@@ -1,11 +1,10 @@
 import pandas as pd
-import numpy as np
 import os
 import sys
 
 from src.logger.logging import logging
 from src.exception.exception import customexception
-from src.utils.constants import DATA_PATH, TARGET_FEATURE
+from src.utils.constants import DATA_PATH, TARGET_FEATURE, INDEX_COLUMN
 
 from sklearn.model_selection import train_test_split
 from dataclasses import dataclass
@@ -28,7 +27,7 @@ class DataIngestion:
         logging.info("initiating data ingestion")
         try:
             filepath=Path(DATA_PATH)
-            data=pd.read_csv(filepath)
+            data=pd.read_csv(filepath, index_col=INDEX_COLUMN)
             logging.info("data read successfully")
 
             os.makedirs(os.path.dirname(os.path.join(self.ingestion_config.raw_data_path)),exist_ok=True)
