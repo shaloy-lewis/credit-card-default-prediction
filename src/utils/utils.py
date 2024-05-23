@@ -6,7 +6,6 @@ import pandas as pd
 from src.logger.logging import logging
 from src.exception.exception import customexception
 
-from sklearn.metrics import roc_auc_score, recall_score, precision_score, f1_score
 
 def save_object(file_path, obj):
     try:

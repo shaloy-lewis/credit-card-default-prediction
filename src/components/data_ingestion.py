@@ -4,11 +4,11 @@ import sys
 
 from src.logger.logging import logging
 from src.exception.exception import customexception
-from src.utils.constants import DATA_PATH, TARGET_FEATURE, INDEX_COLUMN
+from src.utils.constants import TARGET_FEATURE, INDEX_COLUMN
 
 from sklearn.model_selection import train_test_split
 from dataclasses import dataclass
-from pathlib import Path
+
 
 @dataclass
 class DataIngestionConfig:
@@ -26,7 +26,7 @@ class DataIngestion:
     def initiate_data_ingestion(self):
         logging.info("initiating data ingestion")
         try:
-            filepath=Path(DATA_PATH)
+            filepath=os.path.join('data','UCI_Credit_Card.csv')
             data=pd.read_csv(filepath, index_col=INDEX_COLUMN)
             logging.info("data read successfully")
 
@@ -66,8 +66,6 @@ class DataIngestion:
             logging.info()
             raise customexception(e,sys)
 
-
 if __name__=="__main__":
     obj=DataIngestion()
-
     obj.initiate_data_ingestion()

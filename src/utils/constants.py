@@ -19,4 +19,9 @@ NUMERIC_FEATURES_AFTER_PREPROCESSING.append('BILL_AMT_AVG_6M')
 OUTLIER_CAPPING_LOWER_THRESHOLD=2.5
 OUTLIER_CAPPING_UPPER_THRESHOLD=97.5
 
-DATA_PATH = r"data\UCI_Credit_Card.csv"
+# Paraeters for hyperparamter tuning
+PARAM_GRID={
+                'iterations': [50, 100, 200, 400, 800],
+                'n_estimators':[50, 100, 200, 400, 800],
+                'depth': [None, 3, 5, 7, 9]
+            }

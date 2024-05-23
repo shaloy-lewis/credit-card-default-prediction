@@ -99,7 +99,7 @@ class DataTransformation:
                 file_path=self.data_transformation_config.preprocessor_obj_file_path,
                 obj=preprocessor
             )
-            logging.info("pPreprocessing file saved in pickle format")
+            logging.info("Preprocessing file saved in pickle format")
             
             return (
                 X_train,
