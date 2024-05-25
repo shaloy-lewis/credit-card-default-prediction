@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.utils.utils import save_object
-from utils.constants import PARAM_GRID
+from src.utils.constants import PARAM_GRID
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedKFold
@@ -20,10 +20,10 @@ class ModelTrainer:
     def __init__(self):
         self.model_trainer_config = ModelTrainerConfig()
     
-    def initate_model_training(self,train_array,test_array,train_target,test_target):
+    def initate_model_training(self,train_array,train_target):
         try:
             logging.info("Initiating model training")
-            cv_method = StratifiedKFold(n_splits=5, shuffle=True, random_state=33)
+            cv_method = StratifiedKFold(n_splits=3, shuffle=True, random_state=33)
             grid_search = GridSearchCV(estimator=CatBoostClassifier()
                                        , param_grid=PARAM_GRID
                                        , cv=cv_method

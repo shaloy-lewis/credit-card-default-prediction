@@ -1,7 +1,7 @@
 NUMERIC_FEATURES = ['LIMIT_BAL', 'AGE', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5'
                     , 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
 
-OUTLIER_COLUMNS = NUMERIC_FEATURES.remove('AGE')
+OUTLIER_COLUMNS = [x for x in NUMERIC_FEATURES if x not in ['AGE']]
 
 ORDIANAL_CATEGORICAL_FEATURES = ['EDUCATION']
 
@@ -21,7 +21,6 @@ OUTLIER_CAPPING_UPPER_THRESHOLD=97.5
 
 # Paraeters for hyperparamter tuning
 PARAM_GRID={
-                'iterations': [50, 100, 200, 400, 800],
-                'n_estimators':[50, 100, 200, 400, 800],
-                'depth': [None, 3, 5, 7, 9]
+                'iterations': [50, 100, 200, 400, 1000, 2000],
+                'depth': [4, 5, 6, 7, 8, 9, 10]
             }

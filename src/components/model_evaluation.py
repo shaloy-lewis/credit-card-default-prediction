@@ -24,9 +24,11 @@ class ModelEvaluation:
             model_path=os.path.join("artifacts","model.pkl")
             best_model=load_object(model_path)
 
+            logging.info("Calculating model predictions")
             y_train_pred=best_model.predict_proba(train_array)[:, 1]
             y_pred=best_model.predict_proba(test_array)[:, 1]
 
+            logging.info("Evaluating model")
             roc_auc_train, recall_train, precision_train, f1_train=self.evaluate_model(train_target,y_train_pred)
             roc_auc_test, recall_test, precision_test, f1_test=self.evaluate_model(test_target,y_pred)
             

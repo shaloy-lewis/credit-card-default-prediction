@@ -69,10 +69,12 @@ class DataTransformation:
             logging.info("Exception occured in get_data_transformation")
             raise customexception(e,sys)
     
-    def initiate_data_transformation(self,X_train_path,X_test_path):
+    def initiate_data_transformation(self,X_train_path,X_test_path,y_train_path,y_test_path):
         try:
             X_train=pd.read_csv(X_train_path)
             X_test=pd.read_csv(X_test_path)
+            y_train=pd.read_csv(y_train_path)
+            y_test=pd.read_csv(y_test_path)
             
             logging.info("Read train and test data for data transformation")
             logging.info(f'Train Dataframe shape : \n{X_train.shape}')
@@ -103,7 +105,9 @@ class DataTransformation:
             
             return (
                 X_train,
-                X_test
+                X_test,
+                y_train,
+                y_test
             )
             
         except Exception as e:
