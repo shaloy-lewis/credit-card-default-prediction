@@ -1,6 +1,7 @@
 import os
 import sys
 import pandas as pd
+import json
 from src.exception.exception import customexception
 from src.logger.logging import logging
 
@@ -19,16 +20,15 @@ class PredictPipeline:
         try:
             preprocessor_path=os.path.join("artifacts","preprocessor.pkl")
             model_path=os.path.join("artifacts","model.pkl")
-            train_data_path=os.path.join("artifacts","X_train.csv")
+            outlier_threshold_path=os.path.join("artifacts","outlier_threshold.json")
 
             preprocessor=load_object(preprocessor_path)
             model=load_object(model_path)
-            X_train=pd.read_csv(train_data_path)
-            
-            X_train, low_perc, high_perc = cap_outliers(X_train
-                                            , percentile_low=OUTLIER_CAPPING_LOWER_THRESHOLD
-                                            , percentile_high=OUTLIER_CAPPING_UPPER_THRESHOLD
-                                            , req_columns=OUTLIER_COLUMNS)
+            with open(outlier_threshold_path,'r') as file:
+                outlier_threshold=json.load(file)
+                
+            low_perc = pd.Series(outlier_threshold['low_perc'])
+            high_perc = pd.Series(outlier_threshold['high_perc'])
             
             features[OUTLIER_COLUMNS] = features[OUTLIER_COLUMNS].clip(lower=low_perc, upper=high_perc, axis=1)
             features['BILL_AMT_AVG_6M'] = features[['BILL_AMT1','BILL_AMT2','BILL_AMT3','BILL_AMT4','BILL_AMT5','BILL_AMT6']].mean(axis=1).values

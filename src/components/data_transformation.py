@@ -3,6 +3,7 @@ from src.logger.logging import logging
 from src.exception.exception import customexception
 import os
 import sys
+import json
 from dataclasses import dataclass
 
 from sklearn.compose import ColumnTransformer
@@ -24,7 +25,7 @@ from src.utils.utils import cap_outliers, preprocess_data
 @dataclass
 class DataTransformationConfig:
     preprocessor_obj_file_path=os.path.join('artifacts','preprocessor.pkl')
-
+    outlier_threshold_path=os.path.join('artifacts','outlier_threshold.json')
 
 class DataTransformation:
     def __init__(self):
@@ -86,6 +87,15 @@ class DataTransformation:
                                             , percentile_high=OUTLIER_CAPPING_UPPER_THRESHOLD
                                             , req_columns=OUTLIER_COLUMNS)
             X_test[OUTLIER_COLUMNS] = X_test[OUTLIER_COLUMNS].clip(lower=low_perc, upper=high_perc, axis=1)
+            
+            logging.info("Saving outlier thresholds in JSON format")
+            thresholds = {
+                'low_perc': low_perc.to_dict(),
+                'high_perc': high_perc.to_dict()
+            }
+            with open(self.data_transformation_config.outlier_threshold_path, 'w') as file:
+                json.dump(thresholds, file)
+            logging.info("Outlier thresholds saved in JSON format")
             
             logging.info('Preprocessing data')
             X_train=preprocess_data(X_train)
