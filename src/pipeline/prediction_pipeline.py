@@ -5,16 +5,12 @@ import json
 from src.exception.exception import customexception
 from src.logger.logging import logging
 
-from src.utils.utils import load_object, cap_outliers
-from src.utils.constants import (
-    OUTLIER_COLUMNS, 
-    OUTLIER_CAPPING_UPPER_THRESHOLD,
-    OUTLIER_CAPPING_LOWER_THRESHOLD
-)
+from src.utils.utils import load_object
+from src.utils.constants import OUTLIER_COLUMNS 
 
 class PredictPipeline:
     def __init__(self):
-        print("Initializing the prediction pipeline")
+        logging.info("Initializing the prediction pipeline")
 
     def predict(self,features):
         try:
@@ -38,6 +34,8 @@ class PredictPipeline:
             
             scaled_features=preprocessor.transform(features)
             pred=model.predict_proba(scaled_features)
+            logging.info('Predictions obtained successfully')
+            logging.info(f'Probability of default: {pred}')
 
             return pred
 

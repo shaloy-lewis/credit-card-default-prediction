@@ -45,6 +45,8 @@ def cap_outliers(df, percentile_low=2.5, percentile_high=97.5, req_columns=[]):
 def preprocess_data(df):
     try:
         df['MARRIAGE'] = np.where(df['MARRIAGE']==0, 3,df['MARRIAGE'])
+        df['MARRIAGE'] = df['MARRIAGE'].map({1:'married',2:'single',3:'others'})
+        df['SEX'] = df['SEX'].map({1:'male',2:'female'})
         
         for i in [0,2,3,4,5,6]:
             df['PAY_{}'.format(i)] = np.where(df['PAY_{}'.format(i)]<0, "bill_paid"
