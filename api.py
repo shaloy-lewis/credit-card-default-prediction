@@ -76,9 +76,24 @@ def predict_default(data: CreditData):
         # Initialize the prediction pipeline and make predictions
         pipeline = PredictPipeline()
         prediction = pipeline.predict(features_df)
+        
+        # Compute global feature importance
+        global_importance = pipeline.get_global_feature_importance()
+        global_importance_dict = {col: imp for col, imp in zip(pipeline.preprocessor.get_feature_names_out(), global_importance)}
+        # global_importance_dict = {f'feature_{i}': imp for i, imp in enumerate(global_importance)}
+        global_importance_dict=dict(sorted(global_importance_dict.items(), reverse=True, key=lambda item: item[1]))
+
+        # Compute instance-specific feature importance using SHAP
+        shap_values = pipeline.get_instance_feature_importance(features_df)
+        instance_importance_dict = {col: imp for col, imp in zip(features_df.columns, shap_values[0])}
+        instance_importance_dict=dict(sorted(instance_importance_dict.items(), reverse=True, key=lambda item: item[1]))
 
         # Return the prediction result
-        return {"probability_of_default": round(prediction[0][1],6)}
-
+        return {
+            "probability_of_default": round(prediction[0][1],6),
+            "instance_feature_importance": instance_importance_dict,
+            "global_feature_importance": global_importance_dict
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

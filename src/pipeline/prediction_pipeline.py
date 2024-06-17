@@ -4,6 +4,8 @@ import pandas as pd
 import json
 from src.exception.exception import customexception
 from src.logger.logging import logging
+import shap
+from catboost import Pool
 
 from src.utils.utils import load_object
 from src.utils.constants import OUTLIER_COLUMNS 
@@ -11,20 +13,19 @@ from src.utils.constants import OUTLIER_COLUMNS
 class PredictPipeline:
     def __init__(self):
         logging.info("Initializing the prediction pipeline")
+        self.preprocessor_path=os.path.join("artifacts","preprocessor.pkl")
+        self.model_path=os.path.join("artifacts","model.pkl")
+        self.outlier_threshold_path=os.path.join("artifacts","outlier_threshold.json")
+
+        self.preprocessor=load_object(self.preprocessor_path)
+        self.model=load_object(self.model_path)
+        with open(self.outlier_threshold_path,'r') as file:
+            self.outlier_threshold=json.load(file)
 
     def predict(self,features):
-        try:
-            preprocessor_path=os.path.join("artifacts","preprocessor.pkl")
-            model_path=os.path.join("artifacts","model.pkl")
-            outlier_threshold_path=os.path.join("artifacts","outlier_threshold.json")
-
-            preprocessor=load_object(preprocessor_path)
-            model=load_object(model_path)
-            with open(outlier_threshold_path,'r') as file:
-                outlier_threshold=json.load(file)
-                
-            low_perc = pd.Series(outlier_threshold['low_perc'])
-            high_perc = pd.Series(outlier_threshold['high_perc'])
+        try:    
+            low_perc = pd.Series(self.outlier_threshold['low_perc'])
+            high_perc = pd.Series(self.outlier_threshold['high_perc'])
             
             features[OUTLIER_COLUMNS] = features[OUTLIER_COLUMNS].clip(lower=low_perc, upper=high_perc, axis=1)
             features['BILL_AMT_AVG_6M'] = features[['BILL_AMT1','BILL_AMT2','BILL_AMT3','BILL_AMT4','BILL_AMT5','BILL_AMT6']].mean(axis=1).values
@@ -32,8 +33,8 @@ class PredictPipeline:
         
             # features=preprocess_data(features)
             
-            scaled_features=preprocessor.transform(features)
-            pred=model.predict_proba(scaled_features)
+            scaled_features=self.preprocessor.transform(features)
+            pred=self.model.predict_proba(scaled_features)
             logging.info('Predictions obtained successfully')
             logging.info(f'Probability of default: {pred}')
 
@@ -41,6 +42,31 @@ class PredictPipeline:
 
         except Exception as e:
             raise customexception(e,sys)
+    
+    def get_global_feature_importance(self):
+        try:
+            if hasattr(self.model, 'feature_importances_'):
+                return self.model.feature_importances_
+            else:
+                raise ValueError("Model does not support feature_importances_ attribute.")
+        except Exception as e:
+            raise customexception(e, sys)
+
+    def get_instance_feature_importance(self, features):
+        try:
+            scaled_features = self.preprocessor.transform(features)
+
+            pool = Pool(scaled_features)
+            shap_values = self.model.get_feature_importance(data=pool, fstr_type='ShapValues')
+            logging.info('SHAP values computed successfully')
+
+            # SHAP values array has an extra column for base value; we exclude it
+            shap_values = shap_values[:, :-1]
+
+            return shap_values
+        
+        except Exception as e:
+            raise customexception(e, sys)
 
 class CustomData:
     def __init__(self,
