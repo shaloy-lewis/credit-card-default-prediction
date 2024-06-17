@@ -1,75 +1,84 @@
-import streamlit as st
-import pandas as pd
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from src.pipeline.prediction_pipeline import PredictPipeline, CustomData
 
-# Initialize prediction pipeline
-predict_pipeline = PredictPipeline()
+app = FastAPI(
+    title='Credit Card Default Prediction',
+    description="Predicts the member's probability of defaulting on their credit card bills using their credit history and demographics"
+)
+    
 
-# Streamlit app title
-st.title("Credit Default Prediction")
+@app.get("/")
+async def root():
+    return {"message": "credit card default prediction api"}
 
-# Input fields for user data
-st.header("Enter the details:")
+@app.get("/ping", summary='Health check')
+def root():
+    return {"message": "Health check successful!"}
 
-LIMIT_BAL = st.number_input('Limit Balance', min_value=0.0)
-AGE = st.number_input('Age', min_value=0)
-BILL_AMT1 = st.number_input('Bill Amount 1', min_value=0.0)
-BILL_AMT2 = st.number_input('Bill Amount 2', min_value=0.0)
-BILL_AMT3 = st.number_input('Bill Amount 3', min_value=0.0)
-BILL_AMT4 = st.number_input('Bill Amount 4', min_value=0.0)
-BILL_AMT5 = st.number_input('Bill Amount 5', min_value=0.0)
-BILL_AMT6 = st.number_input('Bill Amount 6', min_value=0.0)
-PAY_AMT1 = st.number_input('Payment Amount 1', min_value=0.0)
-PAY_AMT2 = st.number_input('Payment Amount 2', min_value=0.0)
-PAY_AMT3 = st.number_input('Payment Amount 3', min_value=0.0)
-PAY_AMT4 = st.number_input('Payment Amount 4', min_value=0.0)
-PAY_AMT5 = st.number_input('Payment Amount 5', min_value=0.0)
-PAY_AMT6 = st.number_input('Payment Amount 6', min_value=0.0)
-EDUCATION = st.selectbox('Education', options=['graduate_school', 'university', 'high_school', 'others'])
-MARRIAGE = st.selectbox('Marriage', options=['married', 'single', 'others'])
-SEX = st.selectbox('Sex', options=['male', 'female'])
-PAY_0 = st.selectbox('Repayment Status in September', options=['bill_paid', 'bill_payment_delay', 'revolving_credit'])
-PAY_2 = st.selectbox('Repayment Status in August', options=['bill_paid', 'bill_payment_delay', 'revolving_credit'])
-PAY_3 = st.selectbox('Repayment Status in July', options=['bill_paid', 'bill_payment_delay', 'revolving_credit'])
-PAY_4 = st.selectbox('Repayment Status in June', options=['bill_paid', 'bill_payment_delay', 'revolving_credit'])
-PAY_5 = st.selectbox('Repayment Status in May', options=['bill_paid', 'bill_payment_delay', 'revolving_credit'])
-PAY_6 = st.selectbox('Repayment Status in April', options=['bill_paid', 'bill_payment_delay', 'revolving_credit'])
+class CreditData(BaseModel):
+    LIMIT_BAL: int = 1000000
+    AGE: int = 29
+    BILL_AMT1: float = 4000
+    BILL_AMT2: float = 4000
+    BILL_AMT3: float = 4000
+    BILL_AMT4: float = 4000
+    BILL_AMT5: float = 4000
+    BILL_AMT6: float = 4000
+    PAY_AMT1: float = 1500
+    PAY_AMT2: float = 1500
+    PAY_AMT3: float = 1500
+    PAY_AMT4: float = 1500
+    PAY_AMT5: float = 1500
+    PAY_AMT6: float = 1500
+    EDUCATION: str = 'graduate_school'
+    MARRIAGE: str = 'married'
+    SEX: str = 'female'
+    PAY_0: str = 'bill_payment_delay'
+    PAY_2: str = 'revolving_credit'
+    PAY_3: str = 'bill_paid'
+    PAY_4: str = 'bill_paid'
+    PAY_5: str = 'bill_paid'
+    PAY_6: str = 'bill_paid'
+    
+@app.post("/predict")
+def predict_default(data: CreditData):
+    try:
+        custom_data = CustomData(
+            LIMIT_BAL=data.LIMIT_BAL,
+            AGE=data.AGE,
+            BILL_AMT1=data.BILL_AMT1,
+            BILL_AMT2=data.BILL_AMT2,
+            BILL_AMT3=data.BILL_AMT3,
+            BILL_AMT4=data.BILL_AMT4,
+            BILL_AMT5=data.BILL_AMT5,
+            BILL_AMT6=data.BILL_AMT6,
+            PAY_AMT1=data.PAY_AMT1,
+            PAY_AMT2=data.PAY_AMT2,
+            PAY_AMT3=data.PAY_AMT3,
+            PAY_AMT4=data.PAY_AMT4,
+            PAY_AMT5=data.PAY_AMT5,
+            PAY_AMT6=data.PAY_AMT6,
+            EDUCATION=data.EDUCATION,
+            MARRIAGE=data.MARRIAGE,
+            SEX=data.SEX,
+            PAY_0=data.PAY_0,
+            PAY_2=data.PAY_2,
+            PAY_3=data.PAY_3,
+            PAY_4=data.PAY_4,
+            PAY_5=data.PAY_5,
+            PAY_6=data.PAY_6
+        )
 
-# Button to submit data and get predictions
-if st.button('Predict'):
-    # Create a CustomData instance
-    custom_data = CustomData(
-        LIMIT_BAL=LIMIT_BAL,
-        AGE=AGE,
-        BILL_AMT1=BILL_AMT1,
-        BILL_AMT2=BILL_AMT2,
-        BILL_AMT3=BILL_AMT3,
-        BILL_AMT4=BILL_AMT4,
-        BILL_AMT5=BILL_AMT5,
-        BILL_AMT6=BILL_AMT6,
-        PAY_AMT1=PAY_AMT1,
-        PAY_AMT2=PAY_AMT2,
-        PAY_AMT3=PAY_AMT3,
-        PAY_AMT4=PAY_AMT4,
-        PAY_AMT5=PAY_AMT5,
-        PAY_AMT6=PAY_AMT6,
-        EDUCATION=EDUCATION,
-        MARRIAGE=MARRIAGE,
-        SEX=SEX,
-        PAY_0=PAY_0,
-        PAY_2=PAY_2,
-        PAY_3=PAY_3,
-        PAY_4=PAY_4,
-        PAY_5=PAY_5,
-        PAY_6=PAY_6
-    )
+        # Convert to DataFrame
+        features_df = custom_data.get_data_as_dataframe()
 
-    # Convert the user inputs to a DataFrame
-    input_df = custom_data.get_data_as_dataframe()
+        # Initialize the prediction pipeline and make predictions
+        pipeline = PredictPipeline()
+        prediction = pipeline.predict(features_df)
 
-    # Get predictions
-    predictions = predict_pipeline.predict(input_df)
+        # Return the prediction result
+        return {"probability_of_default": round(prediction[0][1],6)}
 
-    # Display the prediction results
-    st.subheader("Prediction Results:")
-    st.write(f"Probability of default: {predictions[0][1]:.4f}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
