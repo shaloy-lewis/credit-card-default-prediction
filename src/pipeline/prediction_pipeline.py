@@ -4,7 +4,7 @@ import pandas as pd
 import json
 from src.exception.exception import customexception
 from src.logger.logging import logging
-import shap
+# import shap
 from catboost import Pool
 
 from src.utils.utils import load_object
