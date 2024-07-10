@@ -63,7 +63,7 @@ class DataIngestion:
             )
 
         except Exception as e:
-            logging.info()
+            logging.info("Exception occured in data_ingestion")
             raise customexception(e,sys)
 
 if __name__=="__main__":
