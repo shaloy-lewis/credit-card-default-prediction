@@ -1,0 +1,44 @@
+FROM ubuntu:20.04
+
+# Set the environment variable to avoid user interaction during package installation
+ENV DEBIAN_FRONTEND=noninteractive 
+
+# Update and install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    curl \
+    bash \
+    python3.12 \
+    python3.12-venv \
+    python3-pip \
+    tzdata && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN python3.12 -m pip install --upgrade pip
+
+# Set environment variables
+ENV APP_NAME "credit-card-default-prediction-api"
+ENV CODE_PATH "/${APP_NAME}"
+ENV TZ "Asia/Kolkata"
+
+# Create and set the working directory
+RUN mkdir -p $CODE_PATH/
+WORKDIR $CODE_PATH/
+
+# Copy requirements.txt and install dependencies
+COPY requirements.txt $CODE_PATH
+RUN pip3 install -r requirements.txt
+
+# Copy the rest of the application code
+COPY . $CODE_PATH/
+
+# Make the init_setup.sh script executable
+RUN chmod u+x init_setup.sh
+
+# Expose the port the app runs on
+EXPOSE 8080
+
+# Command to run the application using the init_setup.sh script
+CMD ["./init_setup.sh"]
