@@ -22,10 +22,11 @@ The generated risk score can be utilized by lenders for informed decision-making
 else:
     # Input fields for user data
     st.subheader("Enter member demographics:")
-    AGE = st.number_input('Age', min_value=18, max_value=80)
-    EDUCATION = st.selectbox('Education', options=['graduate_school', 'university', 'high_school', 'others'])
-    MARRIAGE = st.selectbox('Marriage', options=['married', 'single', 'others'])
-    SEX = st.selectbox('Sex', options=['male', 'female'])
+    col = st.columns(4)
+    AGE = col[0].number_input('Age', min_value=18, max_value=80)
+    EDUCATION = col[1].selectbox('Education', options=['graduate_school', 'university', 'high_school', 'others'])
+    MARRIAGE = col[2].selectbox('Marriage', options=['married', 'single', 'others'])
+    SEX = col[3].selectbox('Sex', options=['male', 'female'])
 
     st.subheader("Enter member credit details:")
     LIMIT_BAL = st.number_input('Balance', min_value=20000, max_value=500000,step=1000)
