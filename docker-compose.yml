@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  credit-card-default-prediction-api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DEPLOY_ENV=runtime
