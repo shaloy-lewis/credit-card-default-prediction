@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, "codex/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, type-check, and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UV_PYTHON: "3.12"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install locked project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Check formatting
+        run: uv run ruff format --check api.py app.py src/credit_risk tests
+
+      - name: Lint
+        run: uv run ruff check api.py app.py src/credit_risk tests
+
+      - name: Type-check maintained boundaries
+        run: uv run mypy src/credit_risk/cli.py api.py app.py
+
+      - name: Run tests
+        run: uv run pytest --cov --cov-report=term-missing
+
+  container:
+    name: Build API container
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Build container
+        run: docker build --tag credit-risk-api:ci .

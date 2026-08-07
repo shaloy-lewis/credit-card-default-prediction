@@ -1,163 +1,152 @@
-<h1 align="center"> Credit Card Default Prediction</h1>
+# Credit Risk Early-Warning Platform
 
-![--](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
+A portfolio project for monthly credit-risk early warning and
+capacity-constrained intervention prioritisation for existing cardholders.
 
-## Overview
-- This repository hosts a **CatBoost classifier** model, served via **FastAPI**, that predicts the probability of an individual defaulting on their credit card bills in the following month. The prediction is based on their demographics, credit data, payment history, and bill statements.
-- The app is deployed on streamlit. Try it out <a href="https://credit-card-default-prediction-shaloy-lewis.streamlit.app/"> here </a>
-- Dataset obtained from <a href="https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset"> Kaggle </a>
+> **Current status:** Portfolio v2 engineering foundation. The committed
+> CatBoost model remains available for compatibility testing while the data,
+> modelling, governance, registry, and monitoring workflows are rebuilt in
+> staged releases.
 
-![--](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
+## Product intent
 
-## Getting Started
+At the end of a monthly billing cycle, the proposed system ranks eligible
+existing accounts by calibrated probability of next-month default. A
+hypothetical human-owned policy can then allocate a limited review or proactive
+support capacity.
+
+This is not a new-customer underwriting system. It does not autonomously approve
+or deny credit, alter limits or pricing, initiate collections, or provide legally
+sufficient adverse-action reasons.
+
+The approved scope and delivery evidence are documented in:
+
+- [Product and decision brief](docs/product-brief.md)
+- [Twelve-week roadmap](docs/roadmap.md)
+- [Batch-first architecture decision](docs/adr/0001-batch-first-scoring.md)
+
+## Current capabilities
+
+- A legacy CatBoost default-probability model and preprocessing artifacts.
+- FastAPI inference and health endpoints.
+- A local Streamlit demonstration.
+- A reproducible Python 3.12 environment managed through `pyproject.toml` and
+  `uv.lock`.
+- Unit and integration tests that protect the legacy transformation, artifact,
+  prediction, API-health, and CLI contracts.
+- Ruff, mypy, pytest, pre-commit, and GitHub Actions quality gates.
+- A non-root, locked-dependency Docker API image.
+
+Planned releases add reproducible data acquisition, scientific baselines,
+calibration, capacity-based policies, MLflow tracking and registry, model-risk
+gates, batch/API parity, monitoring, and incident exercises.
+
+## Dataset and evidence limits
+
+The first release uses the public UCI Default of Credit Card Clients dataset: a
+historical sample of 30,000 Taiwanese customers. It provides one modelling
+snapshot, not repeated account-month observations.
+
+Consequently, this repository does not claim:
+
+- validity for Indian customers or a current lender portfolio;
+- genuine out-of-time or longitudinal performance;
+- realised financial or causal intervention impact; or
+- compliance with RBI, Basel, DPDP, or another regulation.
+
+Synthetic data may later test operational failures, batch volume, and drift. It
+will not be used as evidence of real model performance.
+
+## Local development
 
 ### Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+- Python 3.12
+- [uv](https://docs.astral.sh/uv/)
+- Docker Desktop for the container demonstration
 
-### A. Run with Docker
-1. Clone the repository
-```
-git clone https://github.com/shaloy-lewis/credit-card-default-prediction.git
-cd credit-card-default-prediction
-```
-2. Build and run the Docker container
-```
-docker-compose build
-docker-compose up
-```
-3. Access the application
-```
-http://localhost:8080
+### Install the locked environment
+
+```bash
+uv sync --locked --all-extras --dev
 ```
 
-### B. Run Locally Without Docker
-1. Clone the repository
-```
-git clone https://github.com/shaloy-lewis/credit-card-default-prediction.git
-cd credit-card-default-prediction
-```
-2. Create and activate virtualenv
-```
-pip install virtualenv
-python3.12 -m venv venv
-```
-*For windows*
-```
-venv/Scripts/activate.bat
-```
-*For linux*
-```
-source venv/bin/activate
-```
-3. Install all the required packages and dependencies
-```
-pip install -r requirements.txt
-```
-5. Run the server
-```
-uvicorn api:app --reload --port 8080 --host 0.0.0.0
-```
-6. Access the application
-```
-http://localhost:8080
-```
-![--](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
+### Check the local inference artifacts
 
-## Getting Predictions
+```bash
+uv run credit-risk doctor
 ```
-curl -X 'POST' \
-  'http://localhost:[hostname]/predict' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "LIMIT_BAL": 1000000,
-  "AGE": 29,
-  "BILL_AMT1": 4000,
-  "BILL_AMT2": 4000,
-  "BILL_AMT3": 4000,
-  "BILL_AMT4": 4000,
-  "BILL_AMT5": 4000,
-  "BILL_AMT6": 4000,
-  "PAY_AMT1": 1500,
-  "PAY_AMT2": 1500,
-  "PAY_AMT3": 1500,
-  "PAY_AMT4": 1500,
-  "PAY_AMT5": 1500,
-  "PAY_AMT6": 1500,
-  "EDUCATION": "graduate_school",
-  "MARRIAGE": "married",
-  "SEX": "female",
-  "PAY_0": "bill_payment_delay",
-  "PAY_2": "revolving_credit",
-  "PAY_3": "bill_paid",
-  "PAY_4": "bill_paid",
-  "PAY_5": "bill_paid",
-  "PAY_6": "bill_paid"
-}'
-```
-Change the hostname with the hostname given on your environment
 
-![--](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
+### Run quality checks
 
-## Sample Response
+```bash
+uv run ruff format --check api.py app.py src/credit_risk tests
+uv run ruff check api.py app.py src/credit_risk tests
+uv run mypy src/credit_risk/cli.py api.py app.py
+uv run pytest --cov --cov-report=term-missing
 ```
-{
-  "probability_of_default": 0.44088,
-  "instance_feature_importance": {
-    "PAY_4": 1.4777271702957786,
-    "PAY_5": 0.17918025605815618,
-    "PAY_AMT1": 0.11037106966416492,
-    "PAY_AMT2": 0.10314596053208577,
-    "PAY_6": 0.09610677884716073,
-    "PAY_0": 0.037930420274472784,
-    "PAY_AMT4": 0.036291074732687174,
-    "MARRIAGE": 0.022433707766544284,
-    "SEX": -0.000060132484535163944,
-    "PAY_AMT5": -0.006883730662743441,
-    "PAY_2": -0.011844956313233505,
-    "BILL_AMT_AVG_6M": -0.020733354285267975,
-    "PAY_AMT3": -0.022018604419026016,
-    "PAY_AMT6": -0.029683160243983285,
-    "AGE": -0.031806950578487064,
-    "PAY_3": -0.041603067703169974,
-    "EDUCATION": -0.1327952939910248,
-    "LIMIT_BAL": -0.32958023693049865
-  },
-  "global_feature_importance": {
-    "catategorical_pipeline__PAY_0_bill_payment_delay": 17.055813474118786,
-    "numeric_pipeline__BILL_AMT_AVG_6M": 12.431711310501463,
-    "numeric_pipeline__LIMIT_BAL": 8.657984820125861,
-    "numeric_pipeline__PAY_AMT1": 6.799267441131673,
-    "numeric_pipeline__PAY_AMT2": 6.5969902083702285,
-    "numeric_pipeline__PAY_AMT3": 6.374757261276668,
-    "numeric_pipeline__PAY_AMT4": 6.2085932285442,
-    "numeric_pipeline__AGE": 6.056640768191354,
-    "numeric_pipeline__PAY_AMT6": 4.4245035885795385,
-    "numeric_pipeline__PAY_AMT5": 4.4217923003135375,
-    "ordinal_catategorical_pipeline__EDUCATION": 2.799525641836794,
-    "catategorical_pipeline__PAY_2_revolving_credit": 1.9141984681564181,
-    "catategorical_pipeline__PAY_3_bill_payment_delay": 1.908993187707039,
-    "catategorical_pipeline__PAY_2_bill_paid": 1.8650499567765817,
-    "catategorical_pipeline__PAY_4_bill_payment_delay": 1.6767491229516107,
-    "catategorical_pipeline__PAY_2_bill_payment_delay": 1.6614536149658123,
-    "catategorical_pipeline__PAY_5_bill_payment_delay": 1.5890964424818403,
-    "catategorical_pipeline__PAY_6_bill_payment_delay": 1.4241302826970939,
-    "catategorical_pipeline__PAY_0_revolving_credit": 1.3932961919018094,
-    "catategorical_pipeline__SEX_male": 0.8011364436947948,
-    "catategorical_pipeline__PAY_3_bill_paid": 0.6957549188414223,
-    "catategorical_pipeline__MARRIAGE_single": 0.684984822417616,
-    "catategorical_pipeline__PAY_0_bill_paid": 0.6311391989500784,
-    "catategorical_pipeline__PAY_3_revolving_credit": 0.33467411966255955,
-    "catategorical_pipeline__PAY_4_revolving_credit": 0.30801128686171775,
-    "catategorical_pipeline__PAY_4_bill_paid": 0.2912699550985375,
-    "catategorical_pipeline__MARRIAGE_married": 0.2569278760791494,
-    "catategorical_pipeline__PAY_5_bill_paid": 0.20975005121378454,
-    "catategorical_pipeline__PAY_6_revolving_credit": 0.16247980662535025,
-    "catategorical_pipeline__PAY_6_bill_paid": 0.12493276841134475,
-    "catategorical_pipeline__PAY_5_revolving_credit": 0.1203529543645942,
-    "catategorical_pipeline__MARRIAGE_others": 0.11803848715071436
-  }
-}
+
+### Run the API
+
+```bash
+uv run uvicorn api:app --host 0.0.0.0 --port 8080
 ```
+
+Open `http://localhost:8080/docs` for the generated API documentation or call
+`GET /ping` for the health check.
+
+### Run the Streamlit demo
+
+```bash
+uv run streamlit run app.py
+```
+
+### Run with Docker
+
+```bash
+docker compose up --build
+```
+
+The API is exposed at `http://localhost:8080`.
+
+## Legacy prediction request
+
+The compatibility endpoint remains `POST /predict` during the engineering
+foundation. It accepts six months of bill, payment, and repayment-status history
+plus the existing account attributes. Its current output should be treated as a
+legacy contract: the endpoint, schemas, calibrated policy output, and reviewed
+reason categories will be versioned in later phases.
+
+The tests freeze the documented sample probability at `0.44088` so that package,
+dependency, and container refactors cannot silently change model behaviour.
+
+## Repository structure
+
+```text
+.
+├── api.py                     # Legacy-compatible FastAPI entrypoint
+├── app.py                     # Local Streamlit demonstration
+├── artifacts/                 # Legacy compatibility artifacts
+├── docs/                      # Product, roadmap, governance, and ADR evidence
+├── src/credit_risk/           # Installable application package
+├── tests/                     # Unit, integration, and compatibility tests
+├── pyproject.toml             # Direct dependencies and tool configuration
+├── uv.lock                    # Exact cross-platform dependency resolution
+├── Dockerfile
+└── docker-compose.yml
+```
+
+Generated data, logs, environments, caches, and experiment outputs are excluded
+from version control.
+
+## Delivery milestones
+
+- **Release A — defensible model:** reproducible data, baselines, calibration,
+  uncertainty, and capacity-aware evaluation.
+- **Release B — governed ML product:** model/data cards, subgroup analysis,
+  reason-code tests, registry promotion gates, and rollback.
+- **Release C — local platform:** batch/API parity, Docker Compose services,
+  monitoring, incident drills, and recorded portfolio demo.
+
+See the [roadmap](docs/roadmap.md) for weekly acceptance gates and the honest
+mapping from the local implementation to Azure Databricks production concepts.

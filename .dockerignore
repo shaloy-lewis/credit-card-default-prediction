@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+__pycache__
+*.py[cod]
+*.log
+.coverage
+.mypy_cache
+.pytest_cache
+.ruff_cache
+catboost_info
+data
+docs
+experiment
+htmlcov
+logs
+tests
