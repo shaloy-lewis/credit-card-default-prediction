@@ -40,7 +40,7 @@ jobs:
         run: uv run ruff check api.py app.py src/credit_risk tests
 
       - name: Type-check maintained boundaries
-        run: uv run mypy src/credit_risk/cli.py api.py app.py
+        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
         run: uv run pytest --cov --cov-report=term-missing
@@ -55,5 +55,44 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Plant excluded training-data sentinel
+        run: echo "must not ship" > artifacts/raw.csv
+
       - name: Build container
         run: docker build --tag credit-risk-api:ci .
+
+      - name: Start container
+        run: >-
+          docker run --detach --name credit-risk-api-ci --publish 8080:8080
+          --health-interval=1s --health-start-period=1s --health-timeout=3s
+          --health-retries=10 credit-risk-api:ci
+
+      - name: Wait for inference readiness
+        shell: bash
+        run: |
+          for attempt in {1..30}; do
+            status="$(docker inspect --format '{{.State.Health.Status}}' credit-risk-api-ci)"
+            if [[ "$status" == "healthy" ]]; then
+              exit 0
+            fi
+            if [[ "$status" == "unhealthy" ]]; then
+              docker logs credit-risk-api-ci
+              exit 1
+            fi
+            sleep 1
+          done
+          docker logs credit-risk-api-ci
+          exit 1
+
+      - name: Verify container contract
+        shell: bash
+        run: |
+          test "$(docker exec credit-risk-api-ci whoami)" = "app"
+          docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/artifacts').iterdir()) == ['model.pkl', 'outlier_threshold.json', 'preprocessor.pkl']"
+          curl --fail --silent http://127.0.0.1:8080/ping | python -c "import json, sys; assert json.load(sys.stdin) == {'message': 'Health check successful!'}"
+          curl --fail --silent http://127.0.0.1:8080/ready | python -c "import json, sys; assert json.load(sys.stdin) == {'status': 'ready'}"
+          curl --fail --silent --request POST --header 'Content-Type: application/json' --data @tests/fixtures/prediction_request.json http://127.0.0.1:8080/predict | python -c "import json, sys; response = json.load(sys.stdin); assert abs(response['probability_of_default'] - 0.44088) <= 1e-5"
+
+      - name: Remove test container
+        if: always()
+        run: docker rm --force credit-risk-api-ci || true

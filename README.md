@@ -28,7 +28,7 @@ The approved scope and delivery evidence are documented in:
 ## Current capabilities
 
 - A legacy CatBoost default-probability model and preprocessing artifacts.
-- FastAPI inference and health endpoints.
+- FastAPI inference plus separate liveness and inference-readiness endpoints.
 - A local Streamlit demonstration.
 - A reproducible Python 3.12 environment managed through `pyproject.toml` and
   `uv.lock`.
@@ -77,12 +77,16 @@ uv sync --locked --all-extras --dev
 uv run credit-risk doctor
 ```
 
+`doctor` loads the model and preprocessor and validates their shared feature
+contract plus the outlier-threshold schema. Because pickle deserialization can
+execute code, use this command only with trusted project artifacts.
+
 ### Run quality checks
 
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/artifacts.py src/credit_risk/cli.py api.py app.py
 uv run pytest --cov --cov-report=term-missing
 ```
 
@@ -92,8 +96,10 @@ uv run pytest --cov --cov-report=term-missing
 uv run uvicorn api:app --host 0.0.0.0 --port 8080
 ```
 
-Open `http://localhost:8080/docs` for the generated API documentation or call
-`GET /ping` for the health check.
+Open `http://localhost:8080/docs` for the generated API documentation. `GET /ping`
+reports process liveness; `GET /ready` reports that the inference bundle
+loaded and passed its compatibility checks. Invalid artifacts fail application
+startup instead of leaving a non-functional service marked ready.
 
 ### Run the Streamlit demo
 
@@ -107,7 +113,9 @@ uv run streamlit run app.py
 docker compose up --build
 ```
 
-The API is exposed at `http://localhost:8080`.
+The API is exposed at `http://localhost:8080`. The runtime image contains only
+`model.pkl`, `preprocessor.pkl`, and `outlier_threshold.json`; generated raw,
+train, and test datasets are excluded from the image.
 
 ## Legacy prediction request
 

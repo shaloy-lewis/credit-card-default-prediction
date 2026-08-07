@@ -29,13 +29,13 @@ RUN addgroup --system app && \
 
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --chown=app:app api.py ./api.py
-COPY --chown=app:app artifacts ./artifacts
+COPY --chown=app:app artifacts/model.pkl artifacts/preprocessor.pkl artifacts/outlier_threshold.json ./artifacts/
 
 USER app
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ping', timeout=3)"]
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=3)"]
 
 CMD ["uvicorn", "api:app", "--workers=1", "--host=0.0.0.0", "--port=8080", "--no-access-log"]

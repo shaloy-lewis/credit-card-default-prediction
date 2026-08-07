@@ -15,3 +15,10 @@ experiment
 htmlcov
 logs
 tests
+
+# The runtime image must contain inference artifacts only. Training outputs such
+# as raw.csv and train/test partitions must never enter the build context.
+artifacts/*
+!artifacts/model.pkl
+!artifacts/preprocessor.pkl
+!artifacts/outlier_threshold.json

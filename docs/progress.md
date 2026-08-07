@@ -30,6 +30,14 @@ deferred risks. It is not a substitute for commit history or CI results.
 - Added Ruff, mypy, pytest, coverage, pre-commit, and GitHub Actions gates.
 - Added unit and integration tests for preprocessing, CLI behaviour, API health,
   artifact loading, input-column order, and the frozen legacy prediction.
+- Added one shared trusted-artifact readiness contract for the model,
+  preprocessor, threshold schema, binary classes, transformed feature names,
+  and feature-importance dimensions.
+- Made FastAPI load one validated pipeline during startup, expose `/ping` for
+  process liveness and `/ready` for inference readiness, and reuse that pipeline
+  for every prediction.
+- Derived the package version from installed distribution metadata and restricted
+  the runtime image to the three approved inference artifacts.
 - Rebuilt the API image from the lockfile using a multi-stage Dockerfile and a
   non-root runtime user.
 - Reframed the README and Streamlit problem statement to match the approved
@@ -40,15 +48,15 @@ deferred risks. It is not a substitute for commit history or CI results.
 | Check | Result |
 | --- | --- |
 | Ruff lint | Passed |
-| Ruff formatting | 26 maintained Python files formatted |
-| Mypy | Passed for CLI, FastAPI, and Streamlit boundaries |
-| Pytest | 7 passed |
+| Ruff formatting | 28 maintained Python files formatted |
+| Mypy | Passed for artifact validation, CLI, FastAPI, and Streamlit boundaries |
+| Pytest | 26 passed |
 | Legacy probability | Preserved at `0.44088` for the documented request |
-| Coverage baseline | 35% overall; 74% for legacy inference pipeline; no vanity gate set |
-| CLI doctor | Passed against the committed inference artifacts |
-| Docker build | Passed from the cross-platform frozen lockfile |
-| Container runtime | `/ping` passed; Docker health became `healthy`; runtime user was `app` |
-| Docker Compose | Configuration validated |
+| Coverage baseline | 52% overall; 88% for artifact validation and 87% for legacy inference; no vanity gate set |
+| CLI doctor | Loaded the committed trusted artifacts and passed the full readiness contract |
+| Docker build | Baseline image previously passed from the cross-platform frozen lockfile |
+| Container contract | CI now verifies non-root execution, the three-file allowlist, `/ping`, `/ready`, and `/predict`; the remediation image awaits a responsive local Docker daemon or the next CI run |
+| Docker Compose | Configuration validated; health check targets `/ready` |
 
 ### Deferred risks
 

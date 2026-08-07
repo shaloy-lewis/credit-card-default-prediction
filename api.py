@@ -1,22 +1,36 @@
-from fastapi import FastAPI, HTTPException
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from credit_risk.pipeline.prediction_pipeline import CustomData, PredictPipeline
 
-app = FastAPI(
-    title="Credit Card Default Prediction",
-    description="Predicts the member's probability of defaulting on their credit card bills using their credit history and demographics",
-)
+router = APIRouter()
 
 
-@app.get("/")
+@router.get("/")
 async def root():
     return {"message": "credit card default prediction api"}
 
 
-@app.get("/ping", summary="Health check")
+@router.get("/ping", summary="Liveness check")
 def ping():
     return {"message": "Health check successful!"}
+
+
+def get_pipeline(request: Request) -> PredictPipeline:
+    pipeline = getattr(request.app.state, "pipeline", None)
+    if not isinstance(pipeline, PredictPipeline):
+        raise HTTPException(status_code=503, detail="Inference service is not ready")
+    return pipeline
+
+
+@router.get("/ready", summary="Inference readiness check")
+def ready(request: Request):
+    get_pipeline(request)
+    return {"status": "ready"}
 
 
 class CreditData(BaseModel):
@@ -45,8 +59,8 @@ class CreditData(BaseModel):
     PAY_6: str = "bill_paid"
 
 
-@app.post("/predict")
-def predict_default(data: CreditData):
+@router.post("/predict")
+def predict_default(data: CreditData, request: Request):
     try:
         custom_data = CustomData(
             LIMIT_BAL=data.LIMIT_BAL,
@@ -77,8 +91,8 @@ def predict_default(data: CreditData):
         # Convert to DataFrame
         features_df = custom_data.get_data_as_dataframe()
 
-        # Initialize the prediction pipeline and make predictions
-        pipeline = PredictPipeline()
+        # Reuse the artifact bundle validated during application startup.
+        pipeline = get_pipeline(request)
         prediction = pipeline.predict(features_df)
 
         # Compute global feature importance
@@ -114,5 +128,30 @@ def predict_default(data: CreditData):
             "global_feature_importance": global_importance_dict,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+def create_app(artifact_dir: str | Path = Path("artifacts")) -> FastAPI:
+    """Create an API that fails startup when its inference artifacts are invalid."""
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        application.state.pipeline = PredictPipeline(artifact_dir=artifact_dir)
+        try:
+            yield
+        finally:
+            application.state.pipeline = None
+
+    application = FastAPI(
+        title="Credit Card Default Prediction",
+        description="Predicts the member's probability of defaulting on their credit card bills using their credit history and demographics",
+        lifespan=lifespan,
+    )
+    application.include_router(router)
+    return application
+
+
+app = create_app()

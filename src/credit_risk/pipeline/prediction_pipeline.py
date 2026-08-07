@@ -1,29 +1,29 @@
-import json
-import os
 import sys
+from pathlib import Path
 
 import pandas as pd
 
 # import shap
 from catboost import Pool
 
+from credit_risk.artifacts import load_artifact_bundle
 from credit_risk.exception.exception import customexception
 from credit_risk.logger.logging import logging
 from credit_risk.utils.constants import OUTLIER_COLUMNS
-from credit_risk.utils.utils import load_object
 
 
 class PredictPipeline:
-    def __init__(self):
+    def __init__(self, artifact_dir: str | Path = "artifacts"):
         logging.info("Initializing the prediction pipeline")
-        self.preprocessor_path = os.path.join("artifacts", "preprocessor.pkl")
-        self.model_path = os.path.join("artifacts", "model.pkl")
-        self.outlier_threshold_path = os.path.join("artifacts", "outlier_threshold.json")
+        self.artifact_dir = Path(artifact_dir)
+        self.preprocessor_path = str(self.artifact_dir / "preprocessor.pkl")
+        self.model_path = str(self.artifact_dir / "model.pkl")
+        self.outlier_threshold_path = str(self.artifact_dir / "outlier_threshold.json")
 
-        self.preprocessor = load_object(self.preprocessor_path)
-        self.model = load_object(self.model_path)
-        with open(self.outlier_threshold_path) as file:
-            self.outlier_threshold = json.load(file)
+        bundle = load_artifact_bundle(self.artifact_dir)
+        self.preprocessor = bundle.preprocessor
+        self.model = bundle.model
+        self.outlier_threshold = bundle.outlier_threshold
 
     def predict(self, features):
         try:

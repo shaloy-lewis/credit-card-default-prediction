@@ -1,0 +1,1 @@
+Presence-only fixture that must fail artifact validation.

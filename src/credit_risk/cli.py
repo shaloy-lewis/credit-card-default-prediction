@@ -6,6 +6,7 @@ from typing import Annotated
 import typer
 
 from credit_risk import __version__
+from credit_risk.artifacts import ArtifactValidationError, load_artifact_bundle
 
 app = typer.Typer(
     name="credit-risk",
@@ -24,18 +25,17 @@ def version() -> None:
 def doctor(
     artifact_dir: Annotated[
         Path,
-        typer.Option(help="Directory containing the legacy inference artifacts."),
+        typer.Option(help="Directory containing trusted legacy inference artifacts."),
     ] = Path("artifacts"),
 ) -> None:
-    """Check whether the current checkout has the artifacts needed for inference."""
-    required = ("model.pkl", "preprocessor.pkl", "outlier_threshold.json")
-    missing = [name for name in required if not (artifact_dir / name).is_file()]
+    """Load trusted artifacts and validate the complete inference contract."""
+    try:
+        load_artifact_bundle(artifact_dir)
+    except ArtifactValidationError as error:
+        typer.echo(f"Artifact validation failed: {error}", err=True)
+        raise typer.Exit(code=1) from None
 
-    if missing:
-        typer.echo(f"Missing inference artifacts: {', '.join(missing)}", err=True)
-        raise typer.Exit(code=1)
-
-    typer.echo(f"Environment ready: {artifact_dir.resolve()}")
+    typer.echo(f"Inference artifacts validated: {artifact_dir.resolve()}")
 
 
 @app.command()

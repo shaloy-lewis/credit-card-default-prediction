@@ -1,1 +1,0 @@
-Presence-only fixture used by the CLI doctor test.
