@@ -1,20 +1,37 @@
-from fastapi import FastAPI, HTTPException
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from pydantic import BaseModel
-from src.pipeline.prediction_pipeline import PredictPipeline, CustomData
 
-app = FastAPI(
-    title='Credit Card Default Prediction',
-    description="Predicts the member's probability of defaulting on their credit card bills using their credit history and demographics"
-)
-    
+from credit_risk.pipeline.prediction_pipeline import CustomData, PredictPipeline
 
-@app.get("/")
+router = APIRouter()
+
+
+@router.get("/")
 async def root():
     return {"message": "credit card default prediction api"}
 
-@app.get("/ping", summary='Health check')
+
+@router.get("/ping", summary="Liveness check")
 def ping():
     return {"message": "Health check successful!"}
+
+
+def get_pipeline(request: Request) -> PredictPipeline:
+    pipeline = getattr(request.app.state, "pipeline", None)
+    if not isinstance(pipeline, PredictPipeline):
+        raise HTTPException(status_code=503, detail="Inference service is not ready")
+    return pipeline
+
+
+@router.get("/ready", summary="Inference readiness check")
+def ready(request: Request):
+    get_pipeline(request)
+    return {"status": "ready"}
+
 
 class CreditData(BaseModel):
     LIMIT_BAL: int = 1000000
@@ -31,18 +48,19 @@ class CreditData(BaseModel):
     PAY_AMT4: float = 1500
     PAY_AMT5: float = 1500
     PAY_AMT6: float = 1500
-    EDUCATION: str = 'graduate_school'
-    MARRIAGE: str = 'married'
-    SEX: str = 'female'
-    PAY_0: str = 'bill_payment_delay'
-    PAY_2: str = 'revolving_credit'
-    PAY_3: str = 'bill_paid'
-    PAY_4: str = 'bill_paid'
-    PAY_5: str = 'bill_paid'
-    PAY_6: str = 'bill_paid'
-    
-@app.post("/predict")
-def predict_default(data: CreditData):
+    EDUCATION: str = "graduate_school"
+    MARRIAGE: str = "married"
+    SEX: str = "female"
+    PAY_0: str = "bill_payment_delay"
+    PAY_2: str = "revolving_credit"
+    PAY_3: str = "bill_paid"
+    PAY_4: str = "bill_paid"
+    PAY_5: str = "bill_paid"
+    PAY_6: str = "bill_paid"
+
+
+@router.post("/predict")
+def predict_default(data: CreditData, request: Request):
     try:
         custom_data = CustomData(
             LIMIT_BAL=data.LIMIT_BAL,
@@ -67,33 +85,73 @@ def predict_default(data: CreditData):
             PAY_3=data.PAY_3,
             PAY_4=data.PAY_4,
             PAY_5=data.PAY_5,
-            PAY_6=data.PAY_6
+            PAY_6=data.PAY_6,
         )
 
         # Convert to DataFrame
         features_df = custom_data.get_data_as_dataframe()
 
-        # Initialize the prediction pipeline and make predictions
-        pipeline = PredictPipeline()
+        # Reuse the artifact bundle validated during application startup.
+        pipeline = get_pipeline(request)
         prediction = pipeline.predict(features_df)
-        
+
         # Compute global feature importance
         global_importance = pipeline.get_global_feature_importance()
-        global_importance_dict = {col: imp for col, imp in zip(pipeline.preprocessor.get_feature_names_out(), global_importance)}
+        global_importance_dict = {
+            col: imp
+            for col, imp in zip(
+                pipeline.preprocessor.get_feature_names_out(),
+                global_importance,
+                strict=True,
+            )
+        }
         # global_importance_dict = {f'feature_{i}': imp for i, imp in enumerate(global_importance)}
-        global_importance_dict=dict(sorted(global_importance_dict.items(), reverse=True, key=lambda item: item[1]))
+        global_importance_dict = dict(
+            sorted(global_importance_dict.items(), reverse=True, key=lambda item: item[1])
+        )
 
         # Compute instance-specific feature importance using SHAP
         shap_values = pipeline.get_instance_feature_importance(features_df)
-        instance_importance_dict = {col: imp for col, imp in zip(features_df.columns, shap_values[0])}
-        instance_importance_dict=dict(sorted(instance_importance_dict.items(), reverse=True, key=lambda item: item[1]))
+        # Preserve the legacy response until transformed SHAP values are mapped and
+        # aggregated to reviewed raw-feature reason categories in the governance phase.
+        instance_importance_dict = {
+            col: imp for col, imp in zip(features_df.columns, shap_values[0], strict=False)
+        }
+        instance_importance_dict = dict(
+            sorted(instance_importance_dict.items(), reverse=True, key=lambda item: item[1])
+        )
 
         # Return the prediction result
         return {
-            "probability_of_default": round(prediction[0][1],6),
+            "probability_of_default": round(prediction[0][1], 6),
             "instance_feature_importance": instance_importance_dict,
-            "global_feature_importance": global_importance_dict
+            "global_feature_importance": global_importance_dict,
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+def create_app(artifact_dir: str | Path = Path("artifacts")) -> FastAPI:
+    """Create an API that fails startup when its inference artifacts are invalid."""
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        application.state.pipeline = PredictPipeline(artifact_dir=artifact_dir)
+        try:
+            yield
+        finally:
+            application.state.pipeline = None
+
+    application = FastAPI(
+        title="Credit Card Default Prediction",
+        description="Predicts the member's probability of defaulting on their credit card bills using their credit history and demographics",
+        lifespan=lifespan,
+    )
+    application.include_router(router)
+    return application
+
+
+app = create_app()

@@ -49,6 +49,9 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.pytest-cache/
+.pytest-tmp/
+.pre-commit-cache/
 cover/
 
 # Translations
@@ -140,6 +143,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.ruff_cache/
+.uv-cache/
 .dmypy.json
 dmypy.json
 
