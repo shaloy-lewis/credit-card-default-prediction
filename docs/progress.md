@@ -55,7 +55,7 @@ deferred risks. It is not a substitute for commit history or CI results.
 | Coverage baseline | 52% overall; 88% for artifact validation and 87% for legacy inference; no vanity gate set |
 | CLI doctor | Loaded the committed trusted artifacts and passed the full readiness contract |
 | Docker build | Baseline image previously passed from the cross-platform frozen lockfile |
-| Container contract | CI now verifies non-root execution, the three-file allowlist, `/ping`, `/ready`, and `/predict`; the remediation image awaits a responsive local Docker daemon or the next CI run |
+| Container contract | Passed in CI and in the local regression: non-root execution, the three-file allowlist, `/ping`, `/ready`, and `/predict` |
 | Docker Compose | Configuration validated; health check targets `/ready` |
 
 ### Deferred risks
@@ -74,9 +74,64 @@ deferred risks. It is not a substitute for commit history or CI results.
 - Starlette currently emits an upstream `python-multipart` pending-deprecation
   warning during test import; it does not affect the tested endpoints.
 
-## Next checkpoint — Week 2 reproducible data
+## Phase 1 / Week 2 — reproducible data and G1 complete
 
-The next slice will add the official UCI acquisition manifest, checksum,
-immutable raw-data convention, schema contract, validation failure policy, data
-card, feature-availability matrix, and deterministic split manifest. It will not
-begin model comparison until the data gate passes.
+**Completed:** 2026-08-18
+
+### Delivered
+
+- Pinned UCI dataset 350 to the official normalized CSV by URL, byte size,
+  SHA-256, ordered source schema, row count, and target distribution.
+- Added retry-bounded streaming acquisition, immutable content-addressed raw
+  storage, atomic no-overwrite publication, offline reuse, and hash-addressed
+  quarantine for corrupt or conflicting bytes.
+- Added semantic canonical names and a strict Pandera-backed data contract. The
+  pipeline rejects structural, type, identifier, domain, and class-count drift
+  while preserving and reporting documented source anomalies.
+- Added deterministic canonical CSV and quality-report generation with
+  transactional promotion and stable, sampled failure evidence.
+- Sealed an 80/20 stratified development/test holdout and 5-fold × 3-repeat
+  development-only cross-validation protocol at seed 42.
+- Added deterministic per-account split assignments plus a committed reviewed
+  lock tying the source, canonical table, split configuration, scikit-learn
+  version, counts, and assignment digest together without timestamps.
+- Added `credit-risk data fetch`, `build`, and strictly offline `verify`
+  interfaces. The legacy `credit-risk train` path remains compatibility-only.
+- Added the dataset card, feature-availability/leakage review, validation and
+  quarantine policy, and clean-checkout reproduction instructions.
+- Kept Pandera in the optional `data` dependency boundary; the inference image
+  includes the data CLI package but not Pandera or generated data.
+
+### Verification evidence
+
+| Check | Result |
+| --- | --- |
+| Toolchain | Python 3.12 with `uv 0.11.28`; frozen lock passes `uv lock --check` |
+| Official source | 2,897,080 bytes; SHA-256 `45bcf4df62ff2e237a74eb155cabfb4bbbc171219a0637daef44fdad07503dd0` |
+| Canonical data | 30,000 validated rows; SHA-256 `75b2a746781a584b0456f843f1f269190b51e90983cba44c4ed6c4a8685e6c1c` |
+| Split assignments | 24,000 development and 6,000 test rows; SHA-256 `2f6e2cdd0b29617a48ab6fcbdabd6859822c8ad2b6b5d77665967852cb4a034e` |
+| Offline verification | Passed against the reviewed split lock with no network access |
+| Full tests | 183 passed; one documented upstream Starlette warning |
+| Phase 1 branch coverage | 157 tests passed; 97.19% for `credit_risk.data` against a 90% CI gate |
+| Static gates | Ruff format/lint, mypy, pre-commit, and whitespace checks passed |
+| Inference compatibility | Artifact doctor passed and documented prediction probability remained `0.44088` |
+| Container contract | Compose, non-root user, source-package inclusion, optional-extra isolation, three-artifact allowlist, liveness, readiness, and prediction checks passed |
+
+### Accepted limitations and deferred work
+
+- The source is a static 2005 Taiwan sample with no event timestamps, India
+  validation, or defensible out-of-time split. It supports engineering and
+  governance demonstrations, not contemporary portfolio-performance claims.
+- Demographic columns are retained for audit and ablation but excluded from the
+  default predictive policy until the fairness decision is completed.
+- Generated data remains intentionally Git-ignored; a clean checkout must fetch
+  the exact pinned public bytes before building, then can verify fully offline.
+- Legacy training and committed pickle artifacts are not connected to the new
+  canonical data boundary. Replacing that compatibility path belongs to the
+  modelling and registry phases.
+
+## Next checkpoint — Week 3 scientific baselines
+
+Build leakage-safe baseline experiments on the sealed development assignments,
+define decision-relevant evaluation metrics and uncertainty, and keep the test
+partition untouched until the model and policy selection protocol is frozen.

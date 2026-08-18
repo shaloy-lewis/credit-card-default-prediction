@@ -3,10 +3,10 @@
 A portfolio project for monthly credit-risk early warning and
 capacity-constrained intervention prioritisation for existing cardholders.
 
-> **Current status:** Portfolio v2 engineering foundation. The committed
-> CatBoost model remains available for compatibility testing while the data,
-> modelling, governance, registry, and monitoring workflows are rebuilt in
-> staged releases.
+> **Current status:** Phase 1 / G1 reproducible-data gate implemented. The
+> committed CatBoost model remains available for compatibility testing while
+> modelling, registry, serving, and monitoring workflows are rebuilt in staged
+> releases.
 
 ## Product intent
 
@@ -24,6 +24,9 @@ The approved scope and delivery evidence are documented in:
 - [Product and decision brief](docs/product-brief.md)
 - [Twelve-week roadmap](docs/roadmap.md)
 - [Batch-first architecture decision](docs/adr/0001-batch-first-scoring.md)
+- [Dataset card and evidence limits](docs/data/data-card.md)
+- [Feature availability and leakage review](docs/data/feature-availability.md)
+- [Data validation and quarantine policy](docs/data/validation-policy.md)
 
 ## Current capabilities
 
@@ -32,14 +35,18 @@ The approved scope and delivery evidence are documented in:
 - A local Streamlit demonstration.
 - A reproducible Python 3.12 environment managed through `pyproject.toml` and
   `uv.lock`.
+- Checksum-pinned acquisition of the official UCI CSV, strict canonical schema
+  validation, deterministic quality evidence, and content-addressed quarantine.
+- A sealed 80/20 development/test holdout plus 5-fold × 3-repeat development
+  cross-validation assignments tied to a reviewed lineage lock.
 - Unit and integration tests that protect the legacy transformation, artifact,
   prediction, API-health, and CLI contracts.
 - Ruff, mypy, pytest, pre-commit, and GitHub Actions quality gates.
 - A non-root, locked-dependency Docker API image.
 
-Planned releases add reproducible data acquisition, scientific baselines,
-calibration, capacity-based policies, MLflow tracking and registry, model-risk
-gates, batch/API parity, monitoring, and incident exercises.
+Planned releases add scientific baselines, calibration, capacity-based policies,
+MLflow tracking and registry, model-risk gates, batch/API parity, monitoring,
+and incident exercises.
 
 ## Dataset and evidence limits
 
@@ -62,7 +69,7 @@ will not be used as evidence of real model performance.
 ### Prerequisites
 
 - Python 3.12
-- [uv](https://docs.astral.sh/uv/)
+- [uv 0.11.28](https://docs.astral.sh/uv/), matching CI and the container build
 - Docker Desktop for the container demonstration
 
 ### Install the locked environment
@@ -70,6 +77,26 @@ will not be used as evidence of real model performance.
 ```bash
 uv sync --locked --all-extras --dev
 ```
+
+### Reproduce the governed data snapshot
+
+```bash
+uv run credit-risk data fetch
+uv run credit-risk data build
+uv run credit-risk data verify
+```
+
+`fetch` makes acquisition of the checksum-pinned UCI CSV explicit. `build` is
+idempotent and can perform the same acquisition when the verified raw snapshot
+is absent; it then validates the canonical schema and creates the sealed
+holdout and cross-validation assignments. `verify` is strictly offline and
+checks the complete raw-to-split lineage against the reviewed lock.
+
+Downloaded raw data, processed outputs, quality reports, and split assignments
+remain under the Git-ignored root `data/` directory. Source and split manifests,
+governance evidence, and the reviewed lock are version controlled. The existing
+`credit-risk train` command is compatibility-only until the modelling workflow
+is migrated to these governed inputs.
 
 ### Check the local inference artifacts
 
@@ -86,8 +113,9 @@ execute code, use this command only with trusted project artifacts.
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifacts.py src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/cli.py api.py app.py
 uv run pytest --cov --cov-report=term-missing
+uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
 ```
 
 ### Run the API
@@ -135,6 +163,8 @@ dependency, and container refactors cannot silently change model behaviour.
 ├── api.py                     # Legacy-compatible FastAPI entrypoint
 ├── app.py                     # Local Streamlit demonstration
 ├── artifacts/                 # Legacy compatibility artifacts
+├── configs/data/              # Source manifest, split policy, and reviewed lock
+├── data/                      # Ignored reproducible raw/processed/split products
 ├── docs/                      # Product, roadmap, governance, and ADR evidence
 ├── src/credit_risk/           # Installable application package
 ├── tests/                     # Unit, integration, and compatibility tests

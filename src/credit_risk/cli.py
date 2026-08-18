@@ -7,12 +7,14 @@ import typer
 
 from credit_risk import __version__
 from credit_risk.artifacts import ArtifactValidationError, load_artifact_bundle
+from credit_risk.data.cli import data_app
 
 app = typer.Typer(
     name="credit-risk",
     help="Operate the credit-risk early-warning project.",
     no_args_is_help=True,
 )
+app.add_typer(data_app)
 
 
 @app.command()
@@ -40,7 +42,7 @@ def doctor(
 
 @app.command()
 def train() -> None:
-    """Run the existing end-to-end training workflow."""
+    """Run the compatibility-only legacy training workflow."""
     from credit_risk.pipeline.training_pipeline import run_training
 
     run_training()

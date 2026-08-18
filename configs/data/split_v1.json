@@ -1,0 +1,38 @@
+{
+  "config_version": 1,
+  "dataset_id": "uci_credit_default",
+  "dataset_version": "v1",
+  "id_column": "account_id",
+  "target_column": "default_next_month",
+  "sort_by": [
+    "account_id"
+  ],
+  "holdout": {
+    "method": "stratified_shuffle_split",
+    "test_fraction": 0.2,
+    "random_state": 42
+  },
+  "cross_validation": {
+    "method": "repeated_stratified_k_fold",
+    "n_splits": 5,
+    "n_repeats": 3,
+    "random_state": 42
+  },
+  "expected_counts": {
+    "total": 30000,
+    "development": {
+      "total": 24000,
+      "target_counts": {
+        "0": 18691,
+        "1": 5309
+      }
+    },
+    "test": {
+      "total": 6000,
+      "target_counts": {
+        "0": 4673,
+        "1": 1327
+      }
+    }
+  }
+}

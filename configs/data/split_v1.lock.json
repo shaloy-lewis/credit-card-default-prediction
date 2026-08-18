@@ -1,0 +1,165 @@
+{
+  "algorithm": {
+    "cross_validation": "repeated_stratified_k_fold",
+    "holdout": "stratified_shuffle_split",
+    "scikit_learn_version": "1.4.2"
+  },
+  "assignment": {
+    "filename": "split_assignments.csv",
+    "fold_counts": {
+      "cv_fold_r0": {
+        "0": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "1": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "2": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "3": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "4": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3739,
+            "1": 1061
+          }
+        }
+      },
+      "cv_fold_r1": {
+        "0": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "1": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "2": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "3": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "4": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3739,
+            "1": 1061
+          }
+        }
+      },
+      "cv_fold_r2": {
+        "0": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "1": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "2": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "3": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3738,
+            "1": 1062
+          }
+        },
+        "4": {
+          "rows": 4800,
+          "target_counts": {
+            "0": 3739,
+            "1": 1061
+          }
+        }
+      }
+    },
+    "partition_counts": {
+      "development": {
+        "rows": 24000,
+        "target_counts": {
+          "0": 18691,
+          "1": 5309
+        }
+      },
+      "test": {
+        "rows": 6000,
+        "target_counts": {
+          "0": 4673,
+          "1": 1327
+        }
+      }
+    },
+    "rows": 30000,
+    "sha256": "2f6e2cdd0b29617a48ab6fcbdabd6859822c8ad2b6b5d77665967852cb4a034e"
+  },
+  "config": {
+    "cross_validation": {
+      "n_repeats": 3,
+      "n_splits": 5,
+      "random_state": 42
+    },
+    "holdout": {
+      "random_state": 42,
+      "test_fraction": 0.2
+    },
+    "id_column": "account_id",
+    "sort_by": [
+      "account_id"
+    ],
+    "target_column": "default_next_month"
+  },
+  "dataset_id": "uci_credit_default",
+  "dataset_version": "v1",
+  "lineage": {
+    "canonical_sha256": "75b2a746781a584b0456f843f1f269190b51e90983cba44c4ed6c4a8685e6c1c",
+    "source_sha256": "45bcf4df62ff2e237a74eb155cabfb4bbbc171219a0637daef44fdad07503dd0",
+    "split_config_sha256": "36d8bb9ae6221a60dafa389a0bdf65796bd726d4a96413f810c002de43842398"
+  },
+  "schema_version": "1.0.0"
+}
