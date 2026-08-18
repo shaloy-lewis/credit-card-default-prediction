@@ -23,6 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+data = ["pandera[pandas]==0.32.1"]
 demo = ["streamlit==1.35.0"]
 
 [project.scripts]
@@ -64,7 +65,7 @@ warn_unused_ignores = true
 exclude = ["catboost_info", "experiment"]
 
 [[tool.mypy.overrides]]
-module = ["catboost.*", "pandas.*", "sklearn.*", "streamlit.*"]
+module = ["catboost.*", "pandas.*", "pandera.*", "sklearn.*", "streamlit.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

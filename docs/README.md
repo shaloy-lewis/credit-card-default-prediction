@@ -14,3 +14,13 @@ against model accuracy.
 
 The Phase 0 product brief and batch-first architecture decision were accepted on
 2026-08-07. Later material changes should be recorded in an ADR or decision log.
+
+## Phase 1 data-readiness evidence
+
+- [Dataset card and evidence limits](data/data-card.md)
+- [Feature availability and leakage review](data/feature-availability.md)
+- [Validation and quarantine policy](data/validation-policy.md)
+
+The executable source and split contracts live under `configs/data/`. Generated
+data and runtime lineage remain under the Git-ignored root `data/` directory;
+the reviewed split lock is version controlled with the configuration.
