@@ -14,6 +14,10 @@ from credit_risk.data.manifest import (
 )
 from tests.unit.data.helpers import manifest_payload, split_payload, write_json
 
+# Update this digest only after an official rebuild, offline verification, and
+# explicit review of the complete generated split lock.
+REVIEWED_SPLIT_LOCK_SHA256 = "b2312380fa46924ca414acbcfef63b0435d1321083e87e4df5ec04f18736093d"
+
 
 def test_checked_in_dataset_manifest_pins_official_csv() -> None:
     manifest = load_dataset_manifest()
@@ -61,7 +65,10 @@ def test_checked_in_split_config_locks_protocol_and_expected_counts() -> None:
 
 def test_checked_in_split_lock_pins_reviewed_g1_evidence() -> None:
     lock_path = DEFAULT_SPLIT_CONFIG_PATH.with_suffix(".lock.json")
-    lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    lock_bytes = lock_path.read_bytes()
+
+    assert hashlib.sha256(lock_bytes).hexdigest() == REVIEWED_SPLIT_LOCK_SHA256
+    lock = json.loads(lock_bytes)
 
     assert set(lock) == {
         "algorithm",
