@@ -1,0 +1,105 @@
+"""Command-line entry points for governed model-development workflows."""
+
+from pathlib import Path
+from typing import Annotated, NoReturn
+
+import typer
+
+model_app = typer.Typer(
+    name="model",
+    help="Run governed development-only modelling experiments.",
+    no_args_is_help=True,
+)
+
+
+@model_app.callback()
+def model() -> None:
+    """Operate the governed model-development command group."""
+
+
+def _fail(error: Exception) -> NoReturn:
+    typer.echo(f"Model baseline failed: {error}", err=True)
+    raise typer.Exit(code=1)
+
+
+@model_app.command()
+def baseline(
+    data_root: Annotated[
+        Path,
+        typer.Option(help="Root containing verified canonical data and sealed assignments."),
+    ] = Path("data"),
+    config: Annotated[
+        Path,
+        typer.Option(help="Versioned baseline experiment configuration."),
+    ] = Path("configs/modeling/baseline_v1.json"),
+    tracking_root: Annotated[
+        Path,
+        typer.Option(help="Ignored root for the SQLite MLflow store and runtime artifacts."),
+    ] = Path("experiment/mlflow"),
+    output_root: Annotated[
+        Path,
+        typer.Option(help="Destination for deterministic baseline evidence."),
+    ] = Path("reports/modeling/baseline_v1"),
+    allow_dirty: Annotated[
+        bool,
+        typer.Option(
+            "--allow-dirty",
+            help=(
+                "Permit a dirty worktree only with an exploratory output root and record "
+                "its content-sensitive diff hash."
+            ),
+        ),
+    ] = False,
+) -> None:
+    """Evaluate baselines without exposing holdout rows to fitting or evaluation."""
+
+    try:
+        from credit_risk.modeling.tracking import (
+            TrackingDependencyError,
+            ensure_mlflow_available,
+        )
+
+        ensure_mlflow_available()
+    except TrackingDependencyError as error:
+        _fail(error)
+
+    try:
+        from credit_risk.modeling.workflow import (
+            BaselineWorkflowError,
+            run_baseline_experiment,
+        )
+
+        result = run_baseline_experiment(
+            data_root=data_root,
+            config_path=config,
+            tracking_root=tracking_root,
+            output_root=output_root,
+            allow_dirty=allow_dirty,
+        )
+    except ModuleNotFoundError as error:
+        if error.name == "pandera":
+            _fail(
+                ModuleNotFoundError(
+                    "Pandera is unavailable; install the project with the 'data' extra."
+                )
+            )
+        if error.name == "mlflow":
+            _fail(
+                ModuleNotFoundError(
+                    "MLflow is unavailable; install the project with the 'modeling' extra."
+                )
+            )
+        raise
+    except BaselineWorkflowError as error:
+        _fail(error)
+
+    typer.echo(
+        "Baseline experiment passed: "
+        f"parent_run_id={result.tracking.parent_run_id}, "
+        f"summary_sha256={result.summary_sha256}"
+    )
+    typer.echo(f"Summary: {result.summary_path.resolve()}")
+    typer.echo(f"Report: {result.report_path.resolve()}")
+    typer.echo(f"Runtime OOF evidence: {result.oof_predictions_path.resolve()}")
+    typer.echo(f"Logistic fold diagnostics: {result.logistic_diagnostics_path.resolve()}")
+    typer.echo(f"MLflow tracking URI: {result.tracking.tracking_uri}")

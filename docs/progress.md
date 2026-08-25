@@ -135,3 +135,27 @@ deferred risks. It is not a substitute for commit history or CI results.
 Build leakage-safe baseline experiments on the sealed development assignments,
 define decision-relevant evaluation metrics and uncertainty, and keep the test
 partition untouched until the model and policy selection protocol is frozen.
+
+### Implementation status — code complete; clean evidence pending
+
+**Started:** 2026-08-19
+
+- Phase 2 is limited to the Week 3 baseline-and-tracking checkpoint; G2 remains
+  open through candidate modelling, calibration, uncertainty, and stress tests.
+- The governed feature boundary, three-baseline protocol, metric hierarchy, and
+  local SQLite MLflow design are locked before the first experiment.
+- The development-only workflow, exact OOF coverage checks, machine-readable
+  metric priorities, content-validated MLflow artifacts, and fold-level
+  logistic diagnostics are implemented.
+- Two consecutive provisional executions produced identical OOF and diagnostic
+  bytes: 216,000 OOF rows at SHA-256
+  `c8ec30bec3c323ed0cfbe050aa3313ac356eb5d717ab305dee1b4365a0e51abe`
+  and 15 logistic fold records at SHA-256
+  `9a6c0ebe027fe00eda305d319bdf4dd1c7dfc84e470f3a8a7e00cf387ffda425`.
+- Development-only repeat means were: logistic average precision `0.541294`,
+  ROC-AUC `0.767968`, lift at 10% `3.156903`, and Brier score `0.136362`;
+  the fixed repayment rule achieved average precision `0.473102` and lift at
+  10% `2.909619`. These are baseline evidence, not holdout results or promotion
+  thresholds.
+- Implementation evidence remains provisional until it is rerun from a clean,
+  reviewed commit. No test-partition metric is permitted in this phase.

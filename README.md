@@ -3,10 +3,10 @@
 A portfolio project for monthly credit-risk early warning and
 capacity-constrained intervention prioritisation for existing cardholders.
 
-> **Current status:** Phase 1 / G1 reproducible-data gate implemented. The
-> committed CatBoost model remains available for compatibility testing while
-> modelling, registry, serving, and monitoring workflows are rebuilt in staged
-> releases.
+> **Current status:** Phase 1 / G1 is complete and Phase 2's governed scientific
+> baseline workflow is in progress. The committed CatBoost model remains
+> available for compatibility testing while modelling, registry, serving, and
+> monitoring workflows are rebuilt in staged releases.
 
 ## Product intent
 
@@ -43,10 +43,15 @@ The approved scope and delivery evidence are documented in:
   prediction, API-health, and CLI contracts.
 - Ruff, mypy, pytest, pre-commit, and GitHub Actions quality gates.
 - A non-root, locked-dependency Docker API image.
+- A versioned Week 3 experiment protocol that keeps baseline fitting and
+  evaluation on the reviewed development folds only.
+- A governed 19-feature modelling view, three deterministic baselines,
+  repeated-CV capacity metrics, SQLite MLflow lineage, and non-executable
+  fold-level logistic diagnostics.
 
-Planned releases add scientific baselines, calibration, capacity-based policies,
-MLflow tracking and registry, model-risk gates, batch/API parity, monitoring,
-and incident exercises.
+Planned releases add candidate modelling, calibration, capacity-based policies,
+the model registry, model-risk gates, batch/API parity, monitoring, and incident
+exercises.
 
 ## Dataset and evidence limits
 
@@ -98,6 +103,30 @@ governance evidence, and the reviewed lock are version controlled. The existing
 `credit-risk train` command is compatibility-only until the modelling workflow
 is migrated to these governed inputs.
 
+### Run the governed scientific baselines
+
+Install both the `data` and `modeling` extras, then verify the sealed data
+lineage before starting an experiment:
+
+```bash
+uv sync --locked --extra data --extra modeling --dev
+uv run credit-risk data verify
+uv run credit-risk model baseline --allow-dirty \
+  --output-root experiment/provisional/baseline_v1
+```
+
+`--allow-dirty` is for exploratory development only. A reviewed evidence run
+must execute from a clean implementation commit and writes its deterministic
+aggregate report under `reports/modeling/baseline_v1`. Runtime MLflow SQLite
+state, artifacts, and row-level out-of-fold predictions remain under the
+Git-ignored `experiment/` root. The command never evaluates the test partition.
+The same runtime boundary stores schema-validated logistic convergence and
+coefficient diagnostics as JSON; no fitted model pickle is logged.
+
+The [baseline experiment protocol](docs/modeling/experiment-protocol.md)
+defines the exact feature boundary, models, metrics, tie handling, lineage, and
+failure policy.
+
 ### Check the local inference artifacts
 
 ```bash
@@ -113,9 +142,10 @@ execute code, use this command only with trusted project artifacts.
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/cli.py api.py app.py
 uv run pytest --cov --cov-report=term-missing
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
+uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
 ```
 
 ### Run the API
@@ -164,8 +194,11 @@ dependency, and container refactors cannot silently change model behaviour.
 ├── app.py                     # Local Streamlit demonstration
 ├── artifacts/                 # Legacy compatibility artifacts
 ├── configs/data/              # Source manifest, split policy, and reviewed lock
+├── configs/modeling/          # Feature and scientific-baseline contracts
 ├── data/                      # Ignored reproducible raw/processed/split products
 ├── docs/                      # Product, roadmap, governance, and ADR evidence
+├── experiment/                # Ignored MLflow, OOF, and exploratory evidence
+├── reports/modeling/          # Reviewed aggregate experiment evidence
 ├── src/credit_risk/           # Installable application package
 ├── tests/                     # Unit, integration, and compatibility tests
 ├── pyproject.toml             # Direct dependencies and tool configuration

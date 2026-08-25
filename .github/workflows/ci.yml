@@ -16,7 +16,7 @@ jobs:
   quality:
     name: Lint, type-check, and test
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       UV_PYTHON: "3.12"
 
@@ -41,7 +41,7 @@ jobs:
         run: uv run ruff check api.py app.py src/credit_risk tests
 
       - name: Type-check maintained boundaries
-        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/cli.py api.py app.py
+        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
         run: uv run pytest --cov --cov-report=term-missing
@@ -51,6 +51,13 @@ jobs:
           uv run pytest tests/unit/data tests/unit/test_data_cli.py
           tests/integration/test_data_workflow.py
           --cov=credit_risk.data --cov-branch --cov-report=term-missing
+          --cov-fail-under=90
+
+      - name: Enforce Phase 2 modeling-package branch coverage
+        run: >-
+          uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py
+          tests/integration/test_baseline_experiment.py
+          --cov=credit_risk.modeling --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
   container:
@@ -98,7 +105,9 @@ jobs:
           test "$(docker exec credit-risk-api-ci whoami)" = "app"
           test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.1.0"
           docker exec credit-risk-api-ci python -c "import credit_risk.data"
+          docker exec credit-risk-api-ci python -c "import credit_risk.modeling"
           docker exec credit-risk-api-ci python -c "import importlib.util; assert importlib.util.find_spec('pandera') is None"
+          docker exec credit-risk-api-ci python -c "import importlib.util; assert importlib.util.find_spec('mlflow') is None"
           set +e
           data_output="$(docker exec credit-risk-api-ci credit-risk data build --offline 2>&1)"
           data_status=$?
@@ -106,6 +115,14 @@ jobs:
           test "$data_status" -eq 1
           grep --fixed-strings "install the project with the 'data' extra" <<<"$data_output"
           ! grep --fixed-strings "Traceback" <<<"$data_output"
+          set +e
+          model_output="$(docker exec credit-risk-api-ci credit-risk model baseline 2>&1)"
+          model_status=$?
+          set -e
+          test "$model_status" -eq 1
+          grep --fixed-strings "install the project with the 'modeling' extra" <<<"$model_output"
+          ! grep --fixed-strings "Traceback" <<<"$model_output"
+          docker exec credit-risk-api-ci python -c "from pathlib import Path; assert all(not Path('/app', name).exists() for name in ('data', 'experiment', 'mlruns'))"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/artifacts').iterdir()) == ['model.pkl', 'outlier_threshold.json', 'preprocessor.pkl']"
           curl --fail --silent http://127.0.0.1:8080/ping | python -c "import json, sys; assert json.load(sys.stdin) == {'message': 'Health check successful!'}"
           curl --fail --silent http://127.0.0.1:8080/ready | python -c "import json, sys; assert json.load(sys.stdin) == {'status': 'ready'}"

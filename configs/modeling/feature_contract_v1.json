@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "uci_credit_default_features_v1",
+  "dataset": {
+    "dataset_id": "uci_credit_default",
+    "dataset_version": "v1"
+  },
+  "columns": {
+    "id_column": "account_id",
+    "target_column": "default_next_month",
+    "predictor_columns": [
+      "credit_limit_ntd",
+      "repayment_status_lag_0",
+      "repayment_status_lag_1",
+      "repayment_status_lag_2",
+      "repayment_status_lag_3",
+      "repayment_status_lag_4",
+      "repayment_status_lag_5",
+      "bill_amount_ntd_lag_0",
+      "bill_amount_ntd_lag_1",
+      "bill_amount_ntd_lag_2",
+      "bill_amount_ntd_lag_3",
+      "bill_amount_ntd_lag_4",
+      "bill_amount_ntd_lag_5",
+      "payment_amount_ntd_lag_0",
+      "payment_amount_ntd_lag_1",
+      "payment_amount_ntd_lag_2",
+      "payment_amount_ntd_lag_3",
+      "payment_amount_ntd_lag_4",
+      "payment_amount_ntd_lag_5"
+    ],
+    "audit_columns": [
+      "sex_code",
+      "education_code",
+      "marital_status_code",
+      "age_years"
+    ],
+    "forbidden_predictor_columns": [
+      "account_id",
+      "default_next_month",
+      "sex_code",
+      "education_code",
+      "marital_status_code",
+      "age_years"
+    ]
+  },
+  "expected_development": {
+    "rows": 24000,
+    "target_counts": {
+      "0": 18691,
+      "1": 5309
+    }
+  },
+  "cross_validation": {
+    "n_splits": 5,
+    "n_repeats": 3
+  },
+  "lineage": {
+    "source_sha256": "45bcf4df62ff2e237a74eb155cabfb4bbbc171219a0637daef44fdad07503dd0",
+    "dataset_manifest_sha256": "4e6463e3acce879e00435f21b64cc905b11dc5fd894b20a32cddd0f775be6979",
+    "canonical_sha256": "75b2a746781a584b0456f843f1f269190b51e90983cba44c4ed6c4a8685e6c1c",
+    "split_config_sha256": "36d8bb9ae6221a60dafa389a0bdf65796bd726d4a96413f810c002de43842398",
+    "assignment_sha256": "2f6e2cdd0b29617a48ab6fcbdabd6859822c8ad2b6b5d77665967852cb4a034e",
+    "reviewed_split_lock_sha256": "b2312380fa46924ca414acbcfef63b0435d1321083e87e4df5ec04f18736093d"
+  }
+}

@@ -24,3 +24,12 @@ The Phase 0 product brief and batch-first architecture decision were accepted on
 The executable source and split contracts live under `configs/data/`. Generated
 data and runtime lineage remain under the Git-ignored root `data/` directory;
 the reviewed split lock is version controlled with the configuration.
+
+## Phase 2 scientific-baseline evidence
+
+- [Baseline experiment protocol v1](modeling/experiment-protocol.md)
+
+Phase 2 implements the Week 3 baseline and tracking slice. Runtime MLflow state
+and row-level predictions remain ignored; only a clean, reviewed aggregate
+result will become repository evidence. Candidate modelling, calibration, and
+the sealed holdout remain outside this checkpoint.

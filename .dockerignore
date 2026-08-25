@@ -13,7 +13,8 @@ catboost_info
 !src/credit_risk/data
 !src/credit_risk/data/**
 docs
-experiment
+/experiment
+/mlruns
 htmlcov
 logs
 tests
