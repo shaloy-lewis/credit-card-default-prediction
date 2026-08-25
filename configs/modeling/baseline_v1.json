@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_id": "baseline_v1",
+  "experiment_name": "credit-risk-baseline-v1",
+  "feature_contract_path": "configs/modeling/feature_contract_v1.json",
+  "dataset_manifest_path": "configs/data/uci_credit_default_v1.json",
+  "split_config_path": "configs/data/split_v1.json",
+  "feature_contract_sha256": "8978277ae1c92b6f0b8daed94cccf3cd51d8e6cae0aa9c0620d8cfb813384a4b",
+  "partition": "development",
+  "positive_label": 1,
+  "random_state": 42,
+  "baselines": {
+    "prevalence": {
+      "model_id": "fold_prevalence",
+      "kind": "train_fold_prevalence",
+      "prediction_kind": "probability"
+    },
+    "repayment_rule": {
+      "model_id": "repayment_burden_rule",
+      "kind": "weighted_positive_repayment_status",
+      "prediction_kind": "risk_score",
+      "status_columns": [
+        "repayment_status_lag_0",
+        "repayment_status_lag_1",
+        "repayment_status_lag_2",
+        "repayment_status_lag_3",
+        "repayment_status_lag_4",
+        "repayment_status_lag_5"
+      ],
+      "recency_weights": [
+        6,
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "negative_value_floor": 0,
+      "aggregation": "sum"
+    },
+    "logistic": {
+      "model_id": "logistic_l2",
+      "kind": "logistic_regression",
+      "prediction_kind": "probability",
+      "status_columns": [
+        "repayment_status_lag_0",
+        "repayment_status_lag_1",
+        "repayment_status_lag_2",
+        "repayment_status_lag_3",
+        "repayment_status_lag_4",
+        "repayment_status_lag_5"
+      ],
+      "status_encoding": "one_hot",
+      "status_categories": [
+        -2,
+        -1,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "status_drop": "first",
+      "handle_unknown": "error",
+      "monetary_columns": [
+        "credit_limit_ntd",
+        "bill_amount_ntd_lag_0",
+        "bill_amount_ntd_lag_1",
+        "bill_amount_ntd_lag_2",
+        "bill_amount_ntd_lag_3",
+        "bill_amount_ntd_lag_4",
+        "bill_amount_ntd_lag_5",
+        "payment_amount_ntd_lag_0",
+        "payment_amount_ntd_lag_1",
+        "payment_amount_ntd_lag_2",
+        "payment_amount_ntd_lag_3",
+        "payment_amount_ntd_lag_4",
+        "payment_amount_ntd_lag_5"
+      ],
+      "scaler": "standard",
+      "penalty": "l2",
+      "c": 1.0,
+      "solver": "lbfgs",
+      "class_weight": null,
+      "fit_intercept": true,
+      "max_iter": 2000,
+      "tolerance": 1e-8,
+      "random_state": 42
+    }
+  },
+  "evaluation": {
+    "primary_metric": "average_precision",
+    "probability_guardrail": "brier_score",
+    "primary_capacity_metric": {
+      "metric": "lift",
+      "capacity": 0.1
+    },
+    "discrimination_metrics": [
+      "average_precision",
+      "roc_auc",
+      "ks",
+      "gini"
+    ],
+    "probability_metrics": [
+      "brier_score",
+      "log_loss"
+    ],
+    "capacities": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "tie_policy": "fractional_expected",
+    "repeat_summary": [
+      "mean",
+      "standard_deviation",
+      "minimum",
+      "maximum"
+    ]
+  }
+}

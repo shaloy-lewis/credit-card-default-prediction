@@ -8,6 +8,7 @@ import typer
 from credit_risk import __version__
 from credit_risk.artifacts import ArtifactValidationError, load_artifact_bundle
 from credit_risk.data.cli import data_app
+from credit_risk.modeling.cli import model_app
 
 app = typer.Typer(
     name="credit-risk",
@@ -15,6 +16,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(data_app)
+app.add_typer(model_app)
 
 
 @app.command()

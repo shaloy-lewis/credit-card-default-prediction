@@ -1,0 +1,623 @@
+"""MLflow tracking and reproducibility evidence for governed baseline runs.
+
+The adapter deliberately exposes a narrow logging surface. Only aggregate
+metrics, lineage parameters, and the four schema-validated evidence files can enter
+MLflow; fitted estimators and row-level source or holdout data are never
+accepted by this module.
+"""
+
+from __future__ import annotations
+
+import csv
+import hashlib
+import importlib.metadata
+import io
+import json
+import math
+import subprocess
+import threading
+import warnings
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from types import ModuleType
+from typing import Final
+
+BASELINE_MODEL_NAMES: Final[tuple[str, ...]] = (
+    "fold_prevalence",
+    "repayment_burden_rule",
+    "logistic_l2",
+)
+DEFAULT_EXPERIMENT_NAME: Final[str] = "credit-risk-baseline-v1"
+MLFLOW_DATABASE_FILENAME: Final[str] = "mlflow.db"
+MLFLOW_ARTIFACT_DIRECTORY: Final[str] = "artifacts"
+ALLOWED_TRACKING_ARTIFACTS: Final[Mapping[str, str]] = {
+    "summary.json": "evidence",
+    "baseline-report.md": "evidence",
+    "oof_predictions.csv": "runtime",
+    "logistic_fold_diagnostics.json": "runtime",
+}
+DEFAULT_VERSION_PACKAGES: Final[tuple[str, ...]] = (
+    "credit-risk-early-warning",
+    "mlflow",
+    "numpy",
+    "pandas",
+    "pandera",
+    "pydantic",
+    "scikit-learn",
+    "scipy",
+)
+OPTIONAL_PACKAGE_EXTRAS: Final[Mapping[str, str]] = {
+    "mlflow": "modeling",
+    "pandera": "data",
+}
+_MLFLOW_TRACKING_LOCK: Final[threading.RLock] = threading.RLock()
+
+ParameterValue = str | int | float | bool
+
+
+class TrackingError(RuntimeError):
+    """Raised when experiment evidence cannot be recorded safely."""
+
+
+class TrackingDependencyError(TrackingError):
+    """Raised when the optional MLflow dependency is unavailable."""
+
+
+@dataclass(frozen=True, slots=True)
+class GitEvidence:
+    """Commit and working-tree evidence captured before an experiment starts."""
+
+    commit_sha: str
+    dirty: bool
+    diff_sha256: str
+    repository_root: Path | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ModelRunPayload:
+    """Parameters and metrics for one nested baseline run."""
+
+    model_name: str
+    parameters: Mapping[str, ParameterValue]
+    metrics: Mapping[str, float]
+
+
+@dataclass(frozen=True, slots=True)
+class TrackingRunResult:
+    """Operational MLflow identifiers excluded from deterministic reports."""
+
+    tracking_uri: str
+    experiment_name: str
+    parent_run_id: str
+    child_run_ids: tuple[tuple[str, str], ...]
+
+
+def collect_git_evidence(repo_root: str | Path = ".") -> GitEvidence:
+    """Collect a content-sensitive, non-disclosing working-tree fingerprint.
+
+    The digest covers the porcelain status, the binary tracked diff, and a
+    digest of every untracked file.  File contents and diff text are never
+    returned, logged, or placed in the deterministic experiment report.
+    """
+
+    requested_root = Path(repo_root).resolve()
+    top_level = _run_git(requested_root, "rev-parse", "--show-toplevel").decode(
+        "utf-8", errors="strict"
+    )
+    root = Path(top_level.strip()).resolve()
+    if not root.is_dir():
+        raise TrackingError(f"Git returned an invalid repository root for {requested_root}.")
+    commit = _run_git(root, "rev-parse", "HEAD").decode("ascii", errors="strict").strip()
+    if len(commit) != 40 or any(character not in "0123456789abcdef" for character in commit):
+        raise TrackingError(f"Git returned an invalid HEAD commit for {root}.")
+
+    status = _run_git(
+        root,
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=all",
+    )
+    tracked_diff = _run_git(root, "diff", "--binary", "--no-ext-diff", "HEAD", "--")
+    digest = hashlib.sha256()
+    digest.update(b"status\0")
+    digest.update(status)
+    digest.update(b"\0tracked-diff\0")
+    digest.update(tracked_diff)
+
+    for relative_path in _untracked_paths(status):
+        candidate = (root / relative_path).resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError as error:
+            raise TrackingError(
+                f"Git reported an untracked path outside the repository: {relative_path}"
+            ) from error
+        if not candidate.is_file():
+            raise TrackingError(f"Git reported a non-file untracked path: {relative_path}")
+        try:
+            content_sha256 = hashlib.sha256(candidate.read_bytes()).digest()
+        except OSError as error:
+            raise TrackingError(
+                f"Unable to fingerprint untracked file {relative_path}: {error}"
+            ) from error
+        encoded_path = relative_path.as_posix().encode("utf-8", errors="surrogateescape")
+        digest.update(b"\0untracked\0")
+        digest.update(encoded_path)
+        digest.update(b"\0")
+        digest.update(content_sha256)
+
+    return GitEvidence(
+        commit_sha=commit,
+        dirty=bool(status),
+        diff_sha256=digest.hexdigest(),
+        repository_root=root,
+    )
+
+
+def collect_package_versions(
+    package_names: Sequence[str] = DEFAULT_VERSION_PACKAGES,
+) -> dict[str, str]:
+    """Return sorted installed-distribution versions for experiment lineage."""
+
+    versions: dict[str, str] = {}
+    for package_name in sorted(set(package_names)):
+        try:
+            versions[package_name] = importlib.metadata.version(package_name)
+        except importlib.metadata.PackageNotFoundError as error:
+            extra = OPTIONAL_PACKAGE_EXTRAS.get(package_name)
+            install_hint = (
+                f"install the project with the '{extra}' extra"
+                if extra is not None
+                else "install the project's locked dependencies"
+            )
+            raise TrackingDependencyError(
+                f"Package metadata for {package_name!r} is unavailable; {install_hint}."
+            ) from error
+    return versions
+
+
+def ensure_mlflow_available() -> None:
+    """Fail early with the modeling-extra installation guidance when needed."""
+
+    _load_mlflow()
+
+
+def track_baseline_runs(
+    *,
+    tracking_root: str | Path,
+    experiment_name: str,
+    parent_run_name: str,
+    parent_parameters: Mapping[str, ParameterValue],
+    parent_tags: Mapping[str, str],
+    model_runs: Sequence[ModelRunPayload],
+    artifacts: Sequence[str | Path],
+) -> TrackingRunResult:
+    """Record one parent and exactly three nested baseline runs in SQLite MLflow."""
+
+    payloads = tuple(model_runs)
+    _validate_model_payloads(payloads)
+    evidence_files = _validate_artifacts(artifacts)
+    mlflow = _load_mlflow()
+
+    root = Path(tracking_root).resolve()
+    database_path = root / MLFLOW_DATABASE_FILENAME
+    artifact_root = root / MLFLOW_ARTIFACT_DIRECTORY
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        artifact_root.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise TrackingError(f"Unable to initialize MLflow tracking root {root}: {error}") from error
+
+    tracking_uri = _sqlite_tracking_uri(database_path)
+    with _MLFLOW_TRACKING_LOCK:
+        try:
+            previous_tracking_uri = str(mlflow.get_tracking_uri())
+        except Exception as error:
+            raise TrackingError(
+                f"Unable to read the existing MLflow tracking URI: {error}"
+            ) from error
+        try:
+            try:
+                mlflow.set_tracking_uri(tracking_uri)
+                experiment_id = _resolve_experiment(
+                    mlflow,
+                    experiment_name=experiment_name,
+                    artifact_root=artifact_root,
+                    tracking_uri=tracking_uri,
+                )
+                with mlflow.start_run(
+                    experiment_id=experiment_id,
+                    run_name=parent_run_name,
+                    tags={"run_role": "baseline_parent", **dict(parent_tags)},
+                ) as parent_run:
+                    parent_run_id = str(parent_run.info.run_id)
+                    mlflow.log_params(_normalise_parameters(parent_parameters))
+                    child_run_ids: list[tuple[str, str]] = []
+                    for payload in payloads:
+                        with mlflow.start_run(
+                            experiment_id=experiment_id,
+                            run_name=payload.model_name,
+                            nested=True,
+                            tags={
+                                "run_role": "baseline_model",
+                                "model_id": payload.model_name,
+                            },
+                        ) as child_run:
+                            child_run_ids.append((payload.model_name, str(child_run.info.run_id)))
+                            mlflow.log_params(_normalise_parameters(payload.parameters))
+                            mlflow.log_metrics(_normalise_metrics(payload.metrics))
+
+                    for artifact in evidence_files:
+                        mlflow.log_artifact(
+                            str(artifact),
+                            artifact_path=ALLOWED_TRACKING_ARTIFACTS[artifact.name],
+                        )
+            except TrackingError:
+                raise
+            except Exception as error:
+                raise TrackingError(f"MLflow baseline tracking failed: {error}") from error
+        finally:
+            try:
+                mlflow.set_tracking_uri(previous_tracking_uri)
+            except Exception as error:
+                raise TrackingError(
+                    f"Unable to restore the previous MLflow tracking URI: {error}"
+                ) from error
+
+    return TrackingRunResult(
+        tracking_uri=tracking_uri,
+        experiment_name=experiment_name,
+        parent_run_id=parent_run_id,
+        child_run_ids=tuple(child_run_ids),
+    )
+
+
+def mark_tracking_run_failed(
+    result: TrackingRunResult,
+    *,
+    failure_stage: str,
+) -> None:
+    """Correct the parent status when a post-tracking workflow stage fails."""
+
+    if not failure_stage.strip():
+        raise TrackingError("MLflow failure stage must not be blank.")
+    mlflow = _load_mlflow()
+    try:
+        client = mlflow.tracking.MlflowClient(tracking_uri=result.tracking_uri)
+        client.set_tag(result.parent_run_id, "workflow_failure_stage", failure_stage)
+        client.set_terminated(result.parent_run_id, status="FAILED")
+    except Exception as error:
+        raise TrackingError(
+            f"Unable to mark MLflow parent run {result.parent_run_id} failed: {error}"
+        ) from error
+
+
+def _resolve_experiment(
+    mlflow: ModuleType,
+    *,
+    experiment_name: str,
+    artifact_root: Path,
+    tracking_uri: str,
+) -> str:
+    if not experiment_name.strip():
+        raise TrackingError("MLflow experiment name must not be blank.")
+    client = mlflow.tracking.MlflowClient(tracking_uri=tracking_uri)
+    experiment = client.get_experiment_by_name(experiment_name)
+    expected_location = artifact_root.resolve().as_uri().rstrip("/")
+    if experiment is None:
+        return str(
+            client.create_experiment(
+                experiment_name,
+                artifact_location=expected_location,
+            )
+        )
+
+    actual_location = str(experiment.artifact_location).rstrip("/")
+    if actual_location != expected_location:
+        raise TrackingError(
+            "Existing MLflow experiment uses an unexpected artifact location: "
+            f"expected {expected_location}, found {actual_location}."
+        )
+    return str(experiment.experiment_id)
+
+
+def _validate_model_payloads(payloads: tuple[ModelRunPayload, ...]) -> None:
+    names = tuple(payload.model_name for payload in payloads)
+    if names != BASELINE_MODEL_NAMES:
+        raise TrackingError(
+            "Baseline tracking requires exactly the ordered model runs "
+            f"{BASELINE_MODEL_NAMES}; received {names}."
+        )
+
+
+def _validate_artifacts(paths: Sequence[str | Path]) -> tuple[Path, ...]:
+    artifacts = tuple(Path(path).resolve() for path in paths)
+    names = tuple(artifact.name for artifact in artifacts)
+    if len(set(names)) != len(names):
+        raise TrackingError("MLflow evidence artifact filenames must be unique.")
+    unexpected = sorted(set(names) - set(ALLOWED_TRACKING_ARTIFACTS))
+    missing = sorted(set(ALLOWED_TRACKING_ARTIFACTS) - set(names))
+    if unexpected or missing:
+        raise TrackingError(
+            "MLflow evidence artifact allowlist mismatch: "
+            f"missing={missing}, unexpected={unexpected}."
+        )
+    for artifact in artifacts:
+        if not artifact.is_file():
+            raise TrackingError(f"MLflow evidence artifact is missing or not a file: {artifact}")
+    _validate_evidence_content({artifact.name: artifact for artifact in artifacts})
+    return artifacts
+
+
+def _validate_evidence_content(artifacts: Mapping[str, Path]) -> None:
+    try:
+        summary_bytes = artifacts["summary.json"].read_bytes()
+        report_bytes = artifacts["baseline-report.md"].read_bytes()
+        oof_bytes = artifacts["oof_predictions.csv"].read_bytes()
+        diagnostics_bytes = artifacts["logistic_fold_diagnostics.json"].read_bytes()
+        summary = json.loads(summary_bytes)
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise TrackingError(f"Unable to validate MLflow evidence artifacts: {error}") from error
+    if not isinstance(summary, dict):
+        raise TrackingError("MLflow summary evidence must be a JSON object.")
+    try:
+        data = summary["data"]
+        runtime = summary["runtime_artifacts"]
+        models = summary["models"]
+        development_rows = int(data["development_rows"])
+        n_repeats = int(data["n_repeats"])
+        n_splits = int(data["n_splits"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise TrackingError(
+            "MLflow summary evidence is missing its governed data contract."
+        ) from error
+    if (
+        development_rows < 1
+        or n_repeats != 3
+        or n_splits != 5
+        or data.get("holdout_evaluated") is not False
+        or runtime.get("contains_holdout_rows") is not False
+        or runtime.get("contains_fitted_models") is not False
+        or set(models) != set(BASELINE_MODEL_NAMES)
+    ):
+        raise TrackingError("MLflow summary evidence violates the baseline governance boundary.")
+    observed_oof_sha256 = hashlib.sha256(oof_bytes).hexdigest()
+    if runtime.get("oof_predictions_sha256") != observed_oof_sha256:
+        raise TrackingError("MLflow summary and OOF artifact hashes do not match.")
+    observed_diagnostics_sha256 = hashlib.sha256(diagnostics_bytes).hexdigest()
+    if runtime.get("logistic_diagnostics_sha256") != observed_diagnostics_sha256:
+        raise TrackingError("MLflow summary and logistic-diagnostics hashes do not match.")
+
+    summary_sha256 = hashlib.sha256(summary_bytes).hexdigest()
+    try:
+        report = report_bytes.decode("utf-8")
+    except UnicodeError as error:
+        raise TrackingError("MLflow baseline report must be UTF-8 text.") from error
+    if not report.startswith("# Governed baseline experiment report\n") or (
+        f"**Deterministic summary SHA-256:** `{summary_sha256}`" not in report
+    ):
+        raise TrackingError("MLflow report is not bound to the deterministic summary artifact.")
+
+    _validate_oof_content(
+        oof_bytes,
+        development_rows=development_rows,
+        n_repeats=n_repeats,
+        n_splits=n_splits,
+    )
+    _validate_logistic_diagnostics(
+        diagnostics_bytes,
+        n_repeats=n_repeats,
+        n_splits=n_splits,
+    )
+
+
+def _validate_oof_content(
+    content: bytes,
+    *,
+    development_rows: int,
+    n_repeats: int,
+    n_splits: int,
+) -> None:
+    expected_header = (
+        "account_id",
+        "model_id",
+        "repeat_index",
+        "fold_index",
+        "prediction_kind",
+        "score",
+    )
+    try:
+        reader = csv.DictReader(io.StringIO(content.decode("utf-8"), newline=""))
+    except UnicodeError as error:
+        raise TrackingError("MLflow OOF evidence must be UTF-8 CSV.") from error
+    if tuple(reader.fieldnames or ()) != expected_header:
+        raise TrackingError("MLflow OOF evidence has an unexpected schema.")
+
+    expected_kinds = {
+        "fold_prevalence": "probability",
+        "repayment_burden_rule": "risk_score",
+        "logistic_l2": "probability",
+    }
+    keys: set[tuple[int, str, int]] = set()
+    account_fold_assignments: dict[tuple[int, int], int] = {}
+    account_sets: dict[tuple[str, int], set[int]] = {
+        (model_id, repeat_index): set()
+        for model_id in BASELINE_MODEL_NAMES
+        for repeat_index in range(n_repeats)
+    }
+    fold_sets: dict[tuple[str, int], set[int]] = {key: set() for key in account_sets}
+    try:
+        for row in reader:
+            if None in row:
+                raise ValueError("row contains fields outside the governed OOF schema")
+            account_id = int(row["account_id"])
+            model_id = row["model_id"]
+            repeat_index = int(row["repeat_index"])
+            fold_index = int(row["fold_index"])
+            score = float(row["score"])
+            if (
+                account_id < 1
+                or model_id not in expected_kinds
+                or repeat_index not in range(n_repeats)
+                or fold_index not in range(n_splits)
+                or row["prediction_kind"] != expected_kinds[model_id]
+                or not math.isfinite(score)
+                or (row["prediction_kind"] == "probability" and not 0.0 <= score <= 1.0)
+                or (row["prediction_kind"] == "risk_score" and score < 0.0)
+            ):
+                raise ValueError("row violates the governed OOF domain")
+            key = (account_id, model_id, repeat_index)
+            if key in keys:
+                raise ValueError("duplicate account/model/repeat OOF row")
+            keys.add(key)
+            assignment_key = (account_id, repeat_index)
+            expected_fold = account_fold_assignments.setdefault(assignment_key, fold_index)
+            if fold_index != expected_fold:
+                raise ValueError(
+                    "account uses inconsistent fold assignments across baseline models"
+                )
+            account_sets[(model_id, repeat_index)].add(account_id)
+            fold_sets[(model_id, repeat_index)].add(fold_index)
+    except (csv.Error, KeyError, TypeError, ValueError) as error:
+        raise TrackingError(f"MLflow OOF evidence contains an invalid row: {error}") from error
+
+    expected_rows = development_rows * n_repeats * len(BASELINE_MODEL_NAMES)
+    if len(keys) != expected_rows or any(
+        len(account_ids) != development_rows for account_ids in account_sets.values()
+    ):
+        raise TrackingError("MLflow OOF evidence has incomplete account/model/repeat coverage.")
+    reference_ids = next(iter(account_sets.values()))
+    if any(account_ids != reference_ids for account_ids in account_sets.values()):
+        raise TrackingError("MLflow OOF evidence does not use one common development population.")
+    if any(folds != set(range(n_splits)) for folds in fold_sets.values()):
+        raise TrackingError("MLflow OOF evidence does not cover every reviewed fold.")
+
+
+def _validate_logistic_diagnostics(
+    content: bytes,
+    *,
+    n_repeats: int,
+    n_splits: int,
+) -> None:
+    try:
+        payload = json.loads(content)
+        raw_feature_names = payload["transformed_feature_names"]
+        folds = payload["folds"]
+    except (UnicodeError, json.JSONDecodeError, KeyError, TypeError) as error:
+        raise TrackingError("MLflow logistic diagnostics are not valid governed JSON.") from error
+    if (
+        payload.get("schema_version") != "1.0.0"
+        or payload.get("model_id") != "logistic_l2"
+        or not isinstance(raw_feature_names, list)
+    ):
+        raise TrackingError("MLflow logistic diagnostics violate the fold evidence contract.")
+    feature_names = tuple(raw_feature_names)
+    if (
+        not feature_names
+        or not all(isinstance(name, str) and name for name in feature_names)
+        or len(set(feature_names)) != len(feature_names)
+        or not isinstance(folds, list)
+        or len(folds) != n_repeats * n_splits
+    ):
+        raise TrackingError("MLflow logistic diagnostics violate the fold evidence contract.")
+    observed_folds: set[tuple[int, int]] = set()
+    try:
+        for fold in folds:
+            repeat_index = int(fold["repeat_index"])
+            fold_index = int(fold["fold_index"])
+            iterations = int(fold["iterations"])
+            intercept = float(fold["intercept"])
+            coefficients = tuple(float(value) for value in fold["coefficients"])
+            if (
+                repeat_index not in range(n_repeats)
+                or fold_index not in range(n_splits)
+                or (repeat_index, fold_index) in observed_folds
+                or iterations < 1
+                or len(coefficients) != len(feature_names)
+                or not math.isfinite(intercept)
+                or not all(math.isfinite(value) for value in coefficients)
+            ):
+                raise ValueError("fold diagnostic violates the governed domain")
+            observed_folds.add((repeat_index, fold_index))
+    except (KeyError, TypeError, ValueError) as error:
+        raise TrackingError(
+            f"MLflow logistic diagnostics contain an invalid fold: {error}"
+        ) from error
+
+
+def _normalise_parameters(
+    parameters: Mapping[str, ParameterValue],
+) -> dict[str, ParameterValue]:
+    normalised: dict[str, ParameterValue] = {}
+    for key, value in sorted(parameters.items()):
+        if not isinstance(key, str) or not key.strip():
+            raise TrackingError("MLflow parameter names must be non-blank strings.")
+        if isinstance(value, (str, int, float, bool)):
+            normalised[key] = value
+        else:  # pragma: no cover - protected by the public dataclass annotation
+            raise TrackingError(f"MLflow parameter {key!r} has an unsupported value type.")
+    return normalised
+
+
+def _normalise_metrics(metrics: Mapping[str, float]) -> dict[str, float]:
+    normalised: dict[str, float] = {}
+    for key, value in sorted(metrics.items()):
+        if not isinstance(key, str) or not key.strip():
+            raise TrackingError("MLflow metric names must be non-blank strings.")
+        numeric_value = float(value)
+        if numeric_value != numeric_value or numeric_value in (float("inf"), float("-inf")):
+            raise TrackingError(f"MLflow metric {key!r} must be finite.")
+        normalised[key] = numeric_value
+    return normalised
+
+
+def _sqlite_tracking_uri(database_path: Path) -> str:
+    return f"sqlite:///{database_path.resolve().as_posix()}"
+
+
+def _load_mlflow() -> ModuleType:
+    try:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r'Field "model_name" has conflict with protected namespace "model_"\.',
+                category=UserWarning,
+                module=r"pydantic\._internal\._fields",
+            )
+            import mlflow
+    except ModuleNotFoundError as error:
+        missing = error.name or "an MLflow dependency"
+        raise TrackingDependencyError(
+            f"MLflow dependency {missing!r} is unavailable; "
+            "install the project with the 'modeling' extra."
+        ) from error
+    return mlflow
+
+
+def _run_git(root: Path, *arguments: str) -> bytes:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(root), *arguments],
+            check=False,
+            capture_output=True,
+        )
+    except OSError as error:
+        raise TrackingError(
+            f"Unable to execute git for reproducibility evidence: {error}"
+        ) from error
+    if completed.returncode != 0:
+        detail = completed.stderr.decode("utf-8", errors="replace").strip()
+        raise TrackingError(f"Unable to collect git reproducibility evidence: {detail}")
+    return completed.stdout
+
+
+def _untracked_paths(status: bytes) -> tuple[Path, ...]:
+    paths: list[Path] = []
+    for entry in status.split(b"\0"):
+        if not entry.startswith(b"?? "):
+            continue
+        value = entry[3:].decode("utf-8", errors="surrogateescape")
+        paths.append(Path(value))
+    return tuple(sorted(paths, key=lambda path: path.as_posix()))
