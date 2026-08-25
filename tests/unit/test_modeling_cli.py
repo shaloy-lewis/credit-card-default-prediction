@@ -153,7 +153,7 @@ def test_modeling_preflight_reports_missing_mlflow_before_workflow_import(
 
 
 def test_model_group_help_lists_the_baseline_interface() -> None:
-    result = runner.invoke(cli.model_app, ["baseline", "--help"])
+    result = runner.invoke(cli.model_app, ["baseline", "--help"], color=False)
 
     assert result.exit_code == 0
     assert "--data-root" in result.stdout

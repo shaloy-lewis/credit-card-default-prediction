@@ -84,7 +84,7 @@ def test_synthetic_offline_baseline_experiment_is_complete_and_reproducible(
     assert not oof.duplicated(["account_id", "model_id", "repeat_index"]).any()
 
     assignments = pd.read_csv(
-        next(data_root.glob("processed/fixture_credit_default/v1/*/split_assignments.csv"))
+        data_root / "splits" / "fixture_credit_default" / "v1" / "split_assignments.csv"
     )
     test_ids = set(assignments.loc[assignments["partition"].eq("test"), "account_id"])
     assert test_ids
