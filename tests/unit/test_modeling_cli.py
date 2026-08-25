@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from click import unstyle
 from typer.testing import CliRunner
 
 from credit_risk.modeling import cli, tracking, workflow
@@ -154,12 +155,13 @@ def test_modeling_preflight_reports_missing_mlflow_before_workflow_import(
 
 def test_model_group_help_lists_the_baseline_interface() -> None:
     result = runner.invoke(cli.model_app, ["baseline", "--help"], color=False)
+    output = unstyle(result.stdout)
 
     assert result.exit_code == 0
-    assert "--data-root" in result.stdout
-    assert "--tracking-root" in result.stdout
-    assert "--output-root" in result.stdout
-    assert "--allow-dirty" in result.stdout
+    assert "--data-root" in output
+    assert "--tracking-root" in output
+    assert "--output-root" in output
+    assert "--allow-dirty" in output
 
 
 def _result(tmp_path: Path) -> BaselineExperimentResult:
