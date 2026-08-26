@@ -16,7 +16,7 @@ assignments may be loaded. The 6,000-row test partition remains inaccessible to
 candidate fitting, parameter selection, ablation, scoring, and evaluation.
 
 The machine-readable contract is `configs/modeling/candidate_v1.json` at
-SHA-256 `93aa5331c4e558f6c4c1ce1fb9fce4ae16478a16567243fa6db723e031cf3f6c`.
+SHA-256 `556771afb87345a9ba54f5b1f7f60107a44c9d2a0b270a5fe66d1257ab89a695`.
 It is bound to the reviewed baseline summary at SHA-256
 `11e0332fc9df6f7abf36080a8d09304b3e975f34ad060f70f8611f4fc0ad69d6`.
 
@@ -44,12 +44,13 @@ by `feature_contract_v1`.
 
 | Feature view | Predictors | Role |
 | --- | ---: | --- |
-| `repayment_status_only` | 6 | Diagnostic ablation |
-| `monetary_only` | 13 | Diagnostic ablation |
+| `repayment_status_only` | 6 | Diagnostic ablation; cannot advance |
+| `monetary_only` | 13 | Diagnostic ablation; cannot advance |
 | `operational_full` | 19 | Hyperparameter search and candidate view |
 
 The two reduced views answer whether the added feature family provides material
-ranking value. They are not the Week 6 demographic ablation or fairness review.
+ranking value. They cannot become the selected candidate or satisfy the advancement
+gate, and they are not the Week 6 demographic ablation or fairness review.
 
 The six validated repayment-status codes are passed to CatBoost's native
 categorical interface as strings. The 13 monetary fields remain raw numeric
@@ -79,6 +80,10 @@ with seed 42 from this finite space:
 | Random strength | 0, 1 |
 | Bagging temperature | 0, 1 |
 
+The resulting ordered configurations are materialized as `cb_cfg_001` through
+`cb_cfg_012` in the machine-readable contract. Execution must reproduce that exact
+list from the locked sampler before the first candidate fit.
+
 All 12 configurations use all 15 reviewed folds on `operational_full`. The
 selected hyperparameters are then reused unchanged for the two reduced feature
 views. This fixes the maximum at 210 CatBoost fold fits: 180 search fits plus 30
@@ -105,11 +110,12 @@ Search selection chooses the highest-average-precision eligible full-view
 configuration. If none is eligible, the highest-AP configuration may still be
 used for diagnostic ablations, but CatBoost cannot advance.
 
-Eligible variants within 0.002 average precision of the best are treated as
-practically equivalent. The deterministic tie-break order is fewer predictors,
-lower depth, fewer iterations, higher L2 regularisation, lower learning rate,
-lower random strength, and lower bagging temperature. If no CatBoost variant
-passes every gate, `logistic_l2` remains the candidate for Week 5.
+Eligible full-view configurations within 0.002 average precision of the best are
+treated as practically equivalent. The deterministic tie-break order is lower
+depth, fewer iterations, higher L2 regularisation, lower learning rate, lower
+random strength, lower bagging temperature, and then configuration ID. Reduced
+views remain diagnostic regardless of their observed metrics. If no full-view
+configuration passes every gate, `logistic_l2` remains the candidate for Week 5.
 
 ## Required implementation evidence
 

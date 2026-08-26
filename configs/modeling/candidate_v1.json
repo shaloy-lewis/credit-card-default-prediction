@@ -39,6 +39,7 @@
     {
       "view_id": "repayment_status_only",
       "purpose": "diagnostic_ablation",
+      "eligible_for_advancement": false,
       "predictor_count": 6,
       "predictor_columns": [
         "repayment_status_lag_0",
@@ -52,6 +53,7 @@
     {
       "view_id": "monetary_only",
       "purpose": "diagnostic_ablation",
+      "eligible_for_advancement": false,
       "predictor_count": 13,
       "predictor_columns": [
         "credit_limit_ntd",
@@ -72,6 +74,7 @@
     {
       "view_id": "operational_full",
       "purpose": "search_and_candidate",
+      "eligible_for_advancement": true,
       "predictor_count": 19,
       "predictor_columns": [
         "credit_limit_ntd",
@@ -152,6 +155,140 @@
       "sampler_version": "1.4.2",
       "random_state": 42,
       "n_iter": 12,
+      "sampled_configurations": [
+        {
+          "configuration_id": "cb_cfg_001",
+          "parameters": {
+            "bagging_temperature": 0.0,
+            "depth": 8,
+            "iterations": 600,
+            "l2_leaf_reg": 7.0,
+            "learning_rate": 0.03,
+            "random_strength": 0.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_002",
+          "parameters": {
+            "bagging_temperature": 0.0,
+            "depth": 8,
+            "iterations": 300,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.03,
+            "random_strength": 0.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_003",
+          "parameters": {
+            "bagging_temperature": 0.0,
+            "depth": 8,
+            "iterations": 600,
+            "l2_leaf_reg": 7.0,
+            "learning_rate": 0.1,
+            "random_strength": 1.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_004",
+          "parameters": {
+            "bagging_temperature": 0.0,
+            "depth": 4,
+            "iterations": 300,
+            "l2_leaf_reg": 7.0,
+            "learning_rate": 0.05,
+            "random_strength": 1.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_005",
+          "parameters": {
+            "bagging_temperature": 1.0,
+            "depth": 4,
+            "iterations": 600,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.03,
+            "random_strength": 0.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_006",
+          "parameters": {
+            "bagging_temperature": 0.0,
+            "depth": 8,
+            "iterations": 600,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.03,
+            "random_strength": 0.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_007",
+          "parameters": {
+            "bagging_temperature": 1.0,
+            "depth": 6,
+            "iterations": 300,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.05,
+            "random_strength": 1.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_008",
+          "parameters": {
+            "bagging_temperature": 1.0,
+            "depth": 4,
+            "iterations": 600,
+            "l2_leaf_reg": 12.0,
+            "learning_rate": 0.1,
+            "random_strength": 0.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_009",
+          "parameters": {
+            "bagging_temperature": 1.0,
+            "depth": 6,
+            "iterations": 900,
+            "l2_leaf_reg": 12.0,
+            "learning_rate": 0.05,
+            "random_strength": 0.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_010",
+          "parameters": {
+            "bagging_temperature": 0.0,
+            "depth": 8,
+            "iterations": 900,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.03,
+            "random_strength": 0.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_011",
+          "parameters": {
+            "bagging_temperature": 1.0,
+            "depth": 4,
+            "iterations": 300,
+            "l2_leaf_reg": 12.0,
+            "learning_rate": 0.1,
+            "random_strength": 1.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_012",
+          "parameters": {
+            "bagging_temperature": 1.0,
+            "depth": 4,
+            "iterations": 300,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.05,
+            "random_strength": 0.0
+          }
+        }
+      ],
       "search_feature_view": "operational_full",
       "evaluation_assignments": "all_5_folds_x_3_repeats",
       "parameter_space": {
@@ -185,6 +322,8 @@
         ]
       },
       "ablation_policy": {
+        "role": "diagnostic_only",
+        "eligible_for_advancement": false,
         "hyperparameters": "selected_from_operational_full_search",
         "evaluation_feature_views": [
           "repayment_status_only",
@@ -243,7 +382,6 @@
     },
     "equivalence_band_average_precision": 0.002,
     "tie_break_order": [
-      "fewer_predictors",
       "lower_depth",
       "fewer_iterations",
       "higher_l2_leaf_reg",
@@ -252,7 +390,7 @@
       "lower_bagging_temperature"
     ],
     "search_selection": "best_eligible_operational_full_configuration",
-    "final_variant_selection": "best_eligible_feature_view_using_selected_hyperparameters",
+    "final_variant_selection": "selected_eligible_operational_full_configuration_only",
     "no_eligible_search_configuration": "run_ablations_for_diagnosis_but_do_not_advance",
     "fallback_model_id": "logistic_l2"
   },

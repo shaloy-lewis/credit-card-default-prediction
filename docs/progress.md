@@ -192,6 +192,8 @@ regression if the bounded candidate search does not pass every reviewed gate.
 - Advancement requires all four reviewed average-precision, Brier, lift-at-10%,
   and repeat-stability conditions. Logistic regression remains the fallback.
 - Candidate configuration SHA-256 is
-  `93aa5331c4e558f6c4c1ce1fb9fce4ae16478a16567243fa6db723e031cf3f6c`.
+  `556771afb87345a9ba54f5b1f7f60107a44c9d2a0b270a5fe66d1257ab89a695`.
+- The exact 12 sampled configurations are materialized in the frozen contract.
+  Reduced feature views are diagnostic only and cannot advance.
 - Candidate results were unavailable when the protocol was frozen. The test
   partition remains prohibited until the Week 5 procedure is fixed.

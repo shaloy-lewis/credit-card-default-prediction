@@ -9,13 +9,14 @@ import tomllib
 from pathlib import Path
 
 import pytest
+from sklearn.model_selection import ParameterSampler
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPOSITORY_ROOT / "configs" / "modeling" / "candidate_v1.json"
 
 # Change this digest only after explicit review of the complete pre-experiment
 # candidate protocol. Candidate results must not be consulted during that review.
-EXPECTED_CONFIG_SHA256 = "93aa5331c4e558f6c4c1ce1fb9fce4ae16478a16567243fa6db723e031cf3f6c"
+EXPECTED_CONFIG_SHA256 = "556771afb87345a9ba54f5b1f7f60107a44c9d2a0b270a5fe66d1257ab89a695"
 DEMOGRAPHIC_COLUMNS = {
     "sex_code",
     "education_code",
@@ -92,6 +93,9 @@ def test_candidate_protocol_is_frozen_bounded_and_holdout_blind() -> None:
     assert status_predictors.isdisjoint(monetary_predictors)
     assert status_predictors | monetary_predictors == set(full_predictors)
     assert full_predictors == feature_contract["columns"]["predictor_columns"]
+    assert views["operational_full"]["eligible_for_advancement"] is True
+    assert views["repayment_status_only"]["eligible_for_advancement"] is False
+    assert views["monetary_only"]["eligible_for_advancement"] is False
 
     candidate = config["candidate"]
     assert candidate["model_family"] == "catboost"
@@ -130,9 +134,22 @@ def test_candidate_protocol_is_frozen_bounded_and_holdout_blind() -> None:
     assert f"scikit-learn=={search['sampler_version']}" in dependencies
     assert search["random_state"] == 42
     assert search["n_iter"] == 12
+    sampled = search["sampled_configurations"]
+    assert [item["configuration_id"] for item in sampled] == [
+        f"cb_cfg_{index:03d}" for index in range(1, 13)
+    ]
+    assert [item["parameters"] for item in sampled] == list(
+        ParameterSampler(
+            search["parameter_space"],
+            n_iter=search["n_iter"],
+            random_state=search["random_state"],
+        )
+    )
     assert search["search_feature_view"] == "operational_full"
     assert search["evaluation_assignments"] == "all_5_folds_x_3_repeats"
     assert search["ablation_policy"]["hyperparameters"] == ("selected_from_operational_full_search")
+    assert search["ablation_policy"]["role"] == "diagnostic_only"
+    assert search["ablation_policy"]["eligible_for_advancement"] is False
     available_configurations = math.prod(
         len(values) for values in search["parameter_space"].values()
     )
@@ -160,10 +177,9 @@ def test_candidate_protocol_is_frozen_bounded_and_holdout_blind() -> None:
     assert gate["equivalence_band_average_precision"] == 0.002
     assert gate["search_selection"] == "best_eligible_operational_full_configuration"
     assert gate["final_variant_selection"] == (
-        "best_eligible_feature_view_using_selected_hyperparameters"
+        "selected_eligible_operational_full_configuration_only"
     )
     assert gate["tie_break_order"] == [
-        "fewer_predictors",
         "lower_depth",
         "fewer_iterations",
         "higher_l2_leaf_reg",
