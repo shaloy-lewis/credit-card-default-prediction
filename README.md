@@ -3,8 +3,9 @@
 A portfolio project for monthly credit-risk early warning and
 capacity-constrained intervention prioritisation for existing cardholders.
 
-> **Current status:** Phase 1 / G1 is complete and Phase 2's governed scientific
-> baseline workflow is in progress. The committed CatBoost model remains
+> **Current status:** Phase 1 / G1 and Phase 2's governed scientific baseline
+> checkpoint are complete. G2 remains open for candidate modelling, calibration,
+> uncertainty, and stress testing. The committed compatibility CatBoost model remains
 > available for compatibility testing while modelling, registry, serving, and
 > monitoring workflows are rebuilt in staged releases.
 
@@ -27,6 +28,8 @@ The approved scope and delivery evidence are documented in:
 - [Dataset card and evidence limits](docs/data/data-card.md)
 - [Feature availability and leakage review](docs/data/feature-availability.md)
 - [Data validation and quarantine policy](docs/data/validation-policy.md)
+- [Baseline experiment protocol](docs/modeling/experiment-protocol.md)
+- [Reviewed baseline report](reports/modeling/baseline_v1/baseline-report.md)
 
 ## Current capabilities
 
@@ -48,6 +51,8 @@ The approved scope and delivery evidence are documented in:
 - A governed 19-feature modelling view, three deterministic baselines,
   repeated-CV capacity metrics, SQLite MLflow lineage, and non-executable
   fold-level logistic diagnostics.
+- A clean, digest-protected Phase 2 baseline report tied to reviewed commit
+  `c695c60`, with the sealed holdout explicitly unevaluated.
 
 Planned releases add candidate modelling, calibration, capacity-based policies,
 the model registry, model-risk gates, batch/API parity, monitoring, and incident
@@ -125,7 +130,8 @@ coefficient diagnostics as JSON; no fitted model pickle is logged.
 
 The [baseline experiment protocol](docs/modeling/experiment-protocol.md)
 defines the exact feature boundary, models, metrics, tie handling, lineage, and
-failure policy.
+failure policy. The committed [reviewed report](reports/modeling/baseline_v1/baseline-report.md)
+contains development-only evidence; it is not a holdout or promotion result.
 
 ### Check the local inference artifacts
 
