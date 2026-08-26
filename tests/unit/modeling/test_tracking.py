@@ -23,6 +23,7 @@ from credit_risk.modeling.tracking import (
     collect_package_versions,
     mark_tracking_run_failed,
     track_baseline_runs,
+    track_candidate_runs,
 )
 
 
@@ -429,11 +430,260 @@ def test_rejects_string_instead_of_logistic_feature_name_array(
         )
 
 
+def test_tracks_candidate_parent_and_fourteen_variants(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = _FakeMlflow()
+    monkeypatch.setattr(tracking, "_load_mlflow", lambda: fake)
+    artifacts = tuple(
+        tmp_path / name
+        for name in (
+            "summary.json",
+            "candidate-report.md",
+            "oof_predictions.csv",
+            "fold_diagnostics.json",
+        )
+    )
+    monkeypatch.setattr(
+        tracking,
+        "_validate_candidate_artifacts",
+        lambda _paths: tuple(path.resolve() for path in artifacts),
+    )
+    names = tuple(f"operational_full__cb_cfg_{index:03d}" for index in range(1, 13)) + (
+        "repayment_status_only__cb_cfg_004",
+        "monetary_only__cb_cfg_004",
+    )
+    payloads = tuple(
+        ModelRunPayload(model_name=name, parameters={"seed": 42}, metrics={"ap": 0.5})
+        for name in names
+    )
+
+    result = track_candidate_runs(
+        tracking_root=tmp_path / "tracking",
+        parent_parameters={"dirty": False},
+        parent_tags={"partition": "development"},
+        variant_runs=payloads,
+        artifacts=artifacts,
+    )
+
+    assert result.experiment_name == "credit-risk-candidate-v1"
+    assert result.parent_run_id == "run-0"
+    assert result.child_run_ids == tuple(
+        (name, f"run-{index}") for index, name in enumerate(names, start=1)
+    )
+    assert len(fake.started) == 15
+    assert [call["run_name"] for call in fake.started[1:]] == list(names)
+    assert [(path.name, destination) for _, path, destination in fake.artifacts] == [
+        ("summary.json", "evidence"),
+        ("candidate-report.md", "evidence"),
+        ("oof_predictions.csv", "runtime"),
+        ("fold_diagnostics.json", "runtime"),
+    ]
+
+
+def test_candidate_tracking_rejects_incomplete_variant_payloads(tmp_path: Path) -> None:
+    with pytest.raises(TrackingError, match="14 unique"):
+        track_candidate_runs(
+            tracking_root=tmp_path,
+            parent_parameters={},
+            parent_tags={},
+            variant_runs=(),
+            artifacts=(),
+        )
+
+
+def test_candidate_artifact_boundary_accepts_only_hash_bound_non_executable_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifacts = _candidate_evidence_files(tmp_path)
+    monkeypatch.setattr(tracking, "_validate_candidate_oof", lambda *_args: None)
+
+    validated = tracking._validate_candidate_artifacts(artifacts)
+
+    assert {path.name for path in validated} == set(tracking.CANDIDATE_TRACKING_ARTIFACTS)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        ("data", "development-only"),
+        ("fits", "210 fold fits"),
+        ("boundary", "artifact boundary"),
+        ("oof_hash", "OOF hashes"),
+        ("diagnostics_hash", "diagnostics hashes"),
+        ("diagnostics_count", "exactly 210"),
+        ("report", "not bound"),
+        ("forbidden", "operational identifiers"),
+    ),
+)
+def test_candidate_artifact_boundary_rejects_governance_drift(
+    mutation: str,
+    message: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifacts = _candidate_evidence_files(tmp_path)
+    by_name = {path.name: path for path in artifacts}
+    summary = json.loads(by_name["summary.json"].read_text(encoding="utf-8"))
+    diagnostics = json.loads(by_name["fold_diagnostics.json"].read_text(encoding="utf-8"))
+    if mutation == "data":
+        summary["data"]["holdout_evaluated"] = True
+    elif mutation == "fits":
+        summary["fit_budget"]["completed_fold_fits"] = 209
+    elif mutation == "boundary":
+        summary["runtime_artifacts"]["contains_fitted_models"] = True
+    elif mutation == "oof_hash":
+        summary["runtime_artifacts"]["oof_predictions_sha256"] = "0" * 64
+    elif mutation == "diagnostics_hash":
+        summary["runtime_artifacts"]["fold_diagnostics_sha256"] = "0" * 64
+    elif mutation == "diagnostics_count":
+        diagnostics["fit_count"] = 209
+        by_name["fold_diagnostics.json"].write_text(json.dumps(diagnostics), encoding="utf-8")
+        summary["runtime_artifacts"]["fold_diagnostics_sha256"] = hashlib.sha256(
+            by_name["fold_diagnostics.json"].read_bytes()
+        ).hexdigest()
+    elif mutation == "report":
+        by_name["candidate-report.md"].write_text("wrong", encoding="utf-8")
+    elif mutation == "forbidden":
+        summary["tracking_uri"] = "sqlite:///forbidden"
+    summary_bytes = json.dumps(summary, sort_keys=True).encode("utf-8")
+    by_name["summary.json"].write_bytes(summary_bytes)
+    if mutation != "report":
+        by_name["candidate-report.md"].write_text(
+            "# Governed CatBoost candidate report\n\n"
+            f"Deterministic summary SHA-256:** `{hashlib.sha256(summary_bytes).hexdigest()}`\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    monkeypatch.setattr(tracking, "_validate_candidate_oof", lambda *_args: None)
+
+    with pytest.raises(TrackingError, match=message):
+        tracking._validate_candidate_artifacts(artifacts)
+
+
+def test_candidate_artifact_allowlist_and_payload_roles_are_strict(tmp_path: Path) -> None:
+    artifacts = _candidate_evidence_files(tmp_path)
+    with pytest.raises(TrackingError, match="unique"):
+        tracking._validate_candidate_artifacts((*artifacts, artifacts[0]))
+    with pytest.raises(TrackingError, match="allowlist"):
+        tracking._validate_candidate_artifacts(artifacts[:-1])
+    artifacts[-1].unlink()
+    with pytest.raises(TrackingError, match="missing or not a file"):
+        tracking._validate_candidate_artifacts(artifacts)
+
+    wrong_search = tuple(
+        ModelRunPayload(model_name=f"wrong-{index}", parameters={}, metrics={})
+        for index in range(14)
+    )
+    with pytest.raises(TrackingError, match="ordered cb_cfg"):
+        tracking._validate_candidate_payloads(wrong_search)
+    wrong_diagnostics = tuple(
+        ModelRunPayload(
+            model_name=f"operational_full__cb_cfg_{index:03d}", parameters={}, metrics={}
+        )
+        for index in range(1, 13)
+    ) + (
+        ModelRunPayload(model_name="wrong-a", parameters={}, metrics={}),
+        ModelRunPayload(model_name="wrong-b", parameters={}, metrics={}),
+    )
+    with pytest.raises(TrackingError, match="diagnostic variants"):
+        tracking._validate_candidate_payloads(wrong_diagnostics)
+
+    mismatched_diagnostics = wrong_diagnostics[:12] + (
+        ModelRunPayload(model_name="repayment_status_only__cb_cfg_001", parameters={}, metrics={}),
+        ModelRunPayload(model_name="monetary_only__cb_cfg_002", parameters={}, metrics={}),
+    )
+    with pytest.raises(TrackingError, match="reuse one reviewed"):
+        tracking._validate_candidate_payloads(mismatched_diagnostics)
+
+
+@pytest.mark.parametrize(
+    ("row", "message"),
+    (
+        ({"probability": "nan", "repeat_index": "0", "fold_index": "0"}, "probability"),
+        ({"probability": "0.5", "repeat_index": "3", "fold_index": "0"}, "fold"),
+    ),
+)
+def test_candidate_oof_validator_rejects_invalid_rows(
+    row: dict[str, str],
+    message: str,
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "oof_predictions.csv"
+    fields = [
+        "account_id",
+        "variant_id",
+        "feature_view",
+        "configuration_id",
+        "repeat_index",
+        "fold_index",
+        "probability",
+    ]
+    complete = {
+        "account_id": "1",
+        "variant_id": "variant",
+        "feature_view": "operational_full",
+        "configuration_id": "cb_cfg_001",
+        **row,
+    }
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerow(complete)
+
+    with pytest.raises(TrackingError, match=message):
+        tracking._validate_candidate_oof(path, {"oof_prediction_rows": 1})
+
+
 def _payloads() -> tuple[ModelRunPayload, ...]:
     return tuple(
         ModelRunPayload(model_name=name, parameters={}, metrics={"metric": 0.5})
         for name in BASELINE_MODEL_NAMES
     )
+
+
+def _candidate_evidence_files(tmp_path: Path) -> tuple[Path, ...]:
+    oof_path = tmp_path / "oof_predictions.csv"
+    oof_path.write_text(
+        "account_id,variant_id,feature_view,configuration_id,repeat_index,fold_index,probability\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    diagnostics_path = tmp_path / "fold_diagnostics.json"
+    diagnostics_path.write_text(
+        json.dumps({"fit_count": 210, "fits": [{} for _ in range(210)]}),
+        encoding="utf-8",
+    )
+    summary = {
+        "data": {
+            "development_rows": 24_000,
+            "holdout_evaluated": False,
+            "n_repeats": 3,
+            "n_splits": 5,
+            "partition": "development",
+        },
+        "fit_budget": {"completed_fold_fits": 210, "maximum_fold_fits": 210},
+        "runtime_artifacts": {
+            "contains_holdout_rows": False,
+            "contains_fitted_models": False,
+            "oof_prediction_rows": 1_008_000,
+            "oof_predictions_sha256": hashlib.sha256(oof_path.read_bytes()).hexdigest(),
+            "fold_diagnostics_sha256": hashlib.sha256(diagnostics_path.read_bytes()).hexdigest(),
+        },
+    }
+    summary_path = tmp_path / "summary.json"
+    summary_bytes = json.dumps(summary, sort_keys=True).encode("utf-8")
+    summary_path.write_bytes(summary_bytes)
+    report_path = tmp_path / "candidate-report.md"
+    report_path.write_text(
+        "# Governed CatBoost candidate report\n\n"
+        f"Deterministic summary SHA-256:** `{hashlib.sha256(summary_bytes).hexdigest()}`\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return summary_path, report_path, oof_path, diagnostics_path
 
 
 def _evidence_files(tmp_path: Path) -> tuple[Path, ...]:
