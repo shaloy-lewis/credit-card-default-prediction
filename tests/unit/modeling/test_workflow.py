@@ -108,6 +108,7 @@ def test_baseline_workflow_is_deterministic_and_tracks_only_approved_evidence(
     assert "Average precision" in report
     assert "not a trapezoidal PR-curve area" in report
     assert "pooled OOF metrics as descriptive evidence only" in report
+    assert all(line == line.rstrip() for line in report.splitlines())
 
 
 def test_dirty_gate_runs_before_loading_governed_data(
