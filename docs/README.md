@@ -36,3 +36,13 @@ Phase 2 completed the Week 3 baseline and tracking slice from clean reviewed com
 deterministic aggregate result is version-controlled and protected by complete
 file digests. Candidate modelling, calibration, and the sealed holdout remain
 outside this checkpoint, so G2 is still open.
+
+## Phase 3 candidate-modelling readiness
+
+- [Frozen CatBoost candidate protocol](modeling/candidate-protocol.md)
+- Machine-readable contract: `../configs/modeling/candidate_v1.json`
+
+The protocol fixes the development-only feature views, deterministic 12-trial
+search, 210-fold-fit ceiling, balanced advancement gate, and logistic fallback
+before candidate results exist. No candidate fitting or holdout evaluation is
+included in the readiness checkpoint.

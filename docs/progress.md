@@ -179,3 +179,19 @@ deferred risks. It is not a substitute for commit history or CI results.
 Freeze the candidate protocol and balanced advancement gate before fitting a
 new CatBoost candidate. Keep the test partition sealed and retain logistic
 regression if the bounded candidate search does not pass every reviewed gate.
+
+### Readiness status — protocol frozen; candidate fitting not started
+
+**Frozen:** 2026-08-26
+
+- CatBoost `1.2.5` is the only new model family; no additional challenger or
+  dependency is permitted in this slice.
+- The search samples exactly 12 configurations at seed 42 on the 19-feature
+  operational view and reuses the selected parameters for two feature-family
+  ablations, with a hard ceiling of 210 fold fits.
+- Advancement requires all four reviewed average-precision, Brier, lift-at-10%,
+  and repeat-stability conditions. Logistic regression remains the fallback.
+- Candidate configuration SHA-256 is
+  `93aa5331c4e558f6c4c1ce1fb9fce4ae16478a16567243fa6db723e031cf3f6c`.
+- Candidate results were unavailable when the protocol was frozen. The test
+  partition remains prohibited until the Week 5 procedure is fixed.

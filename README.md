@@ -4,8 +4,9 @@ A portfolio project for monthly credit-risk early warning and
 capacity-constrained intervention prioritisation for existing cardholders.
 
 > **Current status:** Phase 1 / G1 and Phase 2's governed scientific baseline
-> checkpoint are complete. G2 remains open for candidate modelling, calibration,
-> uncertainty, and stress testing. The committed compatibility CatBoost model remains
+> checkpoint are complete. Phase 3's candidate protocol is frozen before fitting;
+> G2 remains open for candidate modelling, calibration, uncertainty, and stress
+> testing. The committed compatibility CatBoost model remains
 > available for compatibility testing while modelling, registry, serving, and
 > monitoring workflows are rebuilt in staged releases.
 
@@ -30,6 +31,7 @@ The approved scope and delivery evidence are documented in:
 - [Data validation and quarantine policy](docs/data/validation-policy.md)
 - [Baseline experiment protocol](docs/modeling/experiment-protocol.md)
 - [Reviewed baseline report](reports/modeling/baseline_v1/baseline-report.md)
+- [Frozen candidate modelling protocol](docs/modeling/candidate-protocol.md)
 
 ## Current capabilities
 
@@ -53,8 +55,11 @@ The approved scope and delivery evidence are documented in:
   fold-level logistic diagnostics.
 - A clean, digest-protected Phase 2 baseline report tied to reviewed commit
   `c695c60`, with the sealed holdout explicitly unevaluated.
+- A versioned Phase 3 CatBoost contract that fixes the feature views, 12-trial
+  search budget, balanced advancement gate, tie-breaking, and logistic fallback
+  before candidate fitting.
 
-Planned releases add candidate modelling, calibration, capacity-based policies,
+Planned releases add candidate fitting, calibration, capacity-based policies,
 the model registry, model-risk gates, batch/API parity, monitoring, and incident
 exercises.
 

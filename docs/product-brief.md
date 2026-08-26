@@ -115,10 +115,12 @@ calibration, decision utility, stability, and governance evidence.
 | Fairness audit | Group calibration, TPR/FPR, contact-selection rates, uncertainty, sample sizes | Detect material subgroup differences and inform use restrictions |
 | Operations | Batch completeness, idempotency, latency, failures, lineage, rollback time | Demonstrate service ownership rather than only model development |
 
-Quantitative acceptance thresholds will be set after the baseline is measured.
-They must not be reverse-engineered from the final test result. If a complex
-model does not provide a defensible improvement over the interpretable baseline,
-the baseline remains eligible for selection.
+The development-CV candidate advancement thresholds are now frozen in the
+[Phase 3 candidate protocol](modeling/candidate-protocol.md) from the reviewed
+baseline evidence. Final calibration, policy, and promotion thresholds remain
+deferred. No threshold may be reverse-engineered from the final test result. If
+a complex model does not provide a defensible improvement over the interpretable
+baseline, the baseline remains eligible for selection.
 
 ## Guardrails and foreseeable harms
 
@@ -193,7 +195,7 @@ appropriate quasi-experiment. The portfolio deliverable will therefore specify:
    capacity assumption.
 2. The hypothetical intervention catalogue and cost assumptions.
 3. The final sensitive-feature policy after demographic ablation.
-4. The model-promotion thresholds after the baseline is measured.
+4. The final model-promotion thresholds after calibration and policy evidence.
 5. The local service-level objectives after an initial benchmark.
 
 These decisions do not block Phase 1. They must be resolved before model

@@ -107,5 +107,5 @@ Week 3 passes only when all three models use the same reviewed development
 folds, the required out-of-fold coverage is exact, lineage is complete, no test
 evidence exists, the deterministic summary is reproducible, and all static,
 test, and container compatibility gates pass. Candidate acceptance thresholds
-are a separate reviewed decision made from this development evidence before
-Week 4. G2 remains open.
+are fixed in the [Phase 3 candidate protocol](candidate-protocol.md) from this
+development evidence before Week 4 candidate fitting. G2 remains open.
