@@ -28,8 +28,21 @@ the reviewed split lock is version controlled with the configuration.
 ## Phase 2 scientific-baseline evidence
 
 - [Baseline experiment protocol v1](modeling/experiment-protocol.md)
+- [Reviewed aggregate baseline report](../reports/modeling/baseline_v1/baseline-report.md)
+- [Reviewed machine-readable baseline summary](../reports/modeling/baseline_v1/summary.json)
 
-Phase 2 implements the Week 3 baseline and tracking slice. Runtime MLflow state
-and row-level predictions remain ignored; only a clean, reviewed aggregate
-result will become repository evidence. Candidate modelling, calibration, and
-the sealed holdout remain outside this checkpoint.
+Phase 2 completed the Week 3 baseline and tracking slice from clean reviewed commit
+`c695c60`. Runtime MLflow state and row-level predictions remain ignored; the
+deterministic aggregate result is version-controlled and protected by complete
+file digests. Candidate modelling, calibration, and the sealed holdout remain
+outside this checkpoint, so G2 is still open.
+
+## Phase 3 candidate-modelling readiness
+
+- [Frozen CatBoost candidate protocol](modeling/candidate-protocol.md)
+- Machine-readable contract: `../configs/modeling/candidate_v1.json`
+
+The protocol fixes the development-only feature views, deterministic 12-trial
+search, 210-fold-fit ceiling, balanced advancement gate, and logistic fallback
+before candidate results exist. No candidate fitting or holdout evaluation is
+included in the readiness checkpoint.

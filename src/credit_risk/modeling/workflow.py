@@ -859,15 +859,15 @@ def _report_bytes(summary: Mapping[str, Any], *, summary_sha256: str) -> bytes:
     lines = [
         "# Governed baseline experiment report",
         "",
-        f"**Experiment:** `{experiment['experiment_id']}`  ",
-        "**Evaluation boundary:** sealed development folds only; holdout rows were not exposed "
-        "to model fitting, scoring, or evaluation  ",
-        f"**Primary metric:** `{experiment['primary_metric']}`  ",
-        f"**Probability guardrail:** `{experiment['probability_guardrail']}`  ",
-        "**Primary capacity metric:** "
+        f"- **Experiment:** `{experiment['experiment_id']}`",
+        "- **Evaluation boundary:** sealed development folds only; holdout rows were not "
+        "exposed to model fitting, scoring, or evaluation",
+        f"- **Primary metric:** `{experiment['primary_metric']}`",
+        f"- **Probability guardrail:** `{experiment['probability_guardrail']}`",
+        "- **Primary capacity metric:** "
         f"`{experiment['primary_capacity_metric']['metric']}@"
-        f"{experiment['primary_capacity_metric']['capacity']}`  ",
-        f"**Deterministic summary SHA-256:** `{summary_sha256}`",
+        f"{experiment['primary_capacity_metric']['capacity']}`",
+        f"- **Deterministic summary SHA-256:** `{summary_sha256}`",
         "",
         "## Protocol result across complete repeats",
         "",

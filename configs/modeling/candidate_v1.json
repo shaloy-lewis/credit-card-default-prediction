@@ -1,0 +1,271 @@
+{
+  "schema_version": "1.0.0",
+  "protocol_id": "candidate_v1",
+  "status": "frozen_pre_experiment",
+  "baseline_evidence": {
+    "summary_path": "reports/modeling/baseline_v1/summary.json",
+    "summary_sha256": "11e0332fc9df6f7abf36080a8d09304b3e975f34ad060f70f8611f4fc0ad69d6",
+    "report_path": "reports/modeling/baseline_v1/baseline-report.md",
+    "report_sha256": "2830b4080f954e773dfdf0c37ed6eaabeaa31917f32071c783ec36abafb63a10",
+    "reference_model_id": "logistic_l2",
+    "reference_metrics": {
+      "average_precision_mean": 0.5412935562637622,
+      "average_precision_standard_deviation": 0.0005794410020725844,
+      "brier_score_mean": 0.13636159002407025,
+      "lift_at_0_1_mean": 3.156903371633076,
+      "roc_auc_mean": 0.7679680902068715
+    }
+  },
+  "data_contract": {
+    "dataset_id": "uci_credit_default",
+    "dataset_version": "v1",
+    "partition": "development",
+    "expected_rows": 24000,
+    "id_column": "account_id",
+    "target_column": "default_next_month",
+    "positive_label": 1,
+    "feature_contract_path": "configs/modeling/feature_contract_v1.json",
+    "feature_contract_sha256": "8978277ae1c92b6f0b8daed94cccf3cd51d8e6cae0aa9c0620d8cfb813384a4b",
+    "split_assignment_sha256": "2f6e2cdd0b29617a48ab6fcbdabd6859822c8ad2b6b5d77665967852cb4a034e",
+    "cross_validation": {
+      "n_splits": 5,
+      "n_repeats": 3,
+      "random_state": 42,
+      "assignment_source": "sealed_phase_1_assignments"
+    },
+    "holdout_access": "prohibited"
+  },
+  "feature_views": [
+    {
+      "view_id": "repayment_status_only",
+      "purpose": "diagnostic_ablation",
+      "predictor_count": 6,
+      "predictor_columns": [
+        "repayment_status_lag_0",
+        "repayment_status_lag_1",
+        "repayment_status_lag_2",
+        "repayment_status_lag_3",
+        "repayment_status_lag_4",
+        "repayment_status_lag_5"
+      ]
+    },
+    {
+      "view_id": "monetary_only",
+      "purpose": "diagnostic_ablation",
+      "predictor_count": 13,
+      "predictor_columns": [
+        "credit_limit_ntd",
+        "bill_amount_ntd_lag_0",
+        "bill_amount_ntd_lag_1",
+        "bill_amount_ntd_lag_2",
+        "bill_amount_ntd_lag_3",
+        "bill_amount_ntd_lag_4",
+        "bill_amount_ntd_lag_5",
+        "payment_amount_ntd_lag_0",
+        "payment_amount_ntd_lag_1",
+        "payment_amount_ntd_lag_2",
+        "payment_amount_ntd_lag_3",
+        "payment_amount_ntd_lag_4",
+        "payment_amount_ntd_lag_5"
+      ]
+    },
+    {
+      "view_id": "operational_full",
+      "purpose": "search_and_candidate",
+      "predictor_count": 19,
+      "predictor_columns": [
+        "credit_limit_ntd",
+        "repayment_status_lag_0",
+        "repayment_status_lag_1",
+        "repayment_status_lag_2",
+        "repayment_status_lag_3",
+        "repayment_status_lag_4",
+        "repayment_status_lag_5",
+        "bill_amount_ntd_lag_0",
+        "bill_amount_ntd_lag_1",
+        "bill_amount_ntd_lag_2",
+        "bill_amount_ntd_lag_3",
+        "bill_amount_ntd_lag_4",
+        "bill_amount_ntd_lag_5",
+        "payment_amount_ntd_lag_0",
+        "payment_amount_ntd_lag_1",
+        "payment_amount_ntd_lag_2",
+        "payment_amount_ntd_lag_3",
+        "payment_amount_ntd_lag_4",
+        "payment_amount_ntd_lag_5"
+      ]
+    }
+  ],
+  "candidate": {
+    "model_id": "catboost_v1",
+    "model_family": "catboost",
+    "library_version": "1.2.5",
+    "additional_challenger": null,
+    "feature_handling": {
+      "native_categorical_columns": [
+        "repayment_status_lag_0",
+        "repayment_status_lag_1",
+        "repayment_status_lag_2",
+        "repayment_status_lag_3",
+        "repayment_status_lag_4",
+        "repayment_status_lag_5"
+      ],
+      "categorical_value_representation": "validated_integer_code_as_string",
+      "numeric_columns": [
+        "credit_limit_ntd",
+        "bill_amount_ntd_lag_0",
+        "bill_amount_ntd_lag_1",
+        "bill_amount_ntd_lag_2",
+        "bill_amount_ntd_lag_3",
+        "bill_amount_ntd_lag_4",
+        "bill_amount_ntd_lag_5",
+        "payment_amount_ntd_lag_0",
+        "payment_amount_ntd_lag_1",
+        "payment_amount_ntd_lag_2",
+        "payment_amount_ntd_lag_3",
+        "payment_amount_ntd_lag_4",
+        "payment_amount_ntd_lag_5"
+      ],
+      "imputation": "none",
+      "clipping": "none",
+      "scaling": "none",
+      "resampling": "none",
+      "target_encoding": "none"
+    },
+    "fixed_parameters": {
+      "loss_function": "Logloss",
+      "eval_metric": "Logloss",
+      "task_type": "CPU",
+      "bootstrap_type": "Bayesian",
+      "class_weights": null,
+      "auto_class_weights": null,
+      "random_seed": 42,
+      "thread_count": 1,
+      "allow_writing_files": false,
+      "verbose": false,
+      "use_best_model": false,
+      "early_stopping_rounds": null
+    },
+    "search": {
+      "strategy": "sklearn_parameter_sampler_without_replacement",
+      "sampler_library": "scikit-learn",
+      "sampler_version": "1.4.2",
+      "random_state": 42,
+      "n_iter": 12,
+      "search_feature_view": "operational_full",
+      "evaluation_assignments": "all_5_folds_x_3_repeats",
+      "parameter_space": {
+        "iterations": [
+          300,
+          600,
+          900
+        ],
+        "depth": [
+          4,
+          6,
+          8
+        ],
+        "learning_rate": [
+          0.03,
+          0.05,
+          0.1
+        ],
+        "l2_leaf_reg": [
+          3.0,
+          7.0,
+          12.0
+        ],
+        "random_strength": [
+          0.0,
+          1.0
+        ],
+        "bagging_temperature": [
+          0.0,
+          1.0
+        ]
+      },
+      "ablation_policy": {
+        "hyperparameters": "selected_from_operational_full_search",
+        "evaluation_feature_views": [
+          "repayment_status_only",
+          "monetary_only",
+          "operational_full"
+        ]
+      },
+      "maximum_fold_fits": 210
+    }
+  },
+  "evaluation": {
+    "primary_metric": "average_precision",
+    "probability_guardrail": "brier_score",
+    "primary_capacity_metric": {
+      "metric": "lift",
+      "capacity": 0.1
+    },
+    "reported_discrimination_metrics": [
+      "average_precision",
+      "roc_auc",
+      "ks",
+      "gini"
+    ],
+    "reported_probability_metrics": [
+      "brier_score",
+      "log_loss"
+    ],
+    "reported_capacities": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "tie_policy": "fractional_expected",
+    "repeat_summary": [
+      "mean",
+      "standard_deviation",
+      "minimum",
+      "maximum"
+    ]
+  },
+  "advancement_gate": {
+    "gate_id": "balanced_v1",
+    "combination_rule": "all_conditions_required",
+    "relative_to_model_id": "logistic_l2",
+    "relative_thresholds": {
+      "minimum_average_precision_improvement": 0.01,
+      "maximum_brier_score_degradation": 0.005,
+      "maximum_lift_at_0_1_regression": 0.1,
+      "maximum_average_precision_repeat_standard_deviation": 0.01
+    },
+    "derived_absolute_thresholds": {
+      "minimum_average_precision_mean": 0.5512935562637622,
+      "maximum_brier_score_mean": 0.14136159002407025,
+      "minimum_lift_at_0_1_mean": 3.056903371633076,
+      "maximum_average_precision_repeat_standard_deviation": 0.01
+    },
+    "equivalence_band_average_precision": 0.002,
+    "tie_break_order": [
+      "fewer_predictors",
+      "lower_depth",
+      "fewer_iterations",
+      "higher_l2_leaf_reg",
+      "lower_learning_rate",
+      "lower_random_strength",
+      "lower_bagging_temperature"
+    ],
+    "search_selection": "best_eligible_operational_full_configuration",
+    "final_variant_selection": "best_eligible_feature_view_using_selected_hyperparameters",
+    "no_eligible_search_configuration": "run_ablations_for_diagnosis_but_do_not_advance",
+    "fallback_model_id": "logistic_l2"
+  },
+  "governance": {
+    "demographic_predictors": "prohibited",
+    "ablation_interpretation": "development_diagnostic_only",
+    "candidate_results_available_when_frozen": false,
+    "deferred_to_phase_4": [
+      "calibration_selection",
+      "bootstrap_confidence_intervals",
+      "simulated_economics",
+      "operating_policy_selection",
+      "one_time_holdout_evaluation"
+    ]
+  }
+}

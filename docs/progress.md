@@ -130,32 +130,68 @@ deferred risks. It is not a substitute for commit history or CI results.
   canonical data boundary. Replacing that compatibility path belongs to the
   modelling and registry phases.
 
-## Next checkpoint — Week 3 scientific baselines
+## Phase 2 / Week 3 — scientific baselines complete
 
-Build leakage-safe baseline experiments on the sealed development assignments,
-define decision-relevant evaluation metrics and uncertainty, and keep the test
-partition untouched until the model and policy selection protocol is frozen.
+**Completed:** 2026-08-26
 
-### Implementation status — code complete; clean evidence pending
+### Delivered
 
-**Started:** 2026-08-19
-
-- Phase 2 is limited to the Week 3 baseline-and-tracking checkpoint; G2 remains
+- Phase 2 is limited to the Week 3 baseline-and-tracking checkpoint. G2 remains
   open through candidate modelling, calibration, uncertainty, and stress tests.
 - The governed feature boundary, three-baseline protocol, metric hierarchy, and
   local SQLite MLflow design are locked before the first experiment.
 - The development-only workflow, exact OOF coverage checks, machine-readable
   metric priorities, content-validated MLflow artifacts, and fold-level
   logistic diagnostics are implemented.
-- Two consecutive provisional executions produced identical OOF and diagnostic
-  bytes: 216,000 OOF rows at SHA-256
+- Three clean executions from reviewed commit `c695c60` produced byte-identical
+  summaries, reports, OOF predictions, and diagnostics. The 216,000 OOF rows have SHA-256
   `c8ec30bec3c323ed0cfbe050aa3313ac356eb5d717ab305dee1b4365a0e51abe`
   and 15 logistic fold records at SHA-256
   `9a6c0ebe027fe00eda305d319bdf4dd1c7dfc84e470f3a8a7e00cf387ffda425`.
 - Development-only repeat means were: logistic average precision `0.541294`,
   ROC-AUC `0.767968`, lift at 10% `3.156903`, and Brier score `0.136362`;
   the fixed repayment rule achieved average precision `0.473102` and lift at
-  10% `2.909619`. These are baseline evidence, not holdout results or promotion
-  thresholds.
-- Implementation evidence remains provisional until it is rerun from a clean,
-  reviewed commit. No test-partition metric is permitted in this phase.
+  10% `2.909619`. These are development-only baseline evidence, not holdout
+  results or promotion thresholds.
+
+### Verification evidence
+
+| Check | Result |
+| --- | --- |
+| Clean lineage | `git_dirty=false` at reviewed commit `c695c60` |
+| Summary | SHA-256 `11e0332fc9df6f7abf36080a8d09304b3e975f34ad060f70f8611f4fc0ad69d6` |
+| Markdown report | SHA-256 `2830b4080f954e773dfdf0c37ed6eaabeaa31917f32071c783ec36abafb63a10` |
+| Evaluation boundary | 24,000 development rows; 5 folds × 3 repeats; holdout unevaluated |
+| Runtime artifacts | OOF and diagnostic hashes matched the two earlier provisional executions |
+| Integrity protection | Complete summary and report digests plus readable semantic assertions |
+
+### Accepted limitations and deferred work
+
+- Repeated-CV variation is descriptive and is not an independence-based confidence interval.
+- No candidate, calibrator, operating policy, or test result is approved by this checkpoint.
+- Runtime MLflow state, OOF rows, and diagnostics remain ignored; only deterministic aggregate
+  evidence is committed.
+- No test-partition metric is permitted until the candidate, calibrator, and policy rules are
+  frozen.
+
+## Next checkpoint — Phase 3 / Week 4 candidate modelling
+
+Freeze the candidate protocol and balanced advancement gate before fitting a
+new CatBoost candidate. Keep the test partition sealed and retain logistic
+regression if the bounded candidate search does not pass every reviewed gate.
+
+### Readiness status — protocol frozen; candidate fitting not started
+
+**Frozen:** 2026-08-26
+
+- CatBoost `1.2.5` is the only new model family; no additional challenger or
+  dependency is permitted in this slice.
+- The search samples exactly 12 configurations at seed 42 on the 19-feature
+  operational view and reuses the selected parameters for two feature-family
+  ablations, with a hard ceiling of 210 fold fits.
+- Advancement requires all four reviewed average-precision, Brier, lift-at-10%,
+  and repeat-stability conditions. Logistic regression remains the fallback.
+- Candidate configuration SHA-256 is
+  `93aa5331c4e558f6c4c1ce1fb9fce4ae16478a16567243fa6db723e031cf3f6c`.
+- Candidate results were unavailable when the protocol was frozen. The test
+  partition remains prohibited until the Week 5 procedure is fixed.
