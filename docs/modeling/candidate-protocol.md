@@ -1,8 +1,8 @@
 # Phase 3 candidate modelling protocol
 
 **Protocol:** `candidate_v1`
-**Status:** Frozen before candidate execution
-**Frozen:** 2026-08-26
+**Status:** Frozen before candidate metric execution; compute amendment recorded
+**Frozen:** 2026-08-26; compute amendment: 2026-08-27
 
 ## Purpose and evidence boundary
 
@@ -15,8 +15,10 @@ Only the 24,000-row development partition and its sealed 5-fold × 3-repeat
 assignments may be loaded. The 6,000-row test partition remains inaccessible to
 candidate fitting, parameter selection, ablation, scoring, and evaluation.
 
-The machine-readable contract is `configs/modeling/candidate_v1.json` at
-SHA-256 `556771afb87345a9ba54f5b1f7f60107a44c9d2a0b270a5fe66d1257ab89a695`.
+The machine-readable contract is `configs/modeling/candidate_v1.json`. Its
+complete amended SHA-256 is
+`4bd9a404064d410e0339e0638464aaf6c1ac0bca632156a47af14a822d7cb5f3` and is
+pinned by the candidate-protocol integrity test.
 It is bound to the reviewed baseline summary at SHA-256
 `11e0332fc9df6f7abf36080a8d09304b3e975f34ad060f70f8611f4fc0ad69d6`.
 
@@ -63,32 +65,41 @@ CatBoost `1.2.5` is the only new model family. A second challenger is excluded
 so the ten-hour slice is spent on governed comparison, diagnostics, and
 reproducibility rather than a model leaderboard.
 
-Every fit uses CPU `Logloss`, Bayesian bootstrap, seed 42, one thread, no class
+Every fit uses CPU `Logloss`, Bayesian bootstrap, seed 42, four threads, no class
 weights, no CatBoost filesystem output, no verbosity, and no evaluation-fold
 early stopping. Setting `use_best_model=false` prevents the scoring fold from
 implicitly choosing the iteration count.
 
-Scikit-learn `1.4.2` `ParameterSampler` draws exactly 12 distinct configurations
+Scikit-learn `1.4.2` `ParameterSampler` draws exactly eight distinct configurations
 with seed 42 from this finite space:
 
 | Parameter | Values |
 | --- | --- |
-| Iterations | 300, 600, 900 |
-| Depth | 4, 6, 8 |
+| Iterations | 300, 600 |
+| Depth | 4, 6 |
 | Learning rate | 0.03, 0.05, 0.10 |
 | L2 leaf regularisation | 3, 7, 12 |
 | Random strength | 0, 1 |
 | Bagging temperature | 0, 1 |
 
 The resulting ordered configurations are materialized as `cb_cfg_001` through
-`cb_cfg_012` in the machine-readable contract. Execution must reproduce that exact
+`cb_cfg_008` in the machine-readable contract. Execution must reproduce that exact
 list from the locked sampler before the first candidate fit.
 
-All 12 configurations use all 15 reviewed folds on `operational_full`. The
+All eight configurations use all 15 reviewed folds on `operational_full`. The
 selected hyperparameters are then reused unchanged for the two reduced feature
-views. This fixes the maximum at 210 CatBoost fold fits: 180 search fits plus 30
+views. This fixes the maximum at 150 CatBoost fold fits: 120 search fits plus 30
 additional ablation fits. The full-view selected configuration reuses its search
 predictions and is not fitted a second time for the ablation comparison.
+
+### Compute amendment
+
+The original 12-configuration space included depth-8, 900-tree fits. Before any
+candidate metric was calculated or inspected, local runtime-only benchmarks found
+one such fold required approximately 238 seconds. Capping the space at depth 6 and
+600 trees reduced the representative ceiling to approximately 67 seconds. The
+amendment preserves every reviewed fold, gate, feature boundary, and tie-break while
+removing impractical compute rather than reacting to model quality.
 
 ## Evaluation and advancement
 
@@ -120,7 +131,7 @@ configuration passes every gate, `logistic_l2` remains the candidate for Week 5.
 ## Required implementation evidence
 
 The future candidate command must record the candidate-config and baseline
-evidence hashes, data and split lineage, code and dependency identity, the 12
+evidence hashes, data and split lineage, code and dependency identity, the eight
 sampled configurations, fold and repeat metrics, complete OOF coverage, feature
 view, fit budget, and the advancement decision. It must reject incomplete folds,
 non-finite scores, probability-bound violations, unapproved features, changed

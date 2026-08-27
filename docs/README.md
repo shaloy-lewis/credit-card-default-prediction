@@ -42,7 +42,9 @@ outside this checkpoint, so G2 is still open.
 - [Frozen CatBoost candidate protocol](modeling/candidate-protocol.md)
 - Machine-readable contract: `../configs/modeling/candidate_v1.json`
 
-The protocol fixes the development-only feature views, deterministic 12-trial
-search, 210-fold-fit ceiling, balanced advancement gate, and logistic fallback
-before candidate results exist. No candidate fitting or holdout evaluation is
-included in the readiness checkpoint.
+The amended protocol fixes the development-only feature views, deterministic
+eight-trial search, 150-fold-fit ceiling, balanced advancement gate, and
+logistic fallback before candidate results exist. The compute amendment uses
+four CatBoost threads and was based only on runtime benchmarks; no candidate
+metric was observed. No candidate fitting or holdout evaluation is included in
+the readiness checkpoint.

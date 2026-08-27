@@ -186,14 +186,18 @@ regression if the bounded candidate search does not pass every reviewed gate.
 
 - CatBoost `1.2.5` is the only new model family; no additional challenger or
   dependency is permitted in this slice.
-- The search samples exactly 12 configurations at seed 42 on the 19-feature
+- The amended search samples exactly eight configurations at seed 42 on the 19-feature
   operational view and reuses the selected parameters for two feature-family
-  ablations, with a hard ceiling of 210 fold fits.
+  ablations, with a hard ceiling of 150 fold fits.
 - Advancement requires all four reviewed average-precision, Brier, lift-at-10%,
   and repeat-stability conditions. Logistic regression remains the fallback.
-- Candidate configuration SHA-256 is
-  `556771afb87345a9ba54f5b1f7f60107a44c9d2a0b270a5fe66d1257ab89a695`.
-- The exact 12 sampled configurations are materialized in the frozen contract.
+- The amended candidate configuration SHA-256 is
+  `4bd9a404064d410e0339e0638464aaf6c1ac0bca632156a47af14a822d7cb5f3` and is
+  pinned by the integrity test.
+- The exact eight sampled configurations are materialized in the frozen contract.
   Reduced feature views are diagnostic only and cannot advance.
+- The 2026-08-27 compute amendment was made from runtime-only benchmarks before
+  any candidate metric was calculated or inspected. It caps the search at depth 6,
+  600 trees and uses four CPU threads per fit while preserving all 15 reviewed folds.
 - Candidate results were unavailable when the protocol was frozen. The test
   partition remains prohibited until the Week 5 procedure is fixed.

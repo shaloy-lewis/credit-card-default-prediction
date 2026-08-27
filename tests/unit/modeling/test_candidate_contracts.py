@@ -27,8 +27,8 @@ def test_checked_in_candidate_contract_resolves_all_reviewed_evidence() -> None:
     config = load_candidate_config()
 
     assert config.protocol_id == "candidate_v1"
-    assert len(config.candidate.search.sampled_configurations) == 12
-    assert config.candidate.search.maximum_fold_fits == 210
+    assert len(config.candidate.search.sampled_configurations) == 8
+    assert config.candidate.search.maximum_fold_fits == 150
     assert [view.eligible_for_advancement for view in config.feature_views] == [
         False,
         False,
@@ -51,7 +51,7 @@ def test_candidate_parser_is_frozen_and_rejects_extra_fields() -> None:
         (("feature_views", 0, "eligible_for_advancement", True), "feature views"),
         (("candidate", "additional_challenger", "xgboost"), "additional_challenger"),
         (("candidate", "fixed_parameters", "thread_count", 2), "thread_count"),
-        (("candidate", "search", "maximum_fold_fits", 211), "maximum_fold_fits"),
+        (("candidate", "search", "maximum_fold_fits", 151), "maximum_fold_fits"),
         (
             ("candidate", "search", "parameter_space", "learning_rate", [0.02, 0.05, 0.1]),
             "parameter space",
@@ -156,7 +156,7 @@ def test_candidate_contract_rejects_duplicate_or_reordered_sample_ids() -> None:
     sampled = payload["candidate"]["search"]["sampled_configurations"]  # type: ignore[index]
     sampled[1]["configuration_id"] = "cb_cfg_001"
 
-    with pytest.raises(ModelingContractError, match="cb_cfg_001..012"):
+    with pytest.raises(ModelingContractError, match="cb_cfg_001..008"):
         parse_candidate_config(json.dumps(payload))
 
 
@@ -199,6 +199,6 @@ def test_candidate_loader_rejects_reference_hash_mismatch(tmp_path: Path) -> Non
 def test_checked_in_candidate_digest_matches_the_reviewed_protocol() -> None:
     content = CONFIG_PATH.read_bytes()
     assert hashlib.sha256(content).hexdigest() == (
-        "556771afb87345a9ba54f5b1f7f60107a44c9d2a0b270a5fe66d1257ab89a695"
+        "4bd9a404064d410e0339e0638464aaf6c1ac0bca632156a47af14a822d7cb5f3"
     )
     assert CandidateExperimentConfig.model_validate_json(content).status == "frozen_pre_experiment"

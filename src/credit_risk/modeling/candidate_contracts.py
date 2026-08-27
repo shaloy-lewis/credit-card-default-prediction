@@ -118,7 +118,7 @@ class FixedCatBoostParameters(_FrozenModel):
     class_weights: None
     auto_class_weights: None
     random_seed: Literal[42]
-    thread_count: Literal[1]
+    thread_count: Literal[4]
     allow_writing_files: Literal[False]
     verbose: Literal[False]
     use_best_model: Literal[False]
@@ -140,8 +140,8 @@ class SampledConfiguration(_FrozenModel):
 
 
 class ParameterSpace(_FrozenModel):
-    iterations: tuple[Literal[300, 600, 900], ...]
-    depth: tuple[Literal[4, 6, 8], ...]
+    iterations: tuple[Literal[300, 600], ...]
+    depth: tuple[Literal[4, 6], ...]
     learning_rate: tuple[float, ...]
     l2_leaf_reg: tuple[float, ...]
     random_strength: tuple[float, ...]
@@ -150,8 +150,8 @@ class ParameterSpace(_FrozenModel):
     @model_validator(mode="after")
     def validate_ordered_values(self) -> ParameterSpace:
         expected = {
-            "iterations": (300, 600, 900),
-            "depth": (4, 6, 8),
+            "iterations": (300, 600),
+            "depth": (4, 6),
             "learning_rate": (0.03, 0.05, 0.1),
             "l2_leaf_reg": (3.0, 7.0, 12.0),
             "random_strength": (0.0, 1.0),
@@ -186,20 +186,20 @@ class CandidateSearch(_FrozenModel):
     sampler_library: Literal["scikit-learn"]
     sampler_version: Literal["1.4.2"]
     random_state: Literal[42]
-    n_iter: Literal[12]
+    n_iter: Literal[8]
     sampled_configurations: tuple[SampledConfiguration, ...]
     search_feature_view: Literal["operational_full"]
     evaluation_assignments: Literal["all_5_folds_x_3_repeats"]
     parameter_space: ParameterSpace
     ablation_policy: AblationPolicy
-    maximum_fold_fits: Literal[210]
+    maximum_fold_fits: Literal[150]
 
     @model_validator(mode="after")
     def validate_materialized_sample(self) -> CandidateSearch:
         expected_ids = tuple(f"cb_cfg_{index:03d}" for index in range(1, self.n_iter + 1))
         observed_ids = tuple(item.configuration_id for item in self.sampled_configurations)
         if observed_ids != expected_ids:
-            raise ValueError("sampled configuration IDs must be the ordered cb_cfg_001..012")
+            raise ValueError("sampled configuration IDs must be the ordered cb_cfg_001..008")
         parameter_grid = self.parameter_space.model_dump()
         sampled = tuple(
             SampledParameters.model_validate(item)
@@ -212,8 +212,8 @@ class CandidateSearch(_FrozenModel):
         observed = tuple(item.parameters for item in self.sampled_configurations)
         if observed != sampled:
             raise ValueError("materialized configurations differ from the reviewed sampler output")
-        if math.prod(len(values) for values in parameter_grid.values()) != 324:
-            raise ValueError("candidate parameter space must contain exactly 324 configurations")
+        if math.prod(len(values) for values in parameter_grid.values()) != 144:
+            raise ValueError("candidate parameter space must contain exactly 144 configurations")
         return self
 
 

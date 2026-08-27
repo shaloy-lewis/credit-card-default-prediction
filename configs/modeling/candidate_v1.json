@@ -143,7 +143,7 @@
       "class_weights": null,
       "auto_class_weights": null,
       "random_seed": 42,
-      "thread_count": 1,
+      "thread_count": 4,
       "allow_writing_files": false,
       "verbose": false,
       "use_best_model": false,
@@ -154,46 +154,13 @@
       "sampler_library": "scikit-learn",
       "sampler_version": "1.4.2",
       "random_state": 42,
-      "n_iter": 12,
+      "n_iter": 8,
       "sampled_configurations": [
         {
           "configuration_id": "cb_cfg_001",
           "parameters": {
-            "bagging_temperature": 0.0,
-            "depth": 8,
-            "iterations": 600,
-            "l2_leaf_reg": 7.0,
-            "learning_rate": 0.03,
-            "random_strength": 0.0
-          }
-        },
-        {
-          "configuration_id": "cb_cfg_002",
-          "parameters": {
-            "bagging_temperature": 0.0,
-            "depth": 8,
-            "iterations": 300,
-            "l2_leaf_reg": 3.0,
-            "learning_rate": 0.03,
-            "random_strength": 0.0
-          }
-        },
-        {
-          "configuration_id": "cb_cfg_003",
-          "parameters": {
-            "bagging_temperature": 0.0,
-            "depth": 8,
-            "iterations": 600,
-            "l2_leaf_reg": 7.0,
-            "learning_rate": 0.1,
-            "random_strength": 1.0
-          }
-        },
-        {
-          "configuration_id": "cb_cfg_004",
-          "parameters": {
-            "bagging_temperature": 0.0,
-            "depth": 4,
+            "bagging_temperature": 1.0,
+            "depth": 6,
             "iterations": 300,
             "l2_leaf_reg": 7.0,
             "learning_rate": 0.05,
@@ -201,13 +168,46 @@
           }
         },
         {
-          "configuration_id": "cb_cfg_005",
+          "configuration_id": "cb_cfg_002",
           "parameters": {
-            "bagging_temperature": 1.0,
+            "bagging_temperature": 0.0,
             "depth": 4,
             "iterations": 600,
             "l2_leaf_reg": 3.0,
             "learning_rate": 0.03,
+            "random_strength": 1.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_003",
+          "parameters": {
+            "bagging_temperature": 1.0,
+            "depth": 4,
+            "iterations": 300,
+            "l2_leaf_reg": 7.0,
+            "learning_rate": 0.1,
+            "random_strength": 0.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_004",
+          "parameters": {
+            "bagging_temperature": 1.0,
+            "depth": 4,
+            "iterations": 600,
+            "l2_leaf_reg": 7.0,
+            "learning_rate": 0.03,
+            "random_strength": 1.0
+          }
+        },
+        {
+          "configuration_id": "cb_cfg_005",
+          "parameters": {
+            "bagging_temperature": 0.0,
+            "depth": 6,
+            "iterations": 600,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.05,
             "random_strength": 0.0
           }
         },
@@ -215,9 +215,9 @@
           "configuration_id": "cb_cfg_006",
           "parameters": {
             "bagging_temperature": 0.0,
-            "depth": 8,
-            "iterations": 600,
-            "l2_leaf_reg": 3.0,
+            "depth": 4,
+            "iterations": 300,
+            "l2_leaf_reg": 12.0,
             "learning_rate": 0.03,
             "random_strength": 0.0
           }
@@ -227,65 +227,21 @@
           "parameters": {
             "bagging_temperature": 1.0,
             "depth": 6,
-            "iterations": 300,
-            "l2_leaf_reg": 3.0,
-            "learning_rate": 0.05,
-            "random_strength": 1.0
-          }
-        },
-        {
-          "configuration_id": "cb_cfg_008",
-          "parameters": {
-            "bagging_temperature": 1.0,
-            "depth": 4,
             "iterations": 600,
-            "l2_leaf_reg": 12.0,
-            "learning_rate": 0.1,
-            "random_strength": 0.0
-          }
-        },
-        {
-          "configuration_id": "cb_cfg_009",
-          "parameters": {
-            "bagging_temperature": 1.0,
-            "depth": 6,
-            "iterations": 900,
-            "l2_leaf_reg": 12.0,
-            "learning_rate": 0.05,
-            "random_strength": 0.0
-          }
-        },
-        {
-          "configuration_id": "cb_cfg_010",
-          "parameters": {
-            "bagging_temperature": 0.0,
-            "depth": 8,
-            "iterations": 900,
-            "l2_leaf_reg": 3.0,
+            "l2_leaf_reg": 7.0,
             "learning_rate": 0.03,
             "random_strength": 0.0
           }
         },
         {
-          "configuration_id": "cb_cfg_011",
+          "configuration_id": "cb_cfg_008",
           "parameters": {
-            "bagging_temperature": 1.0,
-            "depth": 4,
-            "iterations": 300,
-            "l2_leaf_reg": 12.0,
+            "bagging_temperature": 0.0,
+            "depth": 6,
+            "iterations": 600,
+            "l2_leaf_reg": 7.0,
             "learning_rate": 0.1,
             "random_strength": 1.0
-          }
-        },
-        {
-          "configuration_id": "cb_cfg_012",
-          "parameters": {
-            "bagging_temperature": 1.0,
-            "depth": 4,
-            "iterations": 300,
-            "l2_leaf_reg": 3.0,
-            "learning_rate": 0.05,
-            "random_strength": 0.0
           }
         }
       ],
@@ -294,13 +250,11 @@
       "parameter_space": {
         "iterations": [
           300,
-          600,
-          900
+          600
         ],
         "depth": [
           4,
-          6,
-          8
+          6
         ],
         "learning_rate": [
           0.03,
@@ -331,7 +285,7 @@
           "operational_full"
         ]
       },
-      "maximum_fold_fits": 210
+      "maximum_fold_fits": 150
     }
   },
   "evaluation": {

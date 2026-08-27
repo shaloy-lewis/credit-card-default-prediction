@@ -16,7 +16,7 @@ CONFIG_PATH = REPOSITORY_ROOT / "configs" / "modeling" / "candidate_v1.json"
 
 # Change this digest only after explicit review of the complete pre-experiment
 # candidate protocol. Candidate results must not be consulted during that review.
-EXPECTED_CONFIG_SHA256 = "556771afb87345a9ba54f5b1f7f60107a44c9d2a0b270a5fe66d1257ab89a695"
+EXPECTED_CONFIG_SHA256 = "4bd9a404064d410e0339e0638464aaf6c1ac0bca632156a47af14a822d7cb5f3"
 DEMOGRAPHIC_COLUMNS = {
     "sex_code",
     "education_code",
@@ -122,7 +122,7 @@ def test_candidate_protocol_is_frozen_bounded_and_holdout_blind() -> None:
     assert fixed["class_weights"] is None
     assert fixed["auto_class_weights"] is None
     assert fixed["random_seed"] == 42
-    assert fixed["thread_count"] == 1
+    assert fixed["thread_count"] == 4
     assert fixed["allow_writing_files"] is False
     assert fixed["use_best_model"] is False
     assert fixed["early_stopping_rounds"] is None
@@ -133,10 +133,10 @@ def test_candidate_protocol_is_frozen_bounded_and_holdout_blind() -> None:
     assert search["sampler_version"] == "1.4.2"
     assert f"scikit-learn=={search['sampler_version']}" in dependencies
     assert search["random_state"] == 42
-    assert search["n_iter"] == 12
+    assert search["n_iter"] == 8
     sampled = search["sampled_configurations"]
     assert [item["configuration_id"] for item in sampled] == [
-        f"cb_cfg_{index:03d}" for index in range(1, 13)
+        f"cb_cfg_{index:03d}" for index in range(1, 9)
     ]
     assert [item["parameters"] for item in sampled] == list(
         ParameterSampler(
@@ -153,12 +153,12 @@ def test_candidate_protocol_is_frozen_bounded_and_holdout_blind() -> None:
     available_configurations = math.prod(
         len(values) for values in search["parameter_space"].values()
     )
-    assert available_configurations == 324
+    assert available_configurations == 144
     assert search["n_iter"] <= available_configurations
     folds = data["cross_validation"]["n_splits"] * data["cross_validation"]["n_repeats"]
     additional_ablation_views = len(search["ablation_policy"]["evaluation_feature_views"]) - 1
     expected_maximum_fits = search["n_iter"] * folds + additional_ablation_views * folds
-    assert search["maximum_fold_fits"] == expected_maximum_fits == 210
+    assert search["maximum_fold_fits"] == expected_maximum_fits == 150
 
     gate = config["advancement_gate"]
     relative = gate["relative_thresholds"]
