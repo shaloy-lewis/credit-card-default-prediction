@@ -29,6 +29,7 @@ def test_candidate_workflow_runs_exact_budget_and_is_byte_deterministic(
     governed = _governed_data()
     fit_calls: list[tuple[tuple[str, ...], int]] = []
     tracked: list[dict[str, Any]] = []
+    progress: list[workflow.CandidateProgress] = []
 
     def fake_fit(X_train, y_train, X_validation, y_validation, **kwargs):
         del y_train
@@ -50,7 +51,7 @@ def test_candidate_workflow_runs_exact_budget_and_is_byte_deterministic(
 
     def fake_track(**kwargs):
         tracked.append(kwargs)
-        assert len(kwargs["variant_runs"]) == 14
+        assert len(kwargs["variant_runs"]) == 10
         assert {Path(path).name for path in kwargs["artifacts"]} == {
             "summary.json",
             "candidate-report.md",
@@ -92,6 +93,7 @@ def test_candidate_workflow_runs_exact_budget_and_is_byte_deterministic(
         "repo_root": REPOSITORY_ROOT,
         "tracking_root": tmp_path / "tracking",
         "output_root": tmp_path / "reports",
+        "progress_callback": progress.append,
     }
     first = workflow.run_candidate_experiment(**kwargs)
     first_summary = first.summary_path.read_bytes()
@@ -100,7 +102,12 @@ def test_candidate_workflow_runs_exact_budget_and_is_byte_deterministic(
     first_diagnostics = first.fold_diagnostics_path.read_bytes()
     second = workflow.run_candidate_experiment(**kwargs)
 
-    assert len(fit_calls) == 420
+    assert len(fit_calls) == 150
+    assert len(progress) == 300
+    assert progress[149].completed_folds == 150
+    assert progress[149].resumed_folds == 0
+    assert progress[-1].completed_folds == 150
+    assert progress[-1].resumed_folds == 150
     assert first.summary_sha256 == second.summary_sha256
     assert first.report_sha256 == second.report_sha256
     assert first.oof_predictions_sha256 == second.oof_predictions_sha256
@@ -112,17 +119,25 @@ def test_candidate_workflow_runs_exact_budget_and_is_byte_deterministic(
     assert len(tracked) == 2
 
     summary = json.loads(first_summary)
-    assert summary["fit_budget"]["completed_fold_fits"] == 210
-    assert summary["fit_budget"]["evaluated_variants"] == 14
+    assert summary["fit_budget"] == {
+        "completed_fold_fits": 150,
+        "diagnostic_fold_fits": 30,
+        "evaluated_variants": 10,
+        "maximum_fold_fits": 150,
+        "search_fold_fits": 120,
+    }
     assert summary["data"]["holdout_evaluated"] is False
     assert summary["selection"]["diagnostic_views_eligible_for_advancement"] is False
-    assert len(summary["variants"]) == 14
+    assert len(summary["variants"]) == 10
+    assert summary["evidence_policy"]["independent_executions_required"] == 2
+    assert summary["evidence_policy"]["third_fit_pass_for_publication"] == "prohibited"
     diagnostics = json.loads(first_diagnostics)
-    assert diagnostics["fit_count"] == len(diagnostics["fits"]) == 210
+    assert diagnostics["fit_count"] == len(diagnostics["fits"]) == 150
     with first.oof_predictions_path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
-    assert len(rows) == 14 * 3 * len(governed.account_ids)
-    assert len({row["variant_id"] for row in rows}) == 14
+    assert len(rows) == 10 * 3 * len(governed.account_ids)
+    assert len({row["variant_id"] for row in rows}) == 10
+    assert len(list((tmp_path / "tracking" / "candidate-checkpoints").glob("*/*.npz"))) == 150
 
 
 def test_dirty_candidate_runs_require_the_exact_provisional_root(tmp_path: Path) -> None:
@@ -148,6 +163,18 @@ def test_dirty_candidate_runs_require_the_exact_provisional_root(tmp_path: Path)
         output_root=REPOSITORY_ROOT / workflow.PROVISIONAL_OUTPUT_ROOT,
         repo_root=REPOSITORY_ROOT,
     )
+
+
+def test_single_run_cannot_bypass_the_official_two_execution_gate() -> None:
+    git = GitEvidence(commit_sha="1" * 40, dirty=False, diff_sha256="2" * 64)
+
+    with pytest.raises(workflow.CandidateWorkflowError, match="candidate-evidence"):
+        workflow._enforce_output_policy(
+            git,
+            allow_dirty=False,
+            output_root=REPOSITORY_ROOT / workflow.DEFAULT_OUTPUT_ROOT,
+            repo_root=REPOSITORY_ROOT,
+        )
 
 
 def test_runtime_rejects_dependency_drift() -> None:
@@ -283,7 +310,7 @@ def test_fold_and_coverage_validation_reject_invalid_outputs() -> None:
             np.asarray([0.2, 1.2]),
         )
     with pytest.raises(workflow.CandidateWorkflowError, match="unique variants"):
-        workflow._validate_oof_coverage(governed, (), expected_variants=14)
+        workflow._validate_oof_coverage(governed, (), expected_variants=10)
     with pytest.raises(workflow.CandidateWorkflowError, match="misaligned"):
         workflow._validate_block(np.asarray([]), np.asarray([]), np.asarray([]))
     with pytest.raises(workflow.CandidateWorkflowError, match="duplicate"):

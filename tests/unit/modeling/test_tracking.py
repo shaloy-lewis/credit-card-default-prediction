@@ -430,7 +430,7 @@ def test_rejects_string_instead_of_logistic_feature_name_array(
         )
 
 
-def test_tracks_candidate_parent_and_fourteen_variants(
+def test_tracks_candidate_parent_and_ten_variants(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -450,7 +450,7 @@ def test_tracks_candidate_parent_and_fourteen_variants(
         "_validate_candidate_artifacts",
         lambda _paths: tuple(path.resolve() for path in artifacts),
     )
-    names = tuple(f"operational_full__cb_cfg_{index:03d}" for index in range(1, 13)) + (
+    names = tuple(f"operational_full__cb_cfg_{index:03d}" for index in range(1, 9)) + (
         "repayment_status_only__cb_cfg_004",
         "monetary_only__cb_cfg_004",
     )
@@ -472,7 +472,7 @@ def test_tracks_candidate_parent_and_fourteen_variants(
     assert result.child_run_ids == tuple(
         (name, f"run-{index}") for index, name in enumerate(names, start=1)
     )
-    assert len(fake.started) == 15
+    assert len(fake.started) == 11
     assert [call["run_name"] for call in fake.started[1:]] == list(names)
     assert [(path.name, destination) for _, path, destination in fake.artifacts] == [
         ("summary.json", "evidence"),
@@ -483,7 +483,7 @@ def test_tracks_candidate_parent_and_fourteen_variants(
 
 
 def test_candidate_tracking_rejects_incomplete_variant_payloads(tmp_path: Path) -> None:
-    with pytest.raises(TrackingError, match="14 unique"):
+    with pytest.raises(TrackingError, match="10 unique"):
         track_candidate_runs(
             tracking_root=tmp_path,
             parent_parameters={},
@@ -509,11 +509,13 @@ def test_candidate_artifact_boundary_accepts_only_hash_bound_non_executable_evid
     ("mutation", "message"),
     (
         ("data", "development-only"),
-        ("fits", "210 fold fits"),
+        ("fits", "150 fold fits"),
+        ("fit_breakdown", "fit-budget breakdown"),
+        ("evidence_policy", "independent-execution policy"),
         ("boundary", "artifact boundary"),
         ("oof_hash", "OOF hashes"),
         ("diagnostics_hash", "diagnostics hashes"),
-        ("diagnostics_count", "exactly 210"),
+        ("diagnostics_count", "exactly 150"),
         ("report", "not bound"),
         ("forbidden", "operational identifiers"),
     ),
@@ -531,7 +533,11 @@ def test_candidate_artifact_boundary_rejects_governance_drift(
     if mutation == "data":
         summary["data"]["holdout_evaluated"] = True
     elif mutation == "fits":
-        summary["fit_budget"]["completed_fold_fits"] = 209
+        summary["fit_budget"]["completed_fold_fits"] = 149
+    elif mutation == "fit_breakdown":
+        summary["fit_budget"]["search_fold_fits"] = 121
+    elif mutation == "evidence_policy":
+        summary["evidence_policy"]["independent_executions_required"] = 3
     elif mutation == "boundary":
         summary["runtime_artifacts"]["contains_fitted_models"] = True
     elif mutation == "oof_hash":
@@ -539,7 +545,7 @@ def test_candidate_artifact_boundary_rejects_governance_drift(
     elif mutation == "diagnostics_hash":
         summary["runtime_artifacts"]["fold_diagnostics_sha256"] = "0" * 64
     elif mutation == "diagnostics_count":
-        diagnostics["fit_count"] = 209
+        diagnostics["fit_count"] = 149
         by_name["fold_diagnostics.json"].write_text(json.dumps(diagnostics), encoding="utf-8")
         summary["runtime_artifacts"]["fold_diagnostics_sha256"] = hashlib.sha256(
             by_name["fold_diagnostics.json"].read_bytes()
@@ -575,7 +581,7 @@ def test_candidate_artifact_allowlist_and_payload_roles_are_strict(tmp_path: Pat
 
     wrong_search = tuple(
         ModelRunPayload(model_name=f"wrong-{index}", parameters={}, metrics={})
-        for index in range(14)
+        for index in range(10)
     )
     with pytest.raises(TrackingError, match="ordered cb_cfg"):
         tracking._validate_candidate_payloads(wrong_search)
@@ -583,7 +589,7 @@ def test_candidate_artifact_allowlist_and_payload_roles_are_strict(tmp_path: Pat
         ModelRunPayload(
             model_name=f"operational_full__cb_cfg_{index:03d}", parameters={}, metrics={}
         )
-        for index in range(1, 13)
+        for index in range(1, 9)
     ) + (
         ModelRunPayload(model_name="wrong-a", parameters={}, metrics={}),
         ModelRunPayload(model_name="wrong-b", parameters={}, metrics={}),
@@ -591,7 +597,7 @@ def test_candidate_artifact_allowlist_and_payload_roles_are_strict(tmp_path: Pat
     with pytest.raises(TrackingError, match="diagnostic variants"):
         tracking._validate_candidate_payloads(wrong_diagnostics)
 
-    mismatched_diagnostics = wrong_diagnostics[:12] + (
+    mismatched_diagnostics = wrong_diagnostics[:8] + (
         ModelRunPayload(model_name="repayment_status_only__cb_cfg_001", parameters={}, metrics={}),
         ModelRunPayload(model_name="monetary_only__cb_cfg_002", parameters={}, metrics={}),
     )
@@ -653,7 +659,7 @@ def _candidate_evidence_files(tmp_path: Path) -> tuple[Path, ...]:
     )
     diagnostics_path = tmp_path / "fold_diagnostics.json"
     diagnostics_path.write_text(
-        json.dumps({"fit_count": 210, "fits": [{} for _ in range(210)]}),
+        json.dumps({"fit_count": 150, "fits": [{} for _ in range(150)]}),
         encoding="utf-8",
     )
     summary = {
@@ -664,11 +670,28 @@ def _candidate_evidence_files(tmp_path: Path) -> tuple[Path, ...]:
             "n_splits": 5,
             "partition": "development",
         },
-        "fit_budget": {"completed_fold_fits": 210, "maximum_fold_fits": 210},
+        "evidence_policy": {
+            "independent_executions_required": 2,
+            "required_byte_identical_artifacts": [
+                "summary.json",
+                "candidate-report.md",
+                "oof_predictions.csv",
+                "fold_diagnostics.json",
+            ],
+            "tracking_roots_must_be_independent": True,
+            "third_fit_pass_for_publication": "prohibited",
+        },
+        "fit_budget": {
+            "completed_fold_fits": 150,
+            "diagnostic_fold_fits": 30,
+            "evaluated_variants": 10,
+            "maximum_fold_fits": 150,
+            "search_fold_fits": 120,
+        },
         "runtime_artifacts": {
             "contains_holdout_rows": False,
             "contains_fitted_models": False,
-            "oof_prediction_rows": 1_008_000,
+            "oof_prediction_rows": 720_000,
             "oof_predictions_sha256": hashlib.sha256(oof_path.read_bytes()).hexdigest(),
             "fold_diagnostics_sha256": hashlib.sha256(diagnostics_path.read_bytes()).hexdigest(),
         },

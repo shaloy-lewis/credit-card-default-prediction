@@ -10,7 +10,8 @@ import pytest
 from click import unstyle
 from typer.testing import CliRunner
 
-from credit_risk.modeling import candidate_workflow, cli, tracking, workflow
+from credit_risk.modeling import candidate_evidence, candidate_workflow, cli, tracking, workflow
+from credit_risk.modeling.candidate_evidence import CandidateEvidenceError, CandidateEvidenceResult
 from credit_risk.modeling.candidate_workflow import (
     CandidateExperimentResult,
     CandidateWorkflowError,
@@ -182,11 +183,13 @@ def test_candidate_command_uses_defaults_and_reports_the_decision(
     result = runner.invoke(cli.model_app, ["candidate"])
 
     assert result.exit_code == 0
+    progress_callback = captured.pop("progress_callback")
+    assert callable(progress_callback)
     assert captured == {
         "data_root": Path("data"),
         "config_path": Path("configs/modeling/candidate_v1.json"),
         "tracking_root": Path("experiment/mlflow"),
-        "output_root": Path("reports/modeling/candidate_v1"),
+        "output_root": Path("experiment/provisional/candidate_v1"),
         "allow_dirty": False,
     }
     assert "Candidate experiment passed" in result.stdout
@@ -194,6 +197,47 @@ def test_candidate_command_uses_defaults_and_reports_the_decision(
     assert "selected_configuration_id=cb_cfg_004" in result.stdout
     assert "catboost_advances=true" in result.stdout
     assert "Fold diagnostics:" in result.stdout
+
+
+def test_candidate_evidence_command_runs_two_execution_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_run(**kwargs: Any) -> CandidateEvidenceResult:
+        captured.update(kwargs)
+        candidate = _candidate_result(tmp_path)
+        return CandidateEvidenceResult(
+            summary_path=tmp_path / "summary.json",
+            report_path=tmp_path / "candidate-report.md",
+            summary_sha256="a" * 64,
+            report_sha256="b" * 64,
+            oof_predictions_sha256="c" * 64,
+            fold_diagnostics_sha256="d" * 64,
+            selected_model_id="catboost_v1",
+            selected_configuration_id="cb_cfg_004",
+            catboost_advances=True,
+            primary=candidate,
+            verification=candidate,
+        )
+
+    monkeypatch.setattr(candidate_evidence, "run_candidate_evidence", fake_run)
+    result = runner.invoke(cli.model_app, ["candidate-evidence"])
+
+    assert result.exit_code == 0
+    progress_callback = captured.pop("progress_callback")
+    assert callable(progress_callback)
+    assert captured == {
+        "data_root": Path("data"),
+        "config_path": Path("configs/modeling/candidate_v1.json"),
+        "tracking_root": Path("experiment/mlflow"),
+        "verification_root": Path("experiment/phase3-verification"),
+        "output_root": Path("reports/modeling/candidate_v1"),
+    }
+    assert "independent_executions=2" in result.stdout
+    assert "Official summary:" in result.stdout
+    assert "Verification MLflow tracking URI:" in result.stdout
 
 
 def test_candidate_command_returns_actionable_failure_without_traceback(
@@ -212,6 +256,22 @@ def test_candidate_command_returns_actionable_failure_without_traceback(
     assert "Traceback" not in result.output
 
 
+def test_candidate_evidence_returns_actionable_failure_without_traceback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        candidate_evidence,
+        "run_candidate_evidence",
+        lambda **_kwargs: (_ for _ in ()).throw(CandidateEvidenceError("not reproducible")),
+    )
+
+    result = runner.invoke(cli.model_app, ["candidate-evidence"])
+
+    assert result.exit_code == 1
+    assert "Model candidate failed: not reproducible" in result.output
+    assert "Traceback" not in result.output
+
+
 def test_candidate_help_lists_the_governed_interface() -> None:
     result = runner.invoke(cli.model_app, ["candidate", "--help"], color=False)
     output = unstyle(result.stdout)
@@ -222,6 +282,18 @@ def test_candidate_help_lists_the_governed_interface() -> None:
     assert "--tracking-root" in output
     assert "--output-root" in output
     assert "--allow-dirty" in output
+
+
+def test_candidate_evidence_help_lists_independent_roots() -> None:
+    result = runner.invoke(cli.model_app, ["candidate-evidence", "--help"], color=False)
+    output = unstyle(result.stdout)
+
+    assert result.exit_code == 0
+    assert "--data-root" in output
+    assert "--tracking-root" in output
+    assert "--verification-root" in output
+    assert "--output-root" in output
+    assert "--allow-dirty" not in output
 
 
 def _result(tmp_path: Path) -> BaselineExperimentResult:

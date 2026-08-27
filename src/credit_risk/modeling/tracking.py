@@ -291,7 +291,7 @@ def track_candidate_runs(
     variant_runs: Sequence[ModelRunPayload],
     artifacts: Sequence[str | Path],
 ) -> TrackingRunResult:
-    """Record one parent and the 14 governed Phase 3 variant runs."""
+    """Record one parent and the 10 governed Phase 3 variant runs."""
 
     payloads = tuple(variant_runs)
     _validate_candidate_payloads(payloads)
@@ -440,12 +440,12 @@ def _validate_artifacts(paths: Sequence[str | Path]) -> tuple[Path, ...]:
 
 def _validate_candidate_payloads(payloads: tuple[ModelRunPayload, ...]) -> None:
     names = tuple(payload.model_name for payload in payloads)
-    if len(names) != 14 or len(set(names)) != 14:
-        raise TrackingError("Candidate tracking requires exactly 14 unique variant runs.")
-    expected_search = tuple(f"operational_full__cb_cfg_{index:03d}" for index in range(1, 13))
-    if names[:12] != expected_search:
+    if len(names) != 10 or len(set(names)) != 10:
+        raise TrackingError("Candidate tracking requires exactly 10 unique variant runs.")
+    expected_search = tuple(f"operational_full__cb_cfg_{index:03d}" for index in range(1, 9))
+    if names[:8] != expected_search:
         raise TrackingError(
-            "Candidate tracking requires the ordered cb_cfg_001..cb_cfg_012 full-view variants."
+            "Candidate tracking requires the ordered cb_cfg_001..cb_cfg_008 full-view variants."
         )
     if not names[-2].startswith("repayment_status_only__") or not names[-1].startswith(
         "monetary_only__"
@@ -453,7 +453,7 @@ def _validate_candidate_payloads(payloads: tuple[ModelRunPayload, ...]) -> None:
         raise TrackingError("Candidate tracking requires two trailing diagnostic variants.")
     diagnostic_configurations = tuple(name.rpartition("__")[2] for name in names[-2:])
     if len(set(diagnostic_configurations)) != 1 or diagnostic_configurations[0] not in {
-        f"cb_cfg_{index:03d}" for index in range(1, 13)
+        f"cb_cfg_{index:03d}" for index in range(1, 9)
     }:
         raise TrackingError(
             "Candidate diagnostic variants must reuse one reviewed full-view configuration."
@@ -492,6 +492,7 @@ def _validate_candidate_evidence_content(artifacts: Mapping[str, Path]) -> None:
         raise TrackingError("Candidate summary and diagnostics must be JSON objects.")
     try:
         data = summary["data"]
+        evidence_policy = summary["evidence_policy"]
         runtime = summary["runtime_artifacts"]
         fit_budget = summary["fit_budget"]
         summary_hash = hashlib.sha256(summary_bytes).hexdigest()
@@ -507,8 +508,26 @@ def _validate_candidate_evidence_content(artifacts: Mapping[str, Path]) -> None:
         "partition": "development",
     }:
         raise TrackingError("Candidate evidence violates the development-only data boundary.")
-    if fit_budget.get("completed_fold_fits") != 210 or fit_budget.get("maximum_fold_fits") != 210:
-        raise TrackingError("Candidate evidence does not record exactly 210 fold fits.")
+    if fit_budget.get("completed_fold_fits") != 150 or fit_budget.get("maximum_fold_fits") != 150:
+        raise TrackingError("Candidate evidence does not record exactly 150 fold fits.")
+    if (
+        fit_budget.get("search_fold_fits") != 120
+        or fit_budget.get("diagnostic_fold_fits") != 30
+        or fit_budget.get("evaluated_variants") != 10
+    ):
+        raise TrackingError("Candidate evidence has an invalid optimized fit-budget breakdown.")
+    if evidence_policy != {
+        "independent_executions_required": 2,
+        "required_byte_identical_artifacts": [
+            "summary.json",
+            "candidate-report.md",
+            "oof_predictions.csv",
+            "fold_diagnostics.json",
+        ],
+        "tracking_roots_must_be_independent": True,
+        "third_fit_pass_for_publication": "prohibited",
+    }:
+        raise TrackingError("Candidate evidence has an invalid independent-execution policy.")
     if (
         runtime.get("contains_holdout_rows") is not False
         or runtime.get("contains_fitted_models") is not False
@@ -518,8 +537,8 @@ def _validate_candidate_evidence_content(artifacts: Mapping[str, Path]) -> None:
         raise TrackingError("Candidate summary and OOF hashes do not match.")
     if runtime.get("fold_diagnostics_sha256") != diagnostics_hash:
         raise TrackingError("Candidate summary and diagnostics hashes do not match.")
-    if diagnostics.get("fit_count") != 210 or len(diagnostics.get("fits", ())) != 210:
-        raise TrackingError("Candidate fold diagnostics do not contain exactly 210 fits.")
+    if diagnostics.get("fit_count") != 150 or len(diagnostics.get("fits", ())) != 150:
+        raise TrackingError("Candidate fold diagnostics do not contain exactly 150 fits.")
     try:
         report = report_bytes.decode("utf-8")
     except UnicodeError as error:
@@ -565,10 +584,10 @@ def _validate_candidate_oof(path: Path, runtime: Mapping[str, object]) -> None:
                 rows += 1
     except (OSError, UnicodeError, ValueError, KeyError) as error:
         raise TrackingError(f"Candidate OOF evidence contains an invalid row: {error}") from error
-    if rows != runtime.get("oof_prediction_rows") or rows != 1_008_000:
+    if rows != runtime.get("oof_prediction_rows") or rows != 720_000:
         raise TrackingError("Candidate OOF evidence has incomplete row coverage.")
-    if len(variants) != 14:
-        raise TrackingError("Candidate OOF evidence does not contain exactly 14 variants.")
+    if len(variants) != 10:
+        raise TrackingError("Candidate OOF evidence does not contain exactly 10 variants.")
 
 
 def _nested_keys(value: object) -> set[str]:

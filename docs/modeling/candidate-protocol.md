@@ -101,6 +101,29 @@ one such fold required approximately 238 seconds. Capping the space at depth 6 a
 amendment preserves every reviewed fold, gate, feature boundary, and tie-break while
 removing impractical compute rather than reacting to model quality.
 
+### Resumption and independent evidence
+
+Every completed fold is written atomically as a non-pickle NumPy checkpoint
+below that execution's ignored tracking root. Its task hash binds the candidate
+configuration, governed data and split lineage, Git commit or dirty-diff hash,
+feature view, sampled parameters, exact train/validation populations, labels,
+repeat, and fold. Reuse requires exact account, label, probability, diagnostic,
+and tree-count validation. Invalid and interrupted checkpoints are moved to a
+content-addressed quarantine location and the fold is refitted.
+
+One fit runs at a time with four CatBoost threads. Runtime checkpoints do not
+change protocol order, selection, or deterministic evidence, and resume counts
+are console-only operational information.
+
+Official evidence is published by `credit-risk model candidate-evidence`. It
+runs or resumes a primary execution and a second execution under independent
+tracking roots, requires byte-identical summary, report, OOF, and diagnostic
+artifacts, and atomically promotes the primary aggregate files. A third 150-fit
+pass is prohibited. Comparison or publication failure preserves prior official
+evidence and marks both completed MLflow parent runs failed.
+The single-run `candidate` command defaults to an ignored provisional directory
+and is prohibited from writing the official Phase 3 report destination.
+
 ## Evaluation and advancement
 
 Average precision is the primary measure. Brier score is the probability
@@ -130,7 +153,7 @@ configuration passes every gate, `logistic_l2` remains the candidate for Week 5.
 
 ## Required implementation evidence
 
-The future candidate command must record the candidate-config and baseline
+The candidate command records the candidate-config and baseline
 evidence hashes, data and split lineage, code and dependency identity, the eight
 sampled configurations, fold and repeat metrics, complete OOF coverage, feature
 view, fit budget, and the advancement decision. It must reject incomplete folds,

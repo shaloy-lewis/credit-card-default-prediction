@@ -4,8 +4,9 @@ A portfolio project for monthly credit-risk early warning and
 capacity-constrained intervention prioritisation for existing cardholders.
 
 > **Current status:** Phase 1 / G1 and Phase 2's governed scientific baseline
-> checkpoint are complete. Phase 3's candidate protocol is frozen before fitting;
-> G2 remains open for candidate modelling, calibration, uncertainty, and stress
+> checkpoint are complete. Phase 3's compute-aware candidate execution is
+> implemented; independently reproduced aggregate evidence is still pending.
+> G2 remains open for calibration, uncertainty, policy selection, and holdout
 > testing. The committed compatibility CatBoost model remains
 > available for compatibility testing while modelling, registry, serving, and
 > monitoring workflows are rebuilt in staged releases.
@@ -55,11 +56,11 @@ The approved scope and delivery evidence are documented in:
   fold-level logistic diagnostics.
 - A clean, digest-protected Phase 2 baseline report tied to reviewed commit
   `c695c60`, with the sealed holdout explicitly unevaluated.
-- A versioned Phase 3 CatBoost contract that fixes the feature views, 12-trial
-  search budget, balanced advancement gate, tie-breaking, and logistic fallback
-  before candidate fitting.
+- A versioned Phase 3 CatBoost contract with eight bounded search variants,
+  150 reviewed fold fits, deterministic advancement and fallback rules,
+  content-bound NumPy checkpoints, and two-run evidence verification.
 
-Planned releases add candidate fitting, calibration, capacity-based policies,
+Planned releases add reviewed candidate evidence, calibration, capacity-based policies,
 the model registry, model-risk gates, batch/API parity, monitoring, and incident
 exercises.
 
@@ -138,6 +139,37 @@ defines the exact feature boundary, models, metrics, tie handling, lineage, and
 failure policy. The committed [reviewed report](reports/modeling/baseline_v1/baseline-report.md)
 contains development-only evidence; it is not a holdout or promotion result.
 
+### Run the governed CatBoost candidate
+
+For a single exploratory or diagnostic execution:
+
+```bash
+uv run credit-risk model candidate --allow-dirty \
+  --output-root experiment/provisional/candidate_v1
+```
+
+Each completed fold is atomically checkpointed below its ignored tracking root.
+Checkpoints are non-pickle NumPy archives and are reused only after their code,
+configuration, data lineage, exact fold population, labels, probabilities, and
+diagnostics pass validation. Invalid or interrupted files are quarantined and
+that fold is refitted. CatBoost uses four threads for one fit at a time.
+
+Official aggregate evidence must be generated from a clean implementation
+commit through the independent two-run gate:
+
+```bash
+uv run credit-risk data verify
+uv run credit-risk model candidate-evidence
+```
+
+`candidate-evidence` uses separate checkpoint and MLflow roots for its two
+executions, requires byte-identical summary, report, OOF, and diagnostic
+artifacts, then promotes the primary aggregate summary and report. It never
+launches a third fit pass. Runtime checkpoints, MLflow state, predictions, and
+diagnostics remain under `experiment/` and are not committed.
+The single-run command is rejected if pointed at the official Phase 3 report
+directory, so this reproducibility gate cannot be bypassed accidentally.
+
 ### Check the local inference artifacts
 
 ```bash
@@ -156,7 +188,7 @@ uv run ruff check api.py app.py src/credit_risk tests
 uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/cli.py api.py app.py
 uv run pytest --cov --cov-report=term-missing
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
-uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
+uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
 ```
 
 ### Run the API

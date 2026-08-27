@@ -8,7 +8,7 @@ import io
 import json
 import os
 import platform
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -34,6 +34,13 @@ from credit_risk.modeling.candidates import (
     CandidateFoldDiagnostics,
     CandidateModelError,
     fit_candidate_fold,
+)
+from credit_risk.modeling.checkpoints import (
+    CheckpointError,
+    build_checkpoint_task,
+    checkpoint_expectation,
+    load_fold_checkpoint,
+    save_fold_checkpoint,
 )
 from credit_risk.modeling.contracts import ModelingContractError, parse_feature_contract
 from credit_risk.modeling.dataset import (
@@ -66,6 +73,7 @@ DEFAULT_DATA_ROOT: Final[Path] = Path("data")
 DEFAULT_TRACKING_ROOT: Final[Path] = Path("experiment/mlflow")
 DEFAULT_OUTPUT_ROOT: Final[Path] = Path("reports/modeling/candidate_v1")
 PROVISIONAL_OUTPUT_ROOT: Final[Path] = Path("experiment/provisional/candidate_v1")
+SINGLE_RUN_OUTPUT_ROOT: Final[Path] = PROVISIONAL_OUTPUT_ROOT
 SUMMARY_FILENAME: Final[str] = "summary.json"
 REPORT_FILENAME: Final[str] = "candidate-report.md"
 OOF_FILENAME: Final[str] = "oof_predictions.csv"
@@ -93,6 +101,55 @@ class CandidateExperimentResult:
     selected_configuration_id: str
     catboost_advances: bool
     tracking: TrackingRunResult
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateProgress:
+    """Operational progress excluded from deterministic experiment evidence."""
+
+    completed_folds: int
+    total_folds: int
+    resumed_folds: int
+    quarantined_checkpoints: int
+    variant_id: str
+    repeat_index: int
+    fold_index: int
+    resumed: bool
+
+
+@dataclass(slots=True)
+class _ProgressState:
+    total_folds: int
+    callback: Callable[[CandidateProgress], None] | None
+    completed_folds: int = 0
+    resumed_folds: int = 0
+    quarantined_checkpoints: int = 0
+
+    def record(
+        self,
+        *,
+        variant_id: str,
+        repeat_index: int,
+        fold_index: int,
+        resumed: bool,
+        quarantined: int,
+    ) -> None:
+        self.completed_folds += 1
+        self.resumed_folds += int(resumed)
+        self.quarantined_checkpoints += quarantined
+        if self.callback is not None:
+            self.callback(
+                CandidateProgress(
+                    completed_folds=self.completed_folds,
+                    total_folds=self.total_folds,
+                    resumed_folds=self.resumed_folds,
+                    quarantined_checkpoints=self.quarantined_checkpoints,
+                    variant_id=variant_id,
+                    repeat_index=repeat_index,
+                    fold_index=fold_index,
+                    resumed=resumed,
+                )
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,9 +183,10 @@ def run_candidate_experiment(
     data_root: str | Path = DEFAULT_DATA_ROOT,
     config_path: str | Path = DEFAULT_CANDIDATE_CONFIG_PATH,
     tracking_root: str | Path = DEFAULT_TRACKING_ROOT,
-    output_root: str | Path = DEFAULT_OUTPUT_ROOT,
+    output_root: str | Path = SINGLE_RUN_OUTPUT_ROOT,
     allow_dirty: bool = False,
     repo_root: str | Path = ".",
+    progress_callback: Callable[[CandidateProgress], None] | None = None,
 ) -> CandidateExperimentResult:
     """Run the frozen development-only CatBoost search and diagnostics."""
 
@@ -140,6 +198,7 @@ def run_candidate_experiment(
             output_root=Path(output_root),
             allow_dirty=allow_dirty,
             repo_root=Path(repo_root),
+            progress_callback=progress_callback,
         )
     except CandidateWorkflowError:
         raise
@@ -147,6 +206,7 @@ def run_candidate_experiment(
         raise CandidateWorkflowError(str(error)) from error
     except (
         CandidateModelError,
+        CheckpointError,
         CandidateSelectionError,
         MetricValidationError,
         ModelingContractError,
@@ -165,6 +225,7 @@ def _run_candidate_experiment(
     output_root: Path,
     allow_dirty: bool,
     repo_root: Path,
+    progress_callback: Callable[[CandidateProgress], None] | None,
 ) -> CandidateExperimentResult:
     ensure_mlflow_available()
     package_versions = collect_package_versions(CANDIDATE_VERSION_PACKAGES)
@@ -195,9 +256,25 @@ def _run_candidate_experiment(
     _validate_runtime_contract(config, governed, feature_contract_sha256)
 
     full_view = _view(config, "operational_full")
+    progress = _ProgressState(
+        total_folds=config.candidate.search.maximum_fold_fits,
+        callback=progress_callback,
+    )
     blocks: list[_CandidateBlock] = []
     for sampled in config.candidate.search.sampled_configurations:
-        blocks.extend(_score_variant(governed, config, full_view, sampled, role="search"))
+        blocks.extend(
+            _score_variant(
+                governed,
+                config,
+                full_view,
+                sampled,
+                role="search",
+                tracking_root=tracking_root,
+                config_sha256=config_sha256,
+                git=git,
+                progress=progress,
+            )
+        )
     search_evaluations = _evaluate_variants(blocks, config=config)
     selection = select_candidate(
         tuple(
@@ -214,6 +291,10 @@ def _run_candidate_experiment(
                 _view(config, view_id),
                 selection.selected_configuration,
                 role="diagnostic_ablation",
+                tracking_root=tracking_root,
+                config_sha256=config_sha256,
+                git=git,
+                progress=progress,
             )
         )
     if len(blocks) != config.candidate.search.maximum_fold_fits:
@@ -221,11 +302,12 @@ def _run_candidate_experiment(
             "Candidate fit budget mismatch: "
             f"expected={config.candidate.search.maximum_fold_fits}, observed={len(blocks)}."
         )
-    _validate_oof_coverage(governed, blocks, expected_variants=14)
+    expected_variants = len(config.candidate.search.sampled_configurations) + 2
+    _validate_oof_coverage(governed, blocks, expected_variants=expected_variants)
     evaluations = _evaluate_variants(blocks, config=config)
 
     oof_bytes, oof_rows = _oof_bytes(blocks, evaluations)
-    expected_oof_rows = 14 * governed.n_repeats * len(governed.account_ids)
+    expected_oof_rows = expected_variants * governed.n_repeats * len(governed.account_ids)
     if oof_rows != expected_oof_rows:
         raise CandidateWorkflowError(
             f"Candidate OOF row count mismatch: expected={expected_oof_rows}, observed={oof_rows}."
@@ -423,6 +505,10 @@ def _score_variant(
     sampled: SampledConfiguration,
     *,
     role: str,
+    tracking_root: Path,
+    config_sha256: str,
+    git: GitEvidence,
+    progress: _ProgressState,
 ) -> tuple[_CandidateBlock, ...]:
     blocks: list[_CandidateBlock] = []
     categorical = tuple(
@@ -434,18 +520,48 @@ def _score_variant(
     for repeat_index in range(governed.n_repeats):
         for fold_index in range(governed.n_splits):
             fold = governed.fold(repeat_index, fold_index)
-            result = fit_candidate_fold(
-                fold.X_train.loc[:, list(view.predictor_columns)],
-                fold.y_train,
-                fold.X_validation.loc[:, list(view.predictor_columns)],
-                fold.y_validation,
-                predictor_columns=view.predictor_columns,
-                categorical_columns=categorical,
-                fixed_parameters=config.candidate.fixed_parameters,
-                sampled_parameters=sampled.parameters,
-            )
             account_ids = np.asarray(fold.validation_account_ids, dtype=np.int64)
             target = np.asarray(fold.y_validation, dtype=np.int8)
+            expectation = checkpoint_expectation(
+                account_ids=account_ids,
+                target=target,
+                train_target=fold.y_train,
+                predictor_count=len(view.predictor_columns),
+                categorical_columns=categorical,
+                tree_count=sampled.parameters.iterations,
+            )
+            task = build_checkpoint_task(
+                candidate_config_sha256=config_sha256,
+                data_lineage=asdict(governed.lineage),
+                git=git,
+                feature_view=view.view_id,
+                configuration_id=sampled.configuration_id,
+                parameters=sampled.parameters.model_dump(),
+                predictor_columns=view.predictor_columns,
+                categorical_columns=categorical,
+                repeat_index=repeat_index,
+                fold_index=fold_index,
+                train_account_ids=fold.train_account_ids,
+                validation_account_ids=fold.validation_account_ids,
+                train_target=fold.y_train,
+                validation_target=fold.y_validation,
+            )
+            checkpoint = load_fold_checkpoint(tracking_root, task, expectation)
+            resumed = checkpoint.result is not None
+            if checkpoint.result is None:
+                result = fit_candidate_fold(
+                    fold.X_train.loc[:, list(view.predictor_columns)],
+                    fold.y_train,
+                    fold.X_validation.loc[:, list(view.predictor_columns)],
+                    fold.y_validation,
+                    predictor_columns=view.predictor_columns,
+                    categorical_columns=categorical,
+                    fixed_parameters=config.candidate.fixed_parameters,
+                    sampled_parameters=sampled.parameters,
+                )
+                save_fold_checkpoint(tracking_root, task, expectation, result)
+            else:
+                result = checkpoint.result
             probabilities = np.asarray(result.probabilities, dtype=np.float64)
             _validate_block(account_ids, target, probabilities)
             blocks.append(
@@ -461,6 +577,13 @@ def _score_variant(
                     probabilities=probabilities,
                     diagnostics=result.diagnostics,
                 )
+            )
+            progress.record(
+                variant_id=variant_id,
+                repeat_index=repeat_index,
+                fold_index=fold_index,
+                resumed=resumed,
+                quarantined=len(checkpoint.quarantined_paths),
             )
     return tuple(blocks)
 
@@ -541,7 +664,7 @@ def _evaluate_variants(
             for block in variant_blocks
         )
         repeat_metrics: list[tuple[int, PredictionMetrics]] = []
-        for repeat_index in range(3):
+        for repeat_index in range(config.data_contract.cross_validation.n_repeats):
             repeat_blocks = [
                 block for block in variant_blocks if block.repeat_index == repeat_index
             ]
@@ -677,12 +800,31 @@ def _summary_payload(
             "uv_lock_sha256": uv_lock_sha256,
             "package_versions": dict(sorted(package_versions.items())),
         },
+        "evidence_policy": {
+            "independent_executions_required": 2,
+            "required_byte_identical_artifacts": [
+                SUMMARY_FILENAME,
+                REPORT_FILENAME,
+                OOF_FILENAME,
+                DIAGNOSTICS_FILENAME,
+            ],
+            "tracking_roots_must_be_independent": True,
+            "third_fit_pass_for_publication": "prohibited",
+        },
         "fit_budget": {
             "maximum_fold_fits": config.candidate.search.maximum_fold_fits,
             "completed_fold_fits": config.candidate.search.maximum_fold_fits,
-            "search_fold_fits": 180,
-            "diagnostic_fold_fits": 30,
-            "evaluated_variants": 14,
+            "search_fold_fits": (
+                len(config.candidate.search.sampled_configurations)
+                * config.data_contract.cross_validation.n_splits
+                * config.data_contract.cross_validation.n_repeats
+            ),
+            "diagnostic_fold_fits": (
+                2
+                * config.data_contract.cross_validation.n_splits
+                * config.data_contract.cross_validation.n_repeats
+            ),
+            "evaluated_variants": len(evaluations),
         },
         "selection": {
             "selected_configuration_id": selection.selected_configuration.configuration_id,
@@ -726,7 +868,8 @@ def _oof_bytes(
     for variant_id in evaluations:
         variant_blocks = [block for block in blocks if block.variant_id == variant_id]
         first = variant_blocks[0]
-        for repeat_index in range(3):
+        repeat_indexes = sorted({block.repeat_index for block in variant_blocks})
+        for repeat_index in repeat_indexes:
             repeat_blocks = [
                 block for block in variant_blocks if block.repeat_index == repeat_index
             ]
@@ -787,6 +930,9 @@ def _report_bytes(summary: Mapping[str, Any], *, summary_sha256: str) -> bytes:
         "3-repeat assignments; the holdout was not fitted, scored, or evaluated",
         f"- **Deterministic summary SHA-256:** `{summary_sha256}`",
         f"- **Completed fold fits:** `{summary['fit_budget']['completed_fold_fits']}`",
+        "- **Official-publication gate:** two independently checkpointed executions must "
+        "produce byte-identical summary, report, OOF, and diagnostic artifacts; no third fit "
+        "pass is permitted",
         "",
         "## Advancement decision",
         "",
@@ -959,6 +1105,12 @@ def _enforce_output_policy(
     output_root: Path,
     repo_root: Path,
 ) -> None:
+    official = (repo_root / DEFAULT_OUTPUT_ROOT).resolve()
+    if output_root.resolve() == official:
+        raise CandidateWorkflowError(
+            "Official Phase 3 evidence must be published by credit-risk model "
+            "candidate-evidence after two independent executions."
+        )
     if not git.dirty:
         return
     if not allow_dirty:

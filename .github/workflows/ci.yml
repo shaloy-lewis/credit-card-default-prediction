@@ -130,6 +130,13 @@ jobs:
           test "$candidate_status" -eq 1
           grep --fixed-strings "install the project with the 'modeling' extra" <<<"$candidate_output"
           ! grep --fixed-strings "Traceback" <<<"$candidate_output"
+          set +e
+          candidate_evidence_output="$(docker exec credit-risk-api-ci credit-risk model candidate-evidence 2>&1)"
+          candidate_evidence_status=$?
+          set -e
+          test "$candidate_evidence_status" -eq 1
+          grep --fixed-strings "install the project with the 'modeling' extra" <<<"$candidate_evidence_output"
+          ! grep --fixed-strings "Traceback" <<<"$candidate_evidence_output"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert all(not Path('/app', name).exists() for name in ('data', 'experiment', 'mlruns'))"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/artifacts').iterdir()) == ['model.pkl', 'outlier_threshold.json', 'preprocessor.pkl']"
           curl --fail --silent http://127.0.0.1:8080/ping | python -c "import json, sys; assert json.load(sys.stdin) == {'message': 'Health check successful!'}"

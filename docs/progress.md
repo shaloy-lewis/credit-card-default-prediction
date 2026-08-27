@@ -180,7 +180,7 @@ Freeze the candidate protocol and balanced advancement gate before fitting a
 new CatBoost candidate. Keep the test partition sealed and retain logistic
 regression if the bounded candidate search does not pass every reviewed gate.
 
-### Readiness status — protocol frozen; candidate fitting not started
+### Readiness status — optimized execution implemented; reviewed evidence pending
 
 **Frozen:** 2026-08-26
 
@@ -199,5 +199,11 @@ regression if the bounded candidate search does not pass every reviewed gate.
 - The 2026-08-27 compute amendment was made from runtime-only benchmarks before
   any candidate metric was calculated or inspected. It caps the search at depth 6,
   600 trees and uses four CPU threads per fit while preserving all 15 reviewed folds.
+- Every completed fold is stored as an atomic, validated, non-pickle NumPy
+  checkpoint. Invalid or interrupted checkpoints are quarantined and refitted;
+  separate evidence executions cannot reuse one another's predictions.
+- `credit-risk model candidate-evidence` performs exactly two independent runs,
+  requires all four evidence artifacts to be byte-identical, and promotes the
+  primary aggregate report without a third fit pass.
 - Candidate results were unavailable when the protocol was frozen. The test
   partition remains prohibited until the Week 5 procedure is fixed.

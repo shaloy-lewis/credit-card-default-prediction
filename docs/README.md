@@ -46,5 +46,6 @@ The amended protocol fixes the development-only feature views, deterministic
 eight-trial search, 150-fold-fit ceiling, balanced advancement gate, and
 logistic fallback before candidate results exist. The compute amendment uses
 four CatBoost threads and was based only on runtime benchmarks; no candidate
-metric was observed. No candidate fitting or holdout evaluation is included in
-the readiness checkpoint.
+metric was observed. The resumable candidate execution and two-run promotion
+gate are implemented; reviewed candidate evidence and holdout evaluation are
+not included in this implementation checkpoint.
