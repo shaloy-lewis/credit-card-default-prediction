@@ -37,15 +37,20 @@ deterministic aggregate result is version-controlled and protected by complete
 file digests. Candidate modelling, calibration, and the sealed holdout remain
 outside this checkpoint, so G2 is still open.
 
-## Phase 3 candidate-modelling readiness
+## Phase 3 candidate-modelling evidence
 
 - [Frozen CatBoost candidate protocol](modeling/candidate-protocol.md)
 - Machine-readable contract: `../configs/modeling/candidate_v1.json`
+- [Reviewed aggregate candidate report](../reports/modeling/candidate_v1/candidate-report.md)
+- [Reviewed machine-readable candidate summary](../reports/modeling/candidate_v1/summary.json)
 
 The amended protocol fixes the development-only feature views, deterministic
 eight-trial search, 150-fold-fit ceiling, balanced advancement gate, and
 logistic fallback before candidate results exist. The compute amendment uses
 four CatBoost threads and was based only on runtime benchmarks; no candidate
-metric was observed. The resumable candidate execution and two-run promotion
-gate are implemented; reviewed candidate evidence and holdout evaluation are
-not included in this implementation checkpoint.
+metric was observed before it was frozen. Two independent executions from clean
+commit `2b46d4c` produced byte-identical aggregate and runtime evidence.
+Configuration `cb_cfg_006` passed every development-CV advancement condition and
+is the Phase 4 candidate. The holdout remains unevaluated, and G2 remains open
+for calibration, uncertainty, operating-policy selection, and the one-time
+holdout evaluation.

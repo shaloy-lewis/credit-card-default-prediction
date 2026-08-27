@@ -3,11 +3,12 @@
 A portfolio project for monthly credit-risk early warning and
 capacity-constrained intervention prioritisation for existing cardholders.
 
-> **Current status:** Phase 1 / G1 and Phase 2's governed scientific baseline
-> checkpoint are complete. Phase 3's compute-aware candidate execution is
-> implemented; independently reproduced aggregate evidence is still pending.
-> G2 remains open for calibration, uncertainty, policy selection, and holdout
-> testing. The committed compatibility CatBoost model remains
+> **Current status:** Phase 1 / G1, Phase 2's governed scientific baseline,
+> and Phase 3's development-only candidate selection are complete. The frozen
+> gate selected CatBoost configuration `cb_cfg_006` for Phase 4 after two
+> byte-identical independent executions. G2 remains open for calibration,
+> uncertainty, policy selection, and holdout testing. The committed compatibility
+> CatBoost model remains
 > available for compatibility testing while modelling, registry, serving, and
 > monitoring workflows are rebuilt in staged releases.
 
@@ -33,6 +34,7 @@ The approved scope and delivery evidence are documented in:
 - [Baseline experiment protocol](docs/modeling/experiment-protocol.md)
 - [Reviewed baseline report](reports/modeling/baseline_v1/baseline-report.md)
 - [Frozen candidate modelling protocol](docs/modeling/candidate-protocol.md)
+- [Reviewed candidate report](reports/modeling/candidate_v1/candidate-report.md)
 
 ## Current capabilities
 
@@ -59,10 +61,11 @@ The approved scope and delivery evidence are documented in:
 - A versioned Phase 3 CatBoost contract with eight bounded search variants,
   150 reviewed fold fits, deterministic advancement and fallback rules,
   content-bound NumPy checkpoints, and two-run evidence verification.
+- Digest-protected Phase 3 aggregate evidence selecting the lightweight
+  `cb_cfg_006` configuration for Phase 4 from development folds only.
 
-Planned releases add reviewed candidate evidence, calibration, capacity-based policies,
-the model registry, model-risk gates, batch/API parity, monitoring, and incident
-exercises.
+Planned releases add calibration, capacity-based policies, the model registry,
+model-risk gates, batch/API parity, monitoring, and incident exercises.
 
 ## Dataset and evidence limits
 
@@ -169,6 +172,14 @@ launches a third fit pass. Runtime checkpoints, MLflow state, predictions, and
 diagnostics remain under `experiment/` and are not committed.
 The single-run command is rejected if pointed at the official Phase 3 report
 directory, so this reproducibility gate cannot be bypassed accidentally.
+
+The committed [candidate report](reports/modeling/candidate_v1/candidate-report.md)
+records the reviewed outcome. `cb_cfg_006` passed every advancement condition
+with development-CV average precision `0.556419`, Brier score `0.134101`, and
+lift at 10% `3.202110`. It uses depth 4, 300 trees, learning rate `0.03`, L2
+regularisation `12`, random strength `0`, and bagging temperature `0`. Phase 4
+reuses only this selected configuration; it does not repeat the eight-variant
+search. The estimator is not connected to the compatibility `/predict` endpoint.
 
 ### Check the local inference artifacts
 

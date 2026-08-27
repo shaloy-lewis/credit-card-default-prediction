@@ -1,8 +1,8 @@
 # Phase 3 candidate modelling protocol
 
 **Protocol:** `candidate_v1`
-**Status:** Frozen before candidate metric execution; compute amendment recorded
-**Frozen:** 2026-08-26; compute amendment: 2026-08-27
+**Status:** Completed with independently reproduced development-only evidence
+**Frozen:** 2026-08-26; compute amendment: 2026-08-27; evidence: 2026-08-27
 
 ## Purpose and evidence boundary
 
@@ -21,6 +21,13 @@ complete amended SHA-256 is
 pinned by the candidate-protocol integrity test.
 It is bound to the reviewed baseline summary at SHA-256
 `11e0332fc9df6f7abf36080a8d09304b3e975f34ad060f70f8611f4fc0ad69d6`.
+
+The reviewed aggregate evidence is published as
+`reports/modeling/candidate_v1/summary.json` and `candidate-report.md`. Their
+complete SHA-256 digests are
+`55aaa971417bddbcad00b8bdf388f74baa13f6ad96304dd108227e48de23ea83` and
+`156967cfda68ddf6c49e4f1e1666266d69261c58628820df3a2a821e560b17c2`,
+respectively.
 
 ## Reference baseline
 
@@ -165,6 +172,27 @@ ignored. Any deterministic aggregate report must exclude timestamps and
 machine-local paths and must be published only after successful tracking and
 validation.
 
+## Reviewed outcome and Phase 4 handoff
+
+Two independent executions from clean implementation commit `2b46d4c` produced
+byte-identical summary, report, OOF, and fold-diagnostic artifacts. Across the
+two executions, the 720,000 OOF rows have SHA-256
+`94ee8a56b731008722a63a9913f696dbe1bc827f64e1e903208bf98a0c44fd46`
+and the 150 fold diagnostics have SHA-256
+`a3b5a2e64c7a145ce408d2e6a77ffc2034fe71e76387271a9ff9bdf19e5a2174`.
+
+Six configurations fell within the `0.002` equivalence band. The frozen
+tie-break selected `cb_cfg_006`: depth 4, 300 iterations, learning rate `0.03`,
+L2 leaf regularisation `12`, random strength `0`, and bagging temperature `0`.
+It passed all four gates with mean average precision `0.556419`, AP repeat
+standard deviation `0.000821`, Brier score `0.134101`, and lift at 10%
+`3.202110`. CatBoost therefore advances as the Phase 4 candidate.
+
+Phase 4 reuses only `cb_cfg_006`; the eight-configuration search is not repeated.
+This decision remains development-CV model-selection evidence. The selected
+estimator is not serialized or connected to `/predict`, and the holdout remains
+sealed.
+
 ## Deferred decisions and exit gate
 
 Calibration selection, bootstrap confidence intervals, simulated economics,
@@ -172,8 +200,7 @@ operating-policy selection, and the one-time holdout evaluation belong to Week
 5. Demographic ablation, subgroup analysis, explanations, and the final feature
 use decision belong to Week 6.
 
-Week 4 passes only when the implementation reproduces the frozen sampled
-configurations, all variants use the common folds, the fit budget is respected,
-lineage and OOF coverage are complete, the advancement rule is applied exactly,
-the holdout remains untouched, and static, test, and container compatibility
-checks pass. Passing Week 4 does not close G2.
+Week 4 passed after the implementation reproduced the frozen sampled
+configurations, all variants used the common folds, the fit budget was respected,
+lineage and OOF coverage were complete, the advancement rule was applied exactly,
+and the holdout remained untouched. Passing Week 4 does not close G2.
