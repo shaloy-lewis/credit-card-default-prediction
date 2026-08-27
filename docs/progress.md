@@ -174,24 +174,49 @@ deferred risks. It is not a substitute for commit history or CI results.
 - No test-partition metric is permitted until the candidate, calibrator, and policy rules are
   frozen.
 
-## Next checkpoint — Phase 3 / Week 4 candidate modelling
+## Phase 3 / Week 4 — governed candidate modelling complete
 
-Freeze the candidate protocol and balanced advancement gate before fitting a
-new CatBoost candidate. Keep the test partition sealed and retain logistic
-regression if the bounded candidate search does not pass every reviewed gate.
+**Completed:** 2026-08-27
 
-### Readiness status — protocol frozen; candidate fitting not started
+### Delivered
 
-**Frozen:** 2026-08-26
+- The frozen CatBoost protocol evaluated exactly eight full operational-view
+  configurations and two diagnostic feature-family ablations on the reviewed
+  5-fold × 3-repeat development assignments.
+- The compute amendment was made from runtime-only evidence before candidate
+  metrics were observed. Atomic, content-bound checkpoints made both independent
+  executions safely resumable without changing the protocol order or evidence.
+- Both executions completed the 150-fit ceiling and produced byte-identical
+  summary, report, 720,000 OOF rows, and 150 fold diagnostics. No third fit pass
+  was performed for publication.
+- Six full-view configurations were within the frozen equivalence band.
+  Deterministic tie-breaking selected `cb_cfg_006`, the least-complex eligible
+  option: depth 4, 300 iterations, learning rate `0.03`, L2 regularisation `12`,
+  random strength `0`, and bagging temperature `0`.
+- `cb_cfg_006` passed all four advancement conditions with average precision
+  `0.556419`, AP repeat standard deviation `0.000821`, Brier score `0.134101`,
+  and lift at 10% `3.202110`. CatBoost advances to Phase 4.
 
-- CatBoost `1.2.5` is the only new model family; no additional challenger or
-  dependency is permitted in this slice.
-- The search samples exactly 12 configurations at seed 42 on the 19-feature
-  operational view and reuses the selected parameters for two feature-family
-  ablations, with a hard ceiling of 210 fold fits.
-- Advancement requires all four reviewed average-precision, Brier, lift-at-10%,
-  and repeat-stability conditions. Logistic regression remains the fallback.
-- Candidate configuration SHA-256 is
-  `93aa5331c4e558f6c4c1ce1fb9fce4ae16478a16567243fa6db723e031cf3f6c`.
-- Candidate results were unavailable when the protocol was frozen. The test
-  partition remains prohibited until the Week 5 procedure is fixed.
+### Verification evidence
+
+| Check | Result |
+| --- | --- |
+| Clean lineage | `git_dirty=false` at implementation commit `2b46d4c` |
+| Candidate contract | SHA-256 `4bd9a404064d410e0339e0638464aaf6c1ac0bca632156a47af14a822d7cb5f3` |
+| Summary | SHA-256 `55aaa971417bddbcad00b8bdf388f74baa13f6ad96304dd108227e48de23ea83` |
+| Markdown report | SHA-256 `156967cfda68ddf6c49e4f1e1666266d69261c58628820df3a2a821e560b17c2` |
+| Runtime artifacts | OOF SHA-256 `94ee8a56...fd46`; diagnostics SHA-256 `a3b5a2e6...2174`, identical across independent roots |
+| Evaluation boundary | 24,000 development rows; holdout unfitted, unscored, and unevaluated |
+| Published artifacts | Aggregate JSON and Markdown only; no estimator or row-level evidence committed |
+
+### Phase 4 handoff and deferred work
+
+- Phase 4 must reuse only `cb_cfg_006`; it must not repeat the eight-variant
+  search or reinterpret the diagnostic feature views as advancement candidates.
+- Calibration, bootstrap uncertainty, capacity-based operating-policy selection,
+  and the one-time sealed-holdout evaluation remain pending. G2 therefore stays
+  open.
+- Demographic ablation, subgroup analysis, explanations, and the final feature-use
+  decision remain Week 6 work.
+- The selected estimator is not connected to the compatibility `/predict`
+  endpoint and no fitted CatBoost artifact is committed by this checkpoint.

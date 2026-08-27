@@ -29,6 +29,7 @@ BASELINE_MODEL_NAMES: Final[tuple[str, ...]] = (
     "logistic_l2",
 )
 DEFAULT_EXPERIMENT_NAME: Final[str] = "credit-risk-baseline-v1"
+CANDIDATE_EXPERIMENT_NAME: Final[str] = "credit-risk-candidate-v1"
 MLFLOW_DATABASE_FILENAME: Final[str] = "mlflow.db"
 MLFLOW_ARTIFACT_DIRECTORY: Final[str] = "artifacts"
 ALLOWED_TRACKING_ARTIFACTS: Final[Mapping[str, str]] = {
@@ -36,6 +37,12 @@ ALLOWED_TRACKING_ARTIFACTS: Final[Mapping[str, str]] = {
     "baseline-report.md": "evidence",
     "oof_predictions.csv": "runtime",
     "logistic_fold_diagnostics.json": "runtime",
+}
+CANDIDATE_TRACKING_ARTIFACTS: Final[Mapping[str, str]] = {
+    "summary.json": "evidence",
+    "candidate-report.md": "evidence",
+    "oof_predictions.csv": "runtime",
+    "fold_diagnostics.json": "runtime",
 }
 DEFAULT_VERSION_PACKAGES: Final[tuple[str, ...]] = (
     "credit-risk-early-warning",
@@ -212,6 +219,7 @@ def track_baseline_runs(
 
     tracking_uri = _sqlite_tracking_uri(database_path)
     with _MLFLOW_TRACKING_LOCK:
+        previous_tracking_uri: str | None = None
         try:
             previous_tracking_uri = str(mlflow.get_tracking_uri())
         except Exception as error:
@@ -259,16 +267,95 @@ def track_baseline_runs(
             except Exception as error:
                 raise TrackingError(f"MLflow baseline tracking failed: {error}") from error
         finally:
-            try:
-                mlflow.set_tracking_uri(previous_tracking_uri)
-            except Exception as error:
-                raise TrackingError(
-                    f"Unable to restore the previous MLflow tracking URI: {error}"
-                ) from error
+            if previous_tracking_uri is not None:
+                try:
+                    mlflow.set_tracking_uri(previous_tracking_uri)
+                except Exception as error:
+                    raise TrackingError(
+                        f"Unable to restore the previous MLflow tracking URI: {error}"
+                    ) from error
 
     return TrackingRunResult(
         tracking_uri=tracking_uri,
         experiment_name=experiment_name,
+        parent_run_id=parent_run_id,
+        child_run_ids=tuple(child_run_ids),
+    )
+
+
+def track_candidate_runs(
+    *,
+    tracking_root: str | Path,
+    parent_parameters: Mapping[str, ParameterValue],
+    parent_tags: Mapping[str, str],
+    variant_runs: Sequence[ModelRunPayload],
+    artifacts: Sequence[str | Path],
+) -> TrackingRunResult:
+    """Record one parent and the 10 governed Phase 3 variant runs."""
+
+    payloads = tuple(variant_runs)
+    _validate_candidate_payloads(payloads)
+    evidence_files = _validate_candidate_artifacts(artifacts)
+    mlflow = _load_mlflow()
+    root = Path(tracking_root).resolve()
+    database_path = root / MLFLOW_DATABASE_FILENAME
+    artifact_root = root / MLFLOW_ARTIFACT_DIRECTORY
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        artifact_root.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise TrackingError(f"Unable to initialize MLflow tracking root {root}: {error}") from error
+
+    tracking_uri = _sqlite_tracking_uri(database_path)
+    with _MLFLOW_TRACKING_LOCK:
+        previous_tracking_uri: str | None = None
+        try:
+            previous_tracking_uri = str(mlflow.get_tracking_uri())
+            mlflow.set_tracking_uri(tracking_uri)
+            experiment_id = _resolve_experiment(
+                mlflow,
+                experiment_name=CANDIDATE_EXPERIMENT_NAME,
+                artifact_root=artifact_root,
+                tracking_uri=tracking_uri,
+            )
+            with mlflow.start_run(
+                experiment_id=experiment_id,
+                run_name="candidate_v1",
+                tags={"run_role": "candidate_parent", **dict(parent_tags)},
+            ) as parent_run:
+                parent_run_id = str(parent_run.info.run_id)
+                mlflow.log_params(_normalise_parameters(parent_parameters))
+                child_run_ids: list[tuple[str, str]] = []
+                for payload in payloads:
+                    with mlflow.start_run(
+                        experiment_id=experiment_id,
+                        run_name=payload.model_name,
+                        nested=True,
+                        tags={"run_role": "candidate_variant", "variant_id": payload.model_name},
+                    ) as child_run:
+                        child_run_ids.append((payload.model_name, str(child_run.info.run_id)))
+                        mlflow.log_params(_normalise_parameters(payload.parameters))
+                        mlflow.log_metrics(_normalise_metrics(payload.metrics))
+                for artifact in evidence_files:
+                    mlflow.log_artifact(
+                        str(artifact),
+                        artifact_path=CANDIDATE_TRACKING_ARTIFACTS[artifact.name],
+                    )
+        except TrackingError:
+            raise
+        except Exception as error:
+            raise TrackingError(f"MLflow candidate tracking failed: {error}") from error
+        finally:
+            if previous_tracking_uri is not None:
+                try:
+                    mlflow.set_tracking_uri(previous_tracking_uri)
+                except Exception as error:
+                    raise TrackingError(
+                        f"Unable to restore the previous MLflow tracking URI: {error}"
+                    ) from error
+    return TrackingRunResult(
+        tracking_uri=tracking_uri,
+        experiment_name=CANDIDATE_EXPERIMENT_NAME,
         parent_run_id=parent_run_id,
         child_run_ids=tuple(child_run_ids),
     )
@@ -349,6 +436,174 @@ def _validate_artifacts(paths: Sequence[str | Path]) -> tuple[Path, ...]:
             raise TrackingError(f"MLflow evidence artifact is missing or not a file: {artifact}")
     _validate_evidence_content({artifact.name: artifact for artifact in artifacts})
     return artifacts
+
+
+def _validate_candidate_payloads(payloads: tuple[ModelRunPayload, ...]) -> None:
+    names = tuple(payload.model_name for payload in payloads)
+    if len(names) != 10 or len(set(names)) != 10:
+        raise TrackingError("Candidate tracking requires exactly 10 unique variant runs.")
+    expected_search = tuple(f"operational_full__cb_cfg_{index:03d}" for index in range(1, 9))
+    if names[:8] != expected_search:
+        raise TrackingError(
+            "Candidate tracking requires the ordered cb_cfg_001..cb_cfg_008 full-view variants."
+        )
+    if not names[-2].startswith("repayment_status_only__") or not names[-1].startswith(
+        "monetary_only__"
+    ):
+        raise TrackingError("Candidate tracking requires two trailing diagnostic variants.")
+    diagnostic_configurations = tuple(name.rpartition("__")[2] for name in names[-2:])
+    if len(set(diagnostic_configurations)) != 1 or diagnostic_configurations[0] not in {
+        f"cb_cfg_{index:03d}" for index in range(1, 9)
+    }:
+        raise TrackingError(
+            "Candidate diagnostic variants must reuse one reviewed full-view configuration."
+        )
+
+
+def _validate_candidate_artifacts(paths: Sequence[str | Path]) -> tuple[Path, ...]:
+    artifacts = tuple(Path(path).resolve() for path in paths)
+    names = tuple(artifact.name for artifact in artifacts)
+    if len(set(names)) != len(names):
+        raise TrackingError("Candidate MLflow artifact filenames must be unique.")
+    unexpected = sorted(set(names) - set(CANDIDATE_TRACKING_ARTIFACTS))
+    missing = sorted(set(CANDIDATE_TRACKING_ARTIFACTS) - set(names))
+    if unexpected or missing:
+        raise TrackingError(
+            "Candidate MLflow artifact allowlist mismatch: "
+            f"missing={missing}, unexpected={unexpected}."
+        )
+    for artifact in artifacts:
+        if not artifact.is_file():
+            raise TrackingError(f"Candidate MLflow artifact is missing or not a file: {artifact}")
+    _validate_candidate_evidence_content({artifact.name: artifact for artifact in artifacts})
+    return artifacts
+
+
+def _validate_candidate_evidence_content(artifacts: Mapping[str, Path]) -> None:
+    try:
+        summary_bytes = artifacts["summary.json"].read_bytes()
+        report_bytes = artifacts["candidate-report.md"].read_bytes()
+        diagnostics_bytes = artifacts["fold_diagnostics.json"].read_bytes()
+        summary = json.loads(summary_bytes)
+        diagnostics = json.loads(diagnostics_bytes)
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise TrackingError(f"Unable to validate candidate MLflow artifacts: {error}") from error
+    if not isinstance(summary, dict) or not isinstance(diagnostics, dict):
+        raise TrackingError("Candidate summary and diagnostics must be JSON objects.")
+    try:
+        data = summary["data"]
+        evidence_policy = summary["evidence_policy"]
+        runtime = summary["runtime_artifacts"]
+        fit_budget = summary["fit_budget"]
+        summary_hash = hashlib.sha256(summary_bytes).hexdigest()
+        oof_hash = _file_sha256(artifacts["oof_predictions.csv"])
+        diagnostics_hash = hashlib.sha256(diagnostics_bytes).hexdigest()
+    except (KeyError, TypeError, OSError) as error:
+        raise TrackingError(f"Candidate evidence is missing required fields: {error}") from error
+    if data != {
+        "development_rows": 24_000,
+        "holdout_evaluated": False,
+        "n_repeats": 3,
+        "n_splits": 5,
+        "partition": "development",
+    }:
+        raise TrackingError("Candidate evidence violates the development-only data boundary.")
+    if fit_budget.get("completed_fold_fits") != 150 or fit_budget.get("maximum_fold_fits") != 150:
+        raise TrackingError("Candidate evidence does not record exactly 150 fold fits.")
+    if (
+        fit_budget.get("search_fold_fits") != 120
+        or fit_budget.get("diagnostic_fold_fits") != 30
+        or fit_budget.get("evaluated_variants") != 10
+    ):
+        raise TrackingError("Candidate evidence has an invalid optimized fit-budget breakdown.")
+    if evidence_policy != {
+        "independent_executions_required": 2,
+        "required_byte_identical_artifacts": [
+            "summary.json",
+            "candidate-report.md",
+            "oof_predictions.csv",
+            "fold_diagnostics.json",
+        ],
+        "tracking_roots_must_be_independent": True,
+        "third_fit_pass_for_publication": "prohibited",
+    }:
+        raise TrackingError("Candidate evidence has an invalid independent-execution policy.")
+    if (
+        runtime.get("contains_holdout_rows") is not False
+        or runtime.get("contains_fitted_models") is not False
+    ):
+        raise TrackingError("Candidate runtime evidence violates the artifact boundary.")
+    if runtime.get("oof_predictions_sha256") != oof_hash:
+        raise TrackingError("Candidate summary and OOF hashes do not match.")
+    if runtime.get("fold_diagnostics_sha256") != diagnostics_hash:
+        raise TrackingError("Candidate summary and diagnostics hashes do not match.")
+    if diagnostics.get("fit_count") != 150 or len(diagnostics.get("fits", ())) != 150:
+        raise TrackingError("Candidate fold diagnostics do not contain exactly 150 fits.")
+    try:
+        report = report_bytes.decode("utf-8")
+    except UnicodeError as error:
+        raise TrackingError("Candidate report must be UTF-8 text.") from error
+    if not report.startswith("# Governed CatBoost candidate report\n") or (
+        f"Deterministic summary SHA-256:** `{summary_hash}`" not in report
+    ):
+        raise TrackingError("Candidate report is not bound to the deterministic summary.")
+    _validate_candidate_oof(artifacts["oof_predictions.csv"], runtime)
+    forbidden = {"artifact_uri", "run_id", "timestamp", "tracking_uri", "start_time", "end_time"}
+    if _nested_keys(summary) & forbidden:
+        raise TrackingError("Candidate deterministic evidence contains operational identifiers.")
+
+
+def _validate_candidate_oof(path: Path, runtime: Mapping[str, object]) -> None:
+    expected_header = [
+        "account_id",
+        "variant_id",
+        "feature_view",
+        "configuration_id",
+        "repeat_index",
+        "fold_index",
+        "probability",
+    ]
+    rows = 0
+    variants: set[str] = set()
+    try:
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            if reader.fieldnames != expected_header:
+                raise TrackingError("Candidate OOF evidence has an unexpected schema.")
+            for row in reader:
+                probability = float(row["probability"])
+                if not math.isfinite(probability) or not 0.0 <= probability <= 1.0:
+                    raise TrackingError("Candidate OOF evidence contains an invalid probability.")
+                if int(row["repeat_index"]) not in range(3) or int(row["fold_index"]) not in range(
+                    5
+                ):
+                    raise TrackingError(
+                        "Candidate OOF evidence contains an invalid fold assignment."
+                    )
+                variants.add(row["variant_id"])
+                rows += 1
+    except (OSError, UnicodeError, ValueError, KeyError) as error:
+        raise TrackingError(f"Candidate OOF evidence contains an invalid row: {error}") from error
+    if rows != runtime.get("oof_prediction_rows") or rows != 720_000:
+        raise TrackingError("Candidate OOF evidence has incomplete row coverage.")
+    if len(variants) != 10:
+        raise TrackingError("Candidate OOF evidence does not contain exactly 10 variants.")
+
+
+def _nested_keys(value: object) -> set[str]:
+    if isinstance(value, dict):
+        return set(value) | {key for item in value.values() for key in _nested_keys(item)}
+    if isinstance(value, list):
+        return {key for item in value for key in _nested_keys(item)}
+    return set()
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _validate_evidence_content(artifacts: Mapping[str, Path]) -> None:
