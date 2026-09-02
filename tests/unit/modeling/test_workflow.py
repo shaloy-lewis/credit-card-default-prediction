@@ -24,6 +24,8 @@ from credit_risk.modeling.tracking import (
 )
 from credit_risk.modeling.workflow import BaselineWorkflowError, run_baseline_experiment
 
+pytestmark = pytest.mark.training
+
 
 def test_baseline_workflow_is_deterministic_and_tracks_only_approved_evidence(
     tmp_path: Path,

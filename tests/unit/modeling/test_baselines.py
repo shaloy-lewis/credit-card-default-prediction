@@ -31,6 +31,8 @@ from credit_risk.modeling.baselines import (
 )
 from credit_risk.modeling.contracts import load_baseline_config
 
+pytestmark = pytest.mark.training
+
 
 def _predictors(rows: int = 240, *, seed: int = 42) -> pd.DataFrame:
     rng = np.random.default_rng(seed)

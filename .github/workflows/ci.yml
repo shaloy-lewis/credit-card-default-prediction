@@ -44,7 +44,7 @@ jobs:
         run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
-        run: uv run pytest --cov --cov-report=term-missing
+        run: uv run pytest -m "not training" --cov --cov-report=term-missing
 
       - name: Enforce Phase 1 data-package branch coverage
         run: >-
@@ -53,12 +53,23 @@ jobs:
           --cov=credit_risk.data --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
-      - name: Enforce modeling-package branch coverage
+      - name: Enforce one-pass governance branch coverage
         run: >-
-          uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py
-          tests/integration/test_baseline_experiment.py
-          tests/integration/test_candidate_model.py
-          --cov=credit_risk.modeling --cov-branch --cov-report=term-missing
+          uv run pytest tests/unit/modeling/test_selection_workflow.py
+          tests/unit/modeling/test_final_test.py
+          tests/unit/modeling/test_selection_contracts.py
+          tests/unit/modeling/test_selection_analysis.py
+          tests/unit/modeling/test_selection_models.py
+          tests/unit/modeling/test_selected_bundle.py
+          tests/integration/test_selection_protocol.py
+          tests/integration/test_selection_split.py -m "not training"
+          --cov=credit_risk.modeling.selection_contracts
+          --cov=credit_risk.modeling.selection_analysis
+          --cov=credit_risk.modeling.selection_models
+          --cov=credit_risk.modeling.selected_bundle
+          --cov=credit_risk.modeling.selection_workflow
+          --cov=credit_risk.modeling.final_test
+          --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
   container:
@@ -121,22 +132,29 @@ jobs:
           model_status=$?
           set -e
           test "$model_status" -eq 1
-          grep --fixed-strings "install the project with the 'modeling' extra" <<<"$model_output"
+          grep --fixed-strings "historical and cannot be rerun" <<<"$model_output"
           ! grep --fixed-strings "Traceback" <<<"$model_output"
           set +e
           candidate_output="$(docker exec credit-risk-api-ci credit-risk model candidate 2>&1)"
           candidate_status=$?
           set -e
           test "$candidate_status" -eq 1
-          grep --fixed-strings "install the project with the 'modeling' extra" <<<"$candidate_output"
+          grep --fixed-strings "historical and cannot be rerun" <<<"$candidate_output"
           ! grep --fixed-strings "Traceback" <<<"$candidate_output"
           set +e
           candidate_evidence_output="$(docker exec credit-risk-api-ci credit-risk model candidate-evidence 2>&1)"
           candidate_evidence_status=$?
           set -e
           test "$candidate_evidence_status" -eq 1
-          grep --fixed-strings "install the project with the 'modeling' extra" <<<"$candidate_evidence_output"
+          grep --fixed-strings "historical and cannot be rerun" <<<"$candidate_evidence_output"
           ! grep --fixed-strings "Traceback" <<<"$candidate_evidence_output"
+          set +e
+          selection_output="$(docker exec credit-risk-api-ci credit-risk model select 2>&1)"
+          selection_status=$?
+          set -e
+          test "$selection_status" -eq 1
+          grep --fixed-strings "install the project with the 'data' extra" <<<"$selection_output"
+          ! grep --fixed-strings "Traceback" <<<"$selection_output"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert all(not Path('/app', name).exists() for name in ('data', 'experiment', 'mlruns'))"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/artifacts').iterdir()) == ['model.pkl', 'outlier_threshold.json', 'preprocessor.pkl']"
           curl --fail --silent http://127.0.0.1:8080/ping | python -c "import json, sys; assert json.load(sys.stdin) == {'message': 'Health check successful!'}"

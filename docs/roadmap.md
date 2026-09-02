@@ -24,9 +24,9 @@
 | --- | ---: | --- | --- | --- |
 | 1: Scope and foundation | 10 h | Approve product brief and batch-first ADR; repository inventory; target package layout; dependency and test strategy | Decision owner, action, horizon, metrics, limitations, and non-goals are explicit | Product framing and technical direction |
 | 2: Reproducible data | 10 h | Official download/checksum; immutable raw layer; schema and quality checks; data card; feature-availability matrix; deterministic folds | A clean checkout reproduces the expected data and rejects corrupted fixtures | Lineage, contracts, and leakage awareness |
-| 3: Baseline and tracking | 10 h | Prevalence/rule baseline; regularised logistic model; optional scorecard; MLflow experiment tracking; sealed holdout | Runs record data hash, code commit, config, folds, metrics, and artifacts | Scientific discipline and auditability |
-| 4: Candidate modelling | 10 h | CatBoost plus at most one justified challenger; common CV; ablations; bounded hyperparameter search | Candidate selection procedure is fixed without consulting the test result | Trade-offs rather than model shopping |
-| 5: Calibration and policy | 10 h | Calibration comparison; confidence intervals; lift/gains; recall and precision at capacity; risk bands; simulated economics | Candidate, calibrator, and operating-policy rules are documented before one-time test evaluation | Decision science and uncertainty |
+| 3: Historical baseline evidence | 10 h | Reviewed repeated-CV baseline and MLflow evidence retained as an immutable scientific record | Evidence records data hash, code, configuration, folds, metrics, and artifacts; public rerun is retired | Scientific discipline and auditability |
+| 4: Historical candidate evidence | 10 h | Reviewed CatBoost search and ablations retained as immutable evidence; no routine rerun | Search outcome remains auditable but is superseded as the executable release workflow | Transparent protocol evolution |
+| 5: Four-fit governed selection | 10 h | One fixed fit each for logistic, histogram boosting, random forest, and CatBoost; validation selection; identity calibration; bundle and frozen test gates | Exactly four fits, no tuning/CV/refit, sealed test, checksum-protected exact winner | Efficient model governance and controlled release |
 | 6: Governance and explanation | 10 h | Correct SHAP feature mapping; additivity tests; reason categories; demographic ablation; fairness report; model card; risk register | Explanations are dimensionally correct and feature use is governed | Responsible AI and model-risk ownership |
 | 7: Batch and API inference | 10 h | Versioned model bundle; idempotent monthly scorer; `/v1` API; validated contracts; model/trace metadata; structured safe logs | Offline, batch, and API probabilities and policies agree within tolerance | Production inference and parity |
 | 8: Registry, CI, and rollback | 10 h | MLflow registry; candidate/champion workflow; promotion checklist; unit/integration/contract/model tests; GitHub Actions; image scan | A model can be registered, promoted, deployed locally, and rolled back without replacing files by hand | Controlled software and model delivery |
@@ -40,8 +40,8 @@
 ### Release A: defensible model — end of Week 5
 
 - Reproducible data and split protocol.
-- Interpretable baseline and CatBoost candidate.
-- Calibration, uncertainty, capacity metrics, and a documented selection rule.
+- Fixed four-model comparison and the exact serialized validation winner.
+- Identity-calibration diagnostics, prediction-only uncertainty, capacity metrics, and a documented selection rule.
 - No unsupported temporal, causal, India-specific, or compliance claim.
 
 This release is the minimum scientifically credible senior-data-science story.
@@ -132,7 +132,7 @@ not be used to imply that the source dataset requires distributed compute.
 The project is portfolio-ready when:
 
 - the business decision and ownership are explicit;
-- a clean checkout can reproduce data, experiments, model registration, and scoring;
+- a clean checkout can verify data and evidence and execute the bounded four-fit release workflow;
 - baselines, uncertainty, calibration, capacity metrics, and limitations are reported;
 - every released model has data/code/config lineage and governance evidence;
 - batch and online paths are contract-tested and prediction-equivalent;

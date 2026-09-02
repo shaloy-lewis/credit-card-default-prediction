@@ -16,6 +16,7 @@ import pytest
 from credit_risk.modeling import tracking
 from credit_risk.modeling.tracking import (
     BASELINE_MODEL_NAMES,
+    SELECTION_MODEL_NAMES,
     ModelRunPayload,
     TrackingDependencyError,
     TrackingError,
@@ -24,6 +25,7 @@ from credit_risk.modeling.tracking import (
     mark_tracking_run_failed,
     track_baseline_runs,
     track_candidate_runs,
+    track_selection_runs,
 )
 
 
@@ -98,6 +100,83 @@ class _FakeMlflow:
 
     def log_artifact(self, path: str, *, artifact_path: str) -> None:
         self.artifacts.append((self.active_runs[-1], Path(path), artifact_path))
+
+
+def test_tracks_one_selection_parent_and_exactly_four_children(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake = _FakeMlflow()
+    monkeypatch.setattr(tracking, "_load_mlflow", lambda: fake)
+    names = (
+        "summary.json",
+        "selection-report.md",
+        "validation_predictions.csv",
+        "bootstrap_intervals.json",
+        "manifest.json",
+        "model.joblib",
+    )
+    artifacts = tuple(tmp_path / name for name in names)
+    for artifact in artifacts:
+        artifact.write_bytes(b"evidence")
+    payloads = tuple(
+        ModelRunPayload(model_name=name, parameters={"fixed": True}, metrics={"ap": 0.5})
+        for name in SELECTION_MODEL_NAMES
+    )
+
+    result = track_selection_runs(
+        tracking_root=tmp_path / "tracking",
+        parent_parameters={"fit_count": 4},
+        parent_tags={"holdout_evaluated": "false"},
+        model_runs=payloads,
+        artifacts=artifacts,
+    )
+
+    assert result.experiment_name == "credit-risk-selection-v1"
+    assert tuple(name for name, _run_id in result.child_run_ids) == SELECTION_MODEL_NAMES
+    assert len(fake.started) == 5
+    assert [path.name for _run, path, _destination in fake.artifacts] == list(names)
+
+
+def test_selection_tracking_rejects_wrong_fit_budget_or_model_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        tracking,
+        "_load_mlflow",
+        lambda: (_ for _ in ()).throw(AssertionError("MLflow must not load")),
+    )
+    artifacts = []
+    for name in (
+        "summary.json",
+        "selection-report.md",
+        "validation_predictions.csv",
+        "bootstrap_intervals.json",
+        "manifest.json",
+        "model.pkl",
+    ):
+        path = tmp_path / name
+        path.write_bytes(b"evidence")
+        artifacts.append(path)
+    with pytest.raises(TrackingError, match="ordered model runs"):
+        track_selection_runs(
+            tracking_root=tmp_path / "tracking",
+            parent_parameters={},
+            parent_tags={},
+            model_runs=(),
+            artifacts=artifacts,
+        )
+    payloads = tuple(
+        ModelRunPayload(model_name=name, parameters={}, metrics={})
+        for name in SELECTION_MODEL_NAMES
+    )
+    with pytest.raises(TrackingError, match="allowlist mismatch"):
+        track_selection_runs(
+            tracking_root=tmp_path / "tracking",
+            parent_parameters={},
+            parent_tags={},
+            model_runs=payloads,
+            artifacts=artifacts,
+        )
 
 
 def test_tracks_one_parent_and_three_nested_children_with_allowlisted_artifacts(
