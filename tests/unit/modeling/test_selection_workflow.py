@@ -103,6 +103,9 @@ def test_selection_workflow_uses_four_fitted_doubles_and_publishes_atomically(
     assert result.manifest_path.is_file()
     assert result.validation_predictions_path.is_file()
     assert len(tracked["model_runs"]) == 4
+    assert all(
+        value is not None for run in tracked["model_runs"] for value in run.parameters.values()
+    )
     summary = json.loads(result.summary_path.read_text(encoding="utf-8"))
     assert summary["protocol"]["fit_count"] == 4
     assert summary["protocol"]["cross_validation_iteration"] is False

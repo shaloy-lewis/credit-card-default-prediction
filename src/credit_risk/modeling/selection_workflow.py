@@ -282,10 +282,12 @@ def run_model_selection(
                 model_runs=tuple(
                     ModelRunPayload(
                         model_name=result.model_id,
-                        parameters=next(
-                            model.parameters
-                            for model in config.models
-                            if model.model_id == result.model_id
+                        parameters=_tracking_parameters(
+                            next(
+                                model.parameters
+                                for model in config.models
+                                if model.model_id == result.model_id
+                            )
                         ),
                         metrics=flat_tracking_metrics(result.metrics),
                     )
@@ -399,6 +401,12 @@ def _decision_payload(decision: Any) -> dict[str, Any]:
         "models": [asdict(item) for item in decision.decisions],
         "selection_rule": "guardrails_then_ap_equivalence_then_simplicity",
     }
+
+
+def _tracking_parameters(parameters: dict[str, Any]) -> dict[str, str | int | float | bool]:
+    """Represent JSON null deterministically within MLflow's scalar parameter contract."""
+
+    return {name: "none" if value is None else value for name, value in parameters.items()}
 
 
 def _summary_payload(**values: Any) -> dict[str, Any]:
