@@ -152,7 +152,9 @@ uv run credit-risk model freeze-test
 
 This command loads neither data nor the estimator. `credit-risk model final-test`
 is intentionally disabled until a separate explicit request implements and
-authorizes the one-time sealed-test evaluation. The historical baseline and
+authorizes the one-time sealed-test evaluation. The reviewed authorization is
+now committed at `configs/modeling/final_test_v1.json`; it is explicitly marked
+not executed and not authorized. The historical baseline and
 candidate reports remain available, but their public fitting commands fail fast
 with guidance to use `model select`.
 

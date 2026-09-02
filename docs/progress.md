@@ -235,8 +235,9 @@ deferred risks. It is not a substitute for commit history or CI results.
   0.002 equivalence band, and a simplicity tie-break. The winner is never refit.
 - Identity-calibration diagnostics, bootstrap intervals, and risk bands operate
   only on stored validation predictions. The selected bundle is digest protected.
-- Final-test authorization is frozen separately after selection review; test
-  execution requires another explicit request. G2 remains open.
+- Final-test authorization was frozen separately from clean evidence commit
+  `d334b88` without loading data or the model. Test execution remains disabled,
+  requires another explicit request, and G2 remains open.
 - The official clean run at implementation commit `f7c99f2` completed four fits
   and selected `catboost_fixed` without refit. Validation average precision was
   `0.556510`, Brier score `0.133539`, and lift at 10% `3.210923`.

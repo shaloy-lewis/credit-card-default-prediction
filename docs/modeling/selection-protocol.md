@@ -82,3 +82,9 @@ The selected native CBM has SHA-256
 The aggregate summary, report, manifest, and model binary are protected by
 complete-file integrity tests. These are validation results only; the test
 partition remains sealed and G2 remains open.
+
+The reviewed `final_test_v1.json` authorization was generated from evidence
+commit `d334b88` without loading data or the model. It freezes minimum average
+precision `0.526510`, maximum Brier score `0.153539`, minimum lift at 10%
+`2.910923`, identity calibration, the three validation risk thresholds, and
+exactly 6,000 unique test accounts. Its execution flag remains false.

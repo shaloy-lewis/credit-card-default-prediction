@@ -68,3 +68,5 @@ stored predictions. The clean four-fit run selected `catboost_fixed`; its exact
 native CBM is committed under `../models/selected_v1/` with digest-protected
 lineage. The holdout remains unevaluated and G2 stays open until a
 separately authorized one-time test passes gates frozen from validation.
+The immutable authorization contract is `../configs/modeling/final_test_v1.json`;
+it freezes gates but explicitly does not authorize or execute test scoring.
