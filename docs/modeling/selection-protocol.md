@@ -1,7 +1,9 @@
 # One-pass model selection and release protocol
 
-**Protocol:** `selection_v1`  
-**Status:** frozen before validation comparison  
+**Protocol:** `selection_v1`
+
+**Status:** frozen before validation comparison
+
 **Authoritative training budget:** four fits
 
 ## Decision
