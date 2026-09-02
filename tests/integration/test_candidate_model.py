@@ -16,6 +16,7 @@ from credit_risk.modeling.contracts import (
 
 
 @pytest.mark.integration
+@pytest.mark.training
 def test_real_catboost_fold_is_deterministic_and_writes_no_files(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,

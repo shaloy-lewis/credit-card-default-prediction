@@ -3,14 +3,12 @@
 A portfolio project for monthly credit-risk early warning and
 capacity-constrained intervention prioritisation for existing cardholders.
 
-> **Current status:** Phase 1 / G1, Phase 2's governed scientific baseline,
-> and Phase 3's development-only candidate selection are complete. The frozen
-> gate selected CatBoost configuration `cb_cfg_006` for Phase 4 after two
-> byte-identical independent executions. G2 remains open for calibration,
-> uncertainty, policy selection, and holdout testing. The committed compatibility
-> CatBoost model remains
-> available for compatibility testing while modelling, registry, serving, and
-> monitoring workflows are rebuilt in staged releases.
+> **Current status:** Phase 1 / G1 and the reviewed Phase 2/3 evidence are
+> complete. A simpler authoritative release protocol is now frozen: four fixed
+> classifiers, one fit each, one shared validation split, and no tuning, repeated
+> CV, calibration fit, or winner refit. The test remains sealed and G2 remains
+> open. The committed compatibility model continues to serve the existing API
+> until a later, explicitly governed inference migration.
 
 ## Product intent
 
@@ -35,6 +33,7 @@ The approved scope and delivery evidence are documented in:
 - [Reviewed baseline report](reports/modeling/baseline_v1/baseline-report.md)
 - [Frozen candidate modelling protocol](docs/modeling/candidate-protocol.md)
 - [Reviewed candidate report](reports/modeling/candidate_v1/candidate-report.md)
+- [One-pass model selection protocol](docs/modeling/selection-protocol.md)
 
 ## Current capabilities
 
@@ -62,7 +61,10 @@ The approved scope and delivery evidence are documented in:
   150 reviewed fold fits, deterministic advancement and fallback rules,
   content-bound NumPy checkpoints, and two-run evidence verification.
 - Digest-protected Phase 3 aggregate evidence selecting the lightweight
-  `cb_cfg_006` configuration for Phase 4 from development folds only.
+  `cb_cfg_006` configuration from development folds only; this remains historical evidence.
+- A frozen one-pass comparison of logistic regression, histogram gradient
+  boosting, random forest, and fixed CatBoost, with an exact four-fit budget,
+  validation guardrails, deterministic simplicity tie-break, and no winner refit.
 
 Planned releases add calibration, capacity-based policies, the model registry,
 model-risk gates, batch/API parity, monitoring, and incident exercises.
@@ -113,73 +115,40 @@ checks the complete raw-to-split lineage against the reviewed lock.
 
 Downloaded raw data, processed outputs, quality reports, and split assignments
 remain under the Git-ignored root `data/` directory. Source and split manifests,
-governance evidence, and the reviewed lock are version controlled. The existing
-`credit-risk train` command is compatibility-only until the modelling workflow
-is migrated to these governed inputs.
+governance evidence, and the reviewed lock are version controlled. The legacy
+`credit-risk train` command and the Phase 2/3 experiment commands are retired;
+their reviewed evidence and source remain available for audit.
 
-### Run the governed scientific baselines
+### Run the governed one-pass selection
 
-Install both the `data` and `modeling` extras, then verify the sealed data
-lineage before starting an experiment:
+Install the `data` and `modeling` extras, verify the sealed lineage, and commit
+the reviewed implementation before the official run:
 
 ```bash
 uv sync --locked --extra data --extra modeling --dev
 uv run credit-risk data verify
-uv run credit-risk model baseline --allow-dirty \
-  --output-root experiment/provisional/baseline_v1
+uv run credit-risk model select
 ```
 
-`--allow-dirty` is for exploratory development only. A reviewed evidence run
-must execute from a clean implementation commit and writes its deterministic
-aggregate report under `reports/modeling/baseline_v1`. Runtime MLflow SQLite
-state, artifacts, and row-level out-of-fold predictions remain under the
-Git-ignored `experiment/` root. The command never evaluates the test partition.
-The same runtime boundary stores schema-validated logistic convergence and
-coefficient diagnostics as JSON; no fitted model pickle is logged.
+The command fits exactly four fixed models on 19,200 development rows, evaluates
+the same 4,800 validation accounts, and atomically publishes the aggregate
+evidence plus the exact winner bundle without refitting. Row-level predictions,
+bootstrap evidence, and MLflow state remain ignored under `experiment/`.
+Joblib bundles have pickle semantics and are loaded only as trusted local inputs
+after manifest and model-digest verification.
 
-The [baseline experiment protocol](docs/modeling/experiment-protocol.md)
-defines the exact feature boundary, models, metrics, tie handling, lineage, and
-failure policy. The committed [reviewed report](reports/modeling/baseline_v1/baseline-report.md)
-contains development-only evidence; it is not a holdout or promotion result.
-
-### Run the governed CatBoost candidate
-
-For a single exploratory or diagnostic execution:
+After the evidence and bundle are reviewed and committed, freeze—but do not
+execute—the one-time test authorization:
 
 ```bash
-uv run credit-risk model candidate --allow-dirty \
-  --output-root experiment/provisional/candidate_v1
+uv run credit-risk model freeze-test
 ```
 
-Each completed fold is atomically checkpointed below its ignored tracking root.
-Checkpoints are non-pickle NumPy archives and are reused only after their code,
-configuration, data lineage, exact fold population, labels, probabilities, and
-diagnostics pass validation. Invalid or interrupted files are quarantined and
-that fold is refitted. CatBoost uses four threads for one fit at a time.
-
-Official aggregate evidence must be generated from a clean implementation
-commit through the independent two-run gate:
-
-```bash
-uv run credit-risk data verify
-uv run credit-risk model candidate-evidence
-```
-
-`candidate-evidence` uses separate checkpoint and MLflow roots for its two
-executions, requires byte-identical summary, report, OOF, and diagnostic
-artifacts, then promotes the primary aggregate summary and report. It never
-launches a third fit pass. Runtime checkpoints, MLflow state, predictions, and
-diagnostics remain under `experiment/` and are not committed.
-The single-run command is rejected if pointed at the official Phase 3 report
-directory, so this reproducibility gate cannot be bypassed accidentally.
-
-The committed [candidate report](reports/modeling/candidate_v1/candidate-report.md)
-records the reviewed outcome. `cb_cfg_006` passed every advancement condition
-with development-CV average precision `0.556419`, Brier score `0.134101`, and
-lift at 10% `3.202110`. It uses depth 4, 300 trees, learning rate `0.03`, L2
-regularisation `12`, random strength `0`, and bagging temperature `0`. Phase 4
-reuses only this selected configuration; it does not repeat the eight-variant
-search. The estimator is not connected to the compatibility `/predict` endpoint.
+This command loads neither data nor the estimator. `credit-risk model final-test`
+is intentionally disabled until a separate explicit request implements and
+authorizes the one-time sealed-test evaluation. The historical baseline and
+candidate reports remain available, but their public fitting commands fail fast
+with guidance to use `model select`.
 
 ### Check the local inference artifacts
 

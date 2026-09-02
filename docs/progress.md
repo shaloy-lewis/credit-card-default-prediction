@@ -220,3 +220,20 @@ deferred risks. It is not a substitute for commit history or CI results.
   decision remain Week 6 work.
 - The selected estimator is not connected to the compatibility `/predict`
   endpoint and no fitted CatBoost artifact is committed by this checkpoint.
+
+## Simplified release workflow — protocol frozen
+
+**Started:** 2026-09-02
+
+- Historical Phase 2/3 evidence remains immutable, but the expensive baseline,
+  candidate, candidate-evidence, and legacy train commands are retired.
+- The authoritative selection budget is four fits: one fixed logistic, random
+  forest, histogram gradient boosting, and historical `cb_cfg_006` CatBoost.
+- Existing `cv_fold_r0` assignments create 19,200 training and 4,800 validation
+  rows. The 6,000-row test partition remains sealed.
+- Selection uses validation average precision, Brier/lift guardrails, a fixed
+  0.002 equivalence band, and a simplicity tie-break. The winner is never refit.
+- Identity-calibration diagnostics, bootstrap intervals, and risk bands operate
+  only on stored validation predictions. The selected bundle is digest protected.
+- Final-test authorization is frozen separately after selection review; test
+  execution requires another explicit request. G2 remains open.

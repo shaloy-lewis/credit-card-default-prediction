@@ -1,341 +1,108 @@
-"""Command-line tests for the governed baseline workflow."""
+"""CLI gates for the authoritative one-pass modelling workflow."""
 
 from __future__ import annotations
 
-import builtins
 from pathlib import Path
 from typing import Any
 
 import pytest
-from click import unstyle
 from typer.testing import CliRunner
 
-from credit_risk.modeling import candidate_evidence, candidate_workflow, cli, tracking, workflow
-from credit_risk.modeling.candidate_evidence import CandidateEvidenceError, CandidateEvidenceResult
-from credit_risk.modeling.candidate_workflow import (
-    CandidateExperimentResult,
-    CandidateWorkflowError,
+from credit_risk.modeling import cli, selection_workflow
+from credit_risk.modeling.selection_workflow import (
+    SelectionWorkflowError,
+    SelectionWorkflowResult,
 )
-from credit_risk.modeling.tracking import TrackingDependencyError, TrackingRunResult
-from credit_risk.modeling.workflow import BaselineExperimentResult, BaselineWorkflowError
+from credit_risk.modeling.tracking import TrackingRunResult
 
 runner = CliRunner()
 
 
-def test_baseline_command_uses_defaults_and_reports_operational_locations(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("command", ("baseline", "candidate", "candidate-evidence"))
+def test_historical_commands_fail_before_importing_training(command: str) -> None:
+    result = runner.invoke(cli.model_app, [command])
+
+    assert result.exit_code == 1
+    assert "historical and cannot be rerun" in result.output
+    assert "credit-risk model select" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_select_forwards_defaults_and_reports_governance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     captured: dict[str, Any] = {}
 
-    def fake_run(**kwargs: Any) -> BaselineExperimentResult:
+    def fake_run(**kwargs: Any) -> SelectionWorkflowResult:
         captured.update(kwargs)
         return _result(tmp_path)
 
-    monkeypatch.setattr(workflow, "run_baseline_experiment", fake_run)
-    result = runner.invoke(cli.model_app, ["baseline"])
+    monkeypatch.setattr(selection_workflow, "run_model_selection", fake_run)
+    result = runner.invoke(cli.model_app, ["select"])
 
     assert result.exit_code == 0
     assert captured == {
         "data_root": Path("data"),
-        "config_path": Path("configs/modeling/baseline_v1.json"),
+        "config_path": Path("configs/modeling/selection_v1.json"),
         "tracking_root": Path("experiment/mlflow"),
-        "output_root": Path("reports/modeling/baseline_v1"),
-        "allow_dirty": False,
+        "output_root": Path("reports/modeling/selection_v1"),
+        "bundle_root": Path("models/selected_v1"),
     }
-    assert "Baseline experiment passed" in result.stdout
-    assert "parent-run" in result.stdout
-    assert "summary_sha256=" + "a" * 64 in result.stdout
-    assert "Runtime OOF evidence:" in result.stdout
-    assert "sqlite:///experiment/mlflow/mlflow.db" in result.stdout
+    assert "fit_count=4" in result.output
+    assert "winner_refitted=false" in result.output
 
 
-def test_baseline_command_forwards_custom_roots_and_dirty_override(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: dict[str, Any] = {}
-
-    def fake_run(**kwargs: Any) -> BaselineExperimentResult:
-        captured.update(kwargs)
-        return _result(tmp_path)
-
-    monkeypatch.setattr(workflow, "run_baseline_experiment", fake_run)
-    result = runner.invoke(
-        cli.model_app,
-        [
-            "baseline",
-            "--data-root",
-            "custom-data",
-            "--config",
-            "custom-config.json",
-            "--tracking-root",
-            "custom-tracking",
-            "--output-root",
-            "custom-output",
-            "--allow-dirty",
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert captured["data_root"] == Path("custom-data")
-    assert captured["config_path"] == Path("custom-config.json")
-    assert captured["tracking_root"] == Path("custom-tracking")
-    assert captured["output_root"] == Path("custom-output")
-    assert captured["allow_dirty"] is True
-
-
-def test_baseline_command_returns_actionable_workflow_failure_without_traceback(
+def test_select_returns_actionable_failure_without_traceback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        workflow,
-        "run_baseline_experiment",
+        selection_workflow,
+        "run_model_selection",
         lambda **_kwargs: (_ for _ in ()).throw(
-            BaselineWorkflowError("Git worktree is dirty; pass --allow-dirty")
+            SelectionWorkflowError("official selection requires a clean worktree")
         ),
     )
-    result = runner.invoke(cli.model_app, ["baseline"])
+    result = runner.invoke(cli.model_app, ["select"])
 
     assert result.exit_code == 1
-    assert "Model baseline failed: Git worktree is dirty" in result.output
+    assert "clean worktree" in result.output
     assert "Traceback" not in result.output
 
 
-@pytest.mark.parametrize(
-    ("missing_name", "expected"),
-    (
-        ("pandera", "'data' extra"),
-        ("mlflow", "'modeling' extra"),
-    ),
-)
-def test_baseline_command_explains_missing_optional_extras(
-    missing_name: str,
-    expected: str,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    real_import = builtins.__import__
-
-    def missing_import(
-        name: str,
-        globals: dict[str, object] | None = None,
-        locals: dict[str, object] | None = None,
-        fromlist: tuple[str, ...] = (),
-        level: int = 0,
-    ) -> object:
-        if name == "credit_risk.modeling.workflow":
-            raise ModuleNotFoundError(
-                f"No module named {missing_name!r}",
-                name=missing_name,
-            )
-        return real_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", missing_import)
-    result = runner.invoke(cli.model_app, ["baseline"])
+def test_final_test_remains_unimplemented_and_sealed() -> None:
+    result = runner.invoke(cli.model_app, ["final-test"])
 
     assert result.exit_code == 1
-    assert expected in result.output
-    assert "Traceback" not in result.output
+    assert "separate explicit request" in result.output
+    assert "sealed test remains untouched" in result.output
 
 
-def test_modeling_preflight_reports_missing_mlflow_before_workflow_import(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        tracking,
-        "ensure_mlflow_available",
-        lambda: (_ for _ in ()).throw(
-            TrackingDependencyError(
-                "MLflow dependency 'mlflow' is unavailable; "
-                "install the project with the 'modeling' extra."
-            )
-        ),
-    )
-    result = runner.invoke(cli.model_app, ["baseline"])
-
-    assert result.exit_code == 1
-    assert "install the project with the 'modeling' extra" in result.output
-    assert "Traceback" not in result.output
-
-
-def test_model_group_help_lists_the_baseline_interface() -> None:
-    result = runner.invoke(cli.model_app, ["baseline", "--help"], color=False)
-    output = unstyle(result.stdout)
+def test_select_help_exposes_release_destinations() -> None:
+    result = runner.invoke(cli.model_app, ["select", "--help"])
 
     assert result.exit_code == 0
-    assert "--data-root" in output
-    assert "--tracking-root" in output
-    assert "--output-root" in output
-    assert "--allow-dirty" in output
+    assert "--bundle-root" in result.output
+    assert "--output-root" in result.output
+    assert "--tracking-root" in result.output
 
 
-def test_candidate_command_uses_defaults_and_reports_the_decision(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: dict[str, Any] = {}
-
-    def fake_run(**kwargs: Any) -> CandidateExperimentResult:
-        captured.update(kwargs)
-        return _candidate_result(tmp_path)
-
-    monkeypatch.setattr(candidate_workflow, "run_candidate_experiment", fake_run)
-    result = runner.invoke(cli.model_app, ["candidate"])
-
-    assert result.exit_code == 0
-    progress_callback = captured.pop("progress_callback")
-    assert callable(progress_callback)
-    assert captured == {
-        "data_root": Path("data"),
-        "config_path": Path("configs/modeling/candidate_v1.json"),
-        "tracking_root": Path("experiment/mlflow"),
-        "output_root": Path("experiment/provisional/candidate_v1"),
-        "allow_dirty": False,
-    }
-    assert "Candidate experiment passed" in result.stdout
-    assert "selected_model_id=catboost_v1" in result.stdout
-    assert "selected_configuration_id=cb_cfg_004" in result.stdout
-    assert "catboost_advances=true" in result.stdout
-    assert "Fold diagnostics:" in result.stdout
-
-
-def test_candidate_evidence_command_runs_two_execution_gate(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: dict[str, Any] = {}
-
-    def fake_run(**kwargs: Any) -> CandidateEvidenceResult:
-        captured.update(kwargs)
-        candidate = _candidate_result(tmp_path)
-        return CandidateEvidenceResult(
-            summary_path=tmp_path / "summary.json",
-            report_path=tmp_path / "candidate-report.md",
-            summary_sha256="a" * 64,
-            report_sha256="b" * 64,
-            oof_predictions_sha256="c" * 64,
-            fold_diagnostics_sha256="d" * 64,
-            selected_model_id="catboost_v1",
-            selected_configuration_id="cb_cfg_004",
-            catboost_advances=True,
-            primary=candidate,
-            verification=candidate,
-        )
-
-    monkeypatch.setattr(candidate_evidence, "run_candidate_evidence", fake_run)
-    result = runner.invoke(cli.model_app, ["candidate-evidence"])
-
-    assert result.exit_code == 0
-    progress_callback = captured.pop("progress_callback")
-    assert callable(progress_callback)
-    assert captured == {
-        "data_root": Path("data"),
-        "config_path": Path("configs/modeling/candidate_v1.json"),
-        "tracking_root": Path("experiment/mlflow"),
-        "verification_root": Path("experiment/phase3-verification"),
-        "output_root": Path("reports/modeling/candidate_v1"),
-    }
-    assert "independent_executions=2" in result.stdout
-    assert "Official summary:" in result.stdout
-    assert "Verification MLflow tracking URI:" in result.stdout
-
-
-def test_candidate_command_returns_actionable_failure_without_traceback(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        candidate_workflow,
-        "run_candidate_experiment",
-        lambda **_kwargs: (_ for _ in ()).throw(CandidateWorkflowError("invalid lineage")),
-    )
-
-    result = runner.invoke(cli.model_app, ["candidate"])
-
-    assert result.exit_code == 1
-    assert "Model candidate failed: invalid lineage" in result.output
-    assert "Traceback" not in result.output
-
-
-def test_candidate_evidence_returns_actionable_failure_without_traceback(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        candidate_evidence,
-        "run_candidate_evidence",
-        lambda **_kwargs: (_ for _ in ()).throw(CandidateEvidenceError("not reproducible")),
-    )
-
-    result = runner.invoke(cli.model_app, ["candidate-evidence"])
-
-    assert result.exit_code == 1
-    assert "Model candidate failed: not reproducible" in result.output
-    assert "Traceback" not in result.output
-
-
-def test_candidate_help_lists_the_governed_interface() -> None:
-    result = runner.invoke(cli.model_app, ["candidate", "--help"], color=False)
-    output = unstyle(result.stdout)
-
-    assert result.exit_code == 0
-    assert "--data-root" in output
-    assert "--config" in output
-    assert "--tracking-root" in output
-    assert "--output-root" in output
-    assert "--allow-dirty" in output
-
-
-def test_candidate_evidence_help_lists_independent_roots() -> None:
-    result = runner.invoke(cli.model_app, ["candidate-evidence", "--help"], color=False)
-    output = unstyle(result.stdout)
-
-    assert result.exit_code == 0
-    assert "--data-root" in output
-    assert "--tracking-root" in output
-    assert "--verification-root" in output
-    assert "--output-root" in output
-    assert "--allow-dirty" not in output
-
-
-def _result(tmp_path: Path) -> BaselineExperimentResult:
-    return BaselineExperimentResult(
+def _result(tmp_path: Path) -> SelectionWorkflowResult:
+    return SelectionWorkflowResult(
+        selected_model_id="logistic_l2",
         summary_path=tmp_path / "summary.json",
-        report_path=tmp_path / "baseline-report.md",
-        oof_predictions_path=tmp_path / "oof_predictions.csv",
-        logistic_diagnostics_path=tmp_path / "logistic_fold_diagnostics.json",
+        report_path=tmp_path / "selection-report.md",
+        manifest_path=tmp_path / "manifest.json",
+        model_path=tmp_path / "model.joblib",
+        validation_predictions_path=tmp_path / "validation_predictions.csv",
+        bootstrap_path=tmp_path / "bootstrap_intervals.json",
         summary_sha256="a" * 64,
         report_sha256="b" * 64,
-        oof_predictions_sha256="c" * 64,
-        logistic_diagnostics_sha256="d" * 64,
+        manifest_sha256="c" * 64,
+        model_sha256="d" * 64,
         tracking=TrackingRunResult(
             tracking_uri="sqlite:///experiment/mlflow/mlflow.db",
-            experiment_name="credit-risk-baseline-v1",
-            parent_run_id="parent-run",
-            child_run_ids=(
-                ("fold_prevalence", "child-1"),
-                ("repayment_burden_rule", "child-2"),
-                ("logistic_l2", "child-3"),
-            ),
-        ),
-    )
-
-
-def _candidate_result(tmp_path: Path) -> CandidateExperimentResult:
-    return CandidateExperimentResult(
-        summary_path=tmp_path / "summary.json",
-        report_path=tmp_path / "candidate-report.md",
-        oof_predictions_path=tmp_path / "oof_predictions.csv",
-        fold_diagnostics_path=tmp_path / "fold_diagnostics.json",
-        summary_sha256="a" * 64,
-        report_sha256="b" * 64,
-        oof_predictions_sha256="c" * 64,
-        fold_diagnostics_sha256="d" * 64,
-        selected_model_id="catboost_v1",
-        selected_configuration_id="cb_cfg_004",
-        catboost_advances=True,
-        tracking=TrackingRunResult(
-            tracking_uri="sqlite:///experiment/mlflow/mlflow.db",
-            experiment_name="credit-risk-candidate-v1",
-            parent_run_id="parent-run",
-            child_run_ids=(("operational_full__cb_cfg_004", "child"),),
+            experiment_name="credit-risk-selection-v1",
+            parent_run_id="parent",
+            child_run_ids=(("logistic_l2", "child"),),
         ),
     )
