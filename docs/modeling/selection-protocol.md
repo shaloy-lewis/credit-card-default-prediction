@@ -67,3 +67,18 @@ delivery. A separate explicit request is required to implement and execute the
 single 6,000-account test evaluation. G2 remains open until that evaluation
 passes; no force, retraining, retuning, refitting, or reevaluation path is
 permitted.
+
+## Reviewed selection outcome
+
+The official run executed from clean implementation commit `f7c99f2` and
+completed exactly four fits. `catboost_fixed` was the sole model within 0.002
+average precision of the best eligible result and was selected without refit.
+Its validation metrics are average precision `0.556510`, Brier score `0.133539`,
+and lift at 10% `3.210923`. Histogram gradient boosting was eligible with average
+precision `0.554306`; random forest failed the lift guardrail.
+
+The selected native CBM has SHA-256
+`844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c`.
+The aggregate summary, report, manifest, and model binary are protected by
+complete-file integrity tests. These are validation results only; the test
+partition remains sealed and G2 remains open.

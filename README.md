@@ -4,9 +4,10 @@ A portfolio project for monthly credit-risk early warning and
 capacity-constrained intervention prioritisation for existing cardholders.
 
 > **Current status:** Phase 1 / G1 and the reviewed Phase 2/3 evidence are
-> complete. A simpler authoritative release protocol is now frozen: four fixed
+> complete. A simpler authoritative release protocol compared four fixed
 > classifiers, one fit each, one shared validation split, and no tuning, repeated
-> CV, calibration fit, or winner refit. The test remains sealed and G2 remains
+> CV, calibration fit, or winner refit. It selected the exact fitted
+> `catboost_fixed` model. The test remains sealed and G2 remains
 > open. The committed compatibility model continues to serve the existing API
 > until a later, explicitly governed inference migration.
 
@@ -34,6 +35,7 @@ The approved scope and delivery evidence are documented in:
 - [Frozen candidate modelling protocol](docs/modeling/candidate-protocol.md)
 - [Reviewed candidate report](reports/modeling/candidate_v1/candidate-report.md)
 - [One-pass model selection protocol](docs/modeling/selection-protocol.md)
+- [Reviewed one-pass selection report](reports/modeling/selection_v1/selection-report.md)
 
 ## Current capabilities
 
@@ -65,6 +67,8 @@ The approved scope and delivery evidence are documented in:
 - A frozen one-pass comparison of logistic regression, histogram gradient
   boosting, random forest, and fixed CatBoost, with an exact four-fit budget,
   validation guardrails, deterministic simplicity tie-break, and no winner refit.
+- A checksum-protected native CatBoost winner bundle tied to clean implementation
+  commit `f7c99f2` and reviewed validation evidence; it is not yet connected to the API.
 
 Planned releases add calibration, capacity-based policies, the model registry,
 model-risk gates, batch/API parity, monitoring, and incident exercises.
@@ -130,12 +134,14 @@ uv run credit-risk data verify
 uv run credit-risk model select
 ```
 
-The command fits exactly four fixed models on 19,200 development rows, evaluates
+The reviewed run fitted exactly four fixed models on 19,200 development rows, evaluated
 the same 4,800 validation accounts, and atomically publishes the aggregate
 evidence plus the exact winner bundle without refitting. Row-level predictions,
 bootstrap evidence, and MLflow state remain ignored under `experiment/`.
-Joblib bundles have pickle semantics and are loaded only as trusted local inputs
-after manifest and model-digest verification.
+`catboost_fixed` won with validation average precision `0.556510`, Brier score
+`0.133539`, and lift at 10% `3.210923`. The native bundle is protected by its
+manifest and model digests. If a future selection produces joblib, it has pickle
+semantics and must be loaded only as a trusted local input after digest verification.
 
 After the evidence and bundle are reviewed and committed, freeze—but do not
 execute—the one-time test authorization:

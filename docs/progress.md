@@ -221,9 +221,9 @@ deferred risks. It is not a substitute for commit history or CI results.
 - The selected estimator is not connected to the compatibility `/predict`
   endpoint and no fitted CatBoost artifact is committed by this checkpoint.
 
-## Simplified release workflow — protocol frozen
+## Simplified release workflow — selection complete
 
-**Started:** 2026-09-02
+**Completed:** 2026-09-02
 
 - Historical Phase 2/3 evidence remains immutable, but the expensive baseline,
   candidate, candidate-evidence, and legacy train commands are retired.
@@ -237,3 +237,11 @@ deferred risks. It is not a substitute for commit history or CI results.
   only on stored validation predictions. The selected bundle is digest protected.
 - Final-test authorization is frozen separately after selection review; test
   execution requires another explicit request. G2 remains open.
+- The official clean run at implementation commit `f7c99f2` completed four fits
+  and selected `catboost_fixed` without refit. Validation average precision was
+  `0.556510`, Brier score `0.133539`, and lift at 10% `3.210923`.
+- Reviewed file digests are: summary `8c11b1d4...efbd7`, report
+  `16c8748e...cee1`, bundle manifest `df5ce6ce...cd88`, and native CBM
+  `844ec1c3...d88c`. Runtime validation predictions and bootstrap evidence remain ignored.
+- The selected model is not connected to `/predict`; the existing compatibility
+  probability `0.44088` remains the serving contract until a later migration.

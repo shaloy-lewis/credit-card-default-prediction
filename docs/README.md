@@ -58,9 +58,13 @@ as an executable release process, while its evidence remains immutable.
 
 - [Frozen one-pass selection protocol](modeling/selection-protocol.md)
 - Machine-readable contract: `../configs/modeling/selection_v1.json`
+- [Reviewed aggregate selection report](../reports/modeling/selection_v1/selection-report.md)
+- [Reviewed machine-readable selection summary](../reports/modeling/selection_v1/summary.json)
 
 The authoritative workflow fits four fixed binary classifiers exactly once on
 the frozen training slice, selects on one shared validation slice, and bundles
 the exact winner without refitting. Calibration and bootstrap diagnostics reuse
-stored predictions. The holdout remains unevaluated and G2 stays open until a
+stored predictions. The clean four-fit run selected `catboost_fixed`; its exact
+native CBM is committed under `../models/selected_v1/` with digest-protected
+lineage. The holdout remains unevaluated and G2 stays open until a
 separately authorized one-time test passes gates frozen from validation.
