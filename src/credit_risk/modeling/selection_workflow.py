@@ -13,8 +13,13 @@ from tempfile import TemporaryDirectory
 from typing import Any, Literal, cast
 
 import numpy as np
+import pandas as pd
 
-from credit_risk.modeling.dataset import ModelingDataError, load_governed_development_data
+from credit_risk.modeling.dataset import (
+    GovernedDevelopmentData,
+    ModelingDataError,
+    load_governed_development_data,
+)
 from credit_risk.modeling.metrics import MetricValidationError, evaluate_predictions
 from credit_risk.modeling.selected_bundle import (
     BundleManifest,
@@ -36,6 +41,7 @@ from credit_risk.modeling.selection_analysis import (
 )
 from credit_risk.modeling.selection_contracts import (
     DEFAULT_SELECTION_CONFIG_PATH,
+    SelectionConfig,
     SelectionContractError,
     load_selection_config,
     selection_config_sha256,
@@ -85,6 +91,39 @@ class SelectionWorkflowResult:
     tracking: TrackingRunResult
 
 
+@dataclass(frozen=True, slots=True)
+class SelectionDataSplit:
+    """The single reviewed train/validation partition used for selection."""
+
+    X_train: pd.DataFrame
+    y_train: pd.Series
+    X_validation: pd.DataFrame
+    y_validation: pd.Series
+
+
+def build_selection_split(
+    governed: GovernedDevelopmentData,
+    config: SelectionConfig,
+) -> SelectionDataSplit:
+    """Build and validate the frozen fold-zero split without accessing holdout rows."""
+
+    fold_zero = governed.assignments["cv_fold_r0"].eq(0)
+    split = SelectionDataSplit(
+        X_train=governed.X.loc[~fold_zero].copy(),
+        y_train=governed.y.loc[~fold_zero].copy(),
+        X_validation=governed.X.loc[fold_zero].copy(),
+        y_validation=governed.y.loc[fold_zero].copy(),
+    )
+    _validate_selection_split(
+        split.X_train.index.to_numpy(),
+        split.y_train.to_numpy(),
+        split.X_validation.index.to_numpy(),
+        split.y_validation.to_numpy(),
+        config,
+    )
+    return split
+
+
 def run_model_selection(
     *,
     data_root: str | Path = DEFAULT_DATA_ROOT,
@@ -126,18 +165,11 @@ def run_model_selection(
             manifest_path=config.data.dataset_manifest_path,
             split_config_path=config.data.split_config_path,
         )
-        fold_zero = governed.assignments["cv_fold_r0"].eq(0)
-        X_train = governed.X.loc[~fold_zero].copy()
-        y_train = governed.y.loc[~fold_zero].copy()
-        X_validation = governed.X.loc[fold_zero].copy()
-        y_validation = governed.y.loc[fold_zero].copy()
-        _validate_selection_split(
-            X_train.index.to_numpy(),
-            y_train.to_numpy(),
-            X_validation.index.to_numpy(),
-            y_validation.to_numpy(),
-            config,
-        )
+        split = build_selection_split(governed, config)
+        X_train = split.X_train
+        y_train = split.y_train
+        X_validation = split.X_validation
+        y_validation = split.y_validation
 
         fitted_models = fit_one_pass_models(X_train, y_train, config)
         result_items: list[ValidationResult] = []

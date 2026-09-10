@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from credit_risk.modeling import cli, selection_workflow
@@ -79,11 +80,14 @@ def test_final_test_remains_unimplemented_and_sealed() -> None:
 
 def test_select_help_exposes_release_destinations() -> None:
     result = runner.invoke(cli.model_app, ["select", "--help"])
+    command = get_command(cli.model_app)
+    select_command = command.commands["select"]  # type: ignore[attr-defined]
+    option_names = {
+        option for parameter in select_command.params for option in getattr(parameter, "opts", ())
+    }
 
     assert result.exit_code == 0
-    assert "--bundle-root" in result.output
-    assert "--output-root" in result.output
-    assert "--tracking-root" in result.output
+    assert {"--bundle-root", "--output-root", "--tracking-root"} <= option_names
 
 
 def _result(tmp_path: Path) -> SelectionWorkflowResult:
