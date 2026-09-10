@@ -128,6 +128,107 @@ def test_preflight_rejects_approval_drift_before_data_or_scoring(
     assert not Path(paths["output_root"]).exists()
 
 
+def test_preflight_rejects_workflow_drift_before_scoring(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model, paths = _arrange(tmp_path, monkeypatch, passing=True)
+    approval_path = Path(paths["approval_path"])
+    approval = json.loads(approval_path.read_text(encoding="utf-8"))
+    approval["workflow_sha256"] = "0" * 64
+    _write_json(approval_path, approval)
+
+    with pytest.raises(FinalTestWorkflowError, match="workflow source"):
+        run_final_test(**paths)
+
+    assert model.predict_calls == 0
+
+
+def test_preflight_rejects_changed_selection_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model, paths = _arrange(tmp_path, monkeypatch, passing=True)
+    report = tmp_path / "reports" / "modeling" / "selection_v1" / "selection-report.md"
+    report.write_text("changed after approval\n", encoding="utf-8")
+
+    with pytest.raises(FinalTestWorkflowError, match="Selection evidence differs"):
+        run_final_test(**paths)
+
+    assert model.predict_calls == 0
+
+
+@pytest.mark.parametrize("dirty", (True, False))
+def test_git_preflight_fails_before_data_access(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    dirty: bool,
+) -> None:
+    accessed = False
+
+    def fail_if_accessed(*_args: Any, **_kwargs: Any) -> None:
+        nonlocal accessed
+        accessed = True
+        raise AssertionError("data must remain closed")
+
+    monkeypatch.setattr(workflow, "verify_dataset", fail_if_accessed)
+    monkeypatch.setattr(
+        workflow,
+        "collect_git_evidence",
+        lambda _path: GitEvidence("a" * 40, dirty, "b" * 64, None if not dirty else tmp_path),
+    )
+
+    expected = "clean committed worktree" if dirty else "repository root"
+    with pytest.raises(FinalTestWorkflowError, match=expected):
+        run_final_test(
+            authorization_path=tmp_path / "authorization.json",
+            approval_path=tmp_path / "approval.json",
+        )
+
+    assert accessed is False
+
+
+def test_prediction_coverage_failure_is_permanent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model, paths = _arrange(tmp_path, monkeypatch, passing=True)
+    model.probabilities = model.probabilities[:-1]
+
+    with pytest.raises(FinalTestWorkflowError, match="one score per test account"):
+        run_final_test(**paths)
+
+    assert model.fit_calls == 0
+    assert model.predict_calls == 1
+    assert (Path(paths["output_root"]) / workflow.STARTED_FILENAME).is_file()
+
+
+def test_helpers_reject_lineage_drift_duplicate_predictions_and_unsafe_paths(
+    tmp_path: Path,
+) -> None:
+    selection = {"reproducibility": {"data_lineage": {"source_sha256": "a" * 64}}}
+    with pytest.raises(FinalTestWorkflowError, match="Verified data lineage changed"):
+        workflow._verify_lineage(
+            selection,
+            SimpleNamespace(
+                source_sha256="b" * 64,
+                dataset_manifest_sha256="c" * 64,
+                canonical_sha256="d" * 64,
+                quality_report_sha256="e" * 64,
+                split_config_sha256="f" * 64,
+                assignment_sha256="g" * 64,
+                split_manifest_sha256="h" * 64,
+            ),
+        )
+    with pytest.raises(FinalTestWorkflowError, match="6,000 unique accounts"):
+        workflow._write_predictions(
+            tmp_path / "predictions.csv",
+            np.ones(6000, dtype="int64"),
+            np.zeros(6000, dtype="int8"),
+            np.full(6000, 0.2),
+            np.full(6000, "standard"),
+        )
+    with pytest.raises(FinalTestWorkflowError, match="inside the repository"):
+        workflow._safe_destination(tmp_path / "repo", tmp_path / "outside", "test output")
+
+
 @pytest.mark.parametrize(
     ("probability", "expected"),
     ((0.19, "standard"), (0.2, "elevated"), (0.5, "high"), (0.8, "critical")),
@@ -137,6 +238,24 @@ def test_final_test_risk_band_boundaries(
     expected: str,
 ) -> None:
     assert workflow.risk_band(probability, {"q80": 0.2, "q90": 0.5, "q95": 0.8}) == expected
+
+
+@pytest.mark.parametrize(
+    ("probability", "thresholds", "message"),
+    (
+        (float("nan"), {"q80": 0.2, "q90": 0.5, "q95": 0.8}, "Probability"),
+        (1.1, {"q80": 0.2, "q90": 0.5, "q95": 0.8}, "Probability"),
+        (0.5, {"q80": 0.2, "q90": 0.5}, "q80, q90, and q95"),
+        (0.5, {"q80": 0.6, "q90": 0.5, "q95": 0.8}, "bounded, and ordered"),
+    ),
+)
+def test_risk_policy_fails_closed(
+    probability: float,
+    thresholds: dict[str, float],
+    message: str,
+) -> None:
+    with pytest.raises(workflow.RiskPolicyError, match=message):
+        workflow.risk_band(probability, thresholds)
 
 
 def _arrange(

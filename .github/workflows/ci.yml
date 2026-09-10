@@ -57,6 +57,7 @@ jobs:
         run: >-
           uv run pytest tests/unit/modeling/test_selection_workflow.py
           tests/unit/modeling/test_final_test.py
+          tests/unit/modeling/test_final_test_workflow.py
           tests/unit/modeling/test_selection_contracts.py
           tests/unit/modeling/test_selection_analysis.py
           tests/unit/modeling/test_selection_models.py
@@ -69,6 +70,8 @@ jobs:
           --cov=credit_risk.modeling.selected_bundle
           --cov=credit_risk.modeling.selection_workflow
           --cov=credit_risk.modeling.final_test
+          --cov=credit_risk.modeling.final_test_workflow
+          --cov=credit_risk.modeling.risk_policy
           --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
