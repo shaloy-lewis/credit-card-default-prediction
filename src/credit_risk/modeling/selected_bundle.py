@@ -107,14 +107,26 @@ def load_selected_bundle(
     bundle_root: str | Path,
     *,
     trusted: bool = False,
+    expected_manifest_sha256: str | None = None,
 ) -> tuple[BundleManifest, FittedSelectionModel]:
     """Load a digest-verified bundle; joblib requires explicit trust acknowledgement."""
 
     root = Path(bundle_root)
     try:
-        manifest = BundleManifest.model_validate_json((root / "manifest.json").read_bytes())
+        manifest_bytes = (root / "manifest.json").read_bytes()
     except OSError as error:
         raise SelectedBundleError(f"Unable to read selected bundle manifest: {error}") from error
+    observed_manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    if (
+        expected_manifest_sha256 is not None
+        and observed_manifest_sha256 != expected_manifest_sha256
+    ):
+        raise SelectedBundleError(
+            "Selected bundle manifest digest mismatch: "
+            f"expected={expected_manifest_sha256}, observed={observed_manifest_sha256}"
+        )
+    try:
+        manifest = BundleManifest.model_validate_json(manifest_bytes)
     except ValidationError as error:
         raise SelectedBundleError(f"Invalid selected bundle manifest: {error}") from error
     if manifest.feature_order != PREDICTOR_COLUMNS or manifest.class_order != (0, 1):

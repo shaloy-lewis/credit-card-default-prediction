@@ -26,7 +26,7 @@
 | 2: Reproducible data | 10 h | Official download/checksum; immutable raw layer; schema and quality checks; data card; feature-availability matrix; deterministic folds | A clean checkout reproduces the expected data and rejects corrupted fixtures | Lineage, contracts, and leakage awareness |
 | 3: Historical baseline evidence | 10 h | Reviewed repeated-CV baseline and MLflow evidence retained as an immutable scientific record | Evidence records data hash, code, configuration, folds, metrics, and artifacts; public rerun is retired | Scientific discipline and auditability |
 | 4: Historical candidate evidence | 10 h | Reviewed CatBoost search and ablations retained as immutable evidence; no routine rerun | Search outcome remains auditable but is superseded as the executable release workflow | Transparent protocol evolution |
-| 5: Four-fit governed selection | 10 h | One fixed fit each for logistic, histogram boosting, random forest, and CatBoost; validation selection; identity calibration; bundle and frozen test gates | Exactly four fits, no tuning/CV/refit, sealed test, checksum-protected exact winner | Efficient model governance and controlled release |
+| 5: Four-fit governed selection | 10 h | One fixed fit each for logistic, histogram boosting, random forest, and CatBoost; validation selection; identity calibration; bundle; separately authorized one-time test | Exactly four fits, no tuning/CV/refit; one prediction-only test pass; checksum-protected winner and evidence | Efficient model governance and controlled release |
 | 6: Governance and explanation | 10 h | Correct SHAP feature mapping; additivity tests; reason categories; demographic ablation; fairness report; model card; risk register | Explanations are dimensionally correct and feature use is governed | Responsible AI and model-risk ownership |
 | 7: Batch and API inference | 10 h | Versioned model bundle; idempotent monthly scorer; `/v1` API; validated contracts; model/trace metadata; structured safe logs | Offline, batch, and API probabilities and policies agree within tolerance | Production inference and parity |
 | 8: Registry, CI, and rollback | 10 h | MLflow registry; candidate/champion workflow; promotion checklist; unit/integration/contract/model tests; GitHub Actions; image scan | A model can be registered, promoted, deployed locally, and rolled back without replacing files by hand | Controlled software and model delivery |
@@ -42,6 +42,7 @@
 - Reproducible data and split protocol.
 - Fixed four-model comparison and the exact serialized validation winner.
 - Identity-calibration diagnostics, prediction-only uncertainty, capacity metrics, and a documented selection rule.
+- One authorized prediction-only test evaluation with frozen gates, durable receipts, and no rerun path.
 - No unsupported temporal, causal, India-specific, or compliance claim.
 
 This release is the minimum scientifically credible senior-data-science story.

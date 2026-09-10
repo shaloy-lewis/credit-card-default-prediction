@@ -85,8 +85,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Plant excluded training-data sentinel
-        run: echo "must not ship" > artifacts/raw.csv
+      - name: Plant excluded model sentinel
+        run: echo "must not ship" > models/selected_v1/unapproved.bin
 
       - name: Build container
         run: docker build --tag credit-risk-api:ci .
@@ -158,11 +158,19 @@ jobs:
           test "$selection_status" -eq 1
           grep --fixed-strings "install the project with the 'data' extra" <<<"$selection_output"
           ! grep --fixed-strings "Traceback" <<<"$selection_output"
+          set +e
+          final_test_output="$(docker exec credit-risk-api-ci credit-risk model final-test 2>&1)"
+          final_test_status=$?
+          set -e
+          test "$final_test_status" -eq 1
+          grep --fixed-strings "install the project with the 'data' extra" <<<"$final_test_output"
+          ! grep --fixed-strings "Traceback" <<<"$final_test_output"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert all(not Path('/app', name).exists() for name in ('data', 'experiment', 'mlruns'))"
-          docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/artifacts').iterdir()) == ['model.pkl', 'outlier_threshold.json', 'preprocessor.pkl']"
+          docker exec credit-risk-api-ci python -c "from pathlib import Path; assert not Path('/app/artifacts').exists()"
+          docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/models/selected_v1').iterdir()) == ['manifest.json', 'model.cbm']"
           curl --fail --silent http://127.0.0.1:8080/ping | python -c "import json, sys; assert json.load(sys.stdin) == {'message': 'Health check successful!'}"
           curl --fail --silent http://127.0.0.1:8080/ready | python -c "import json, sys; assert json.load(sys.stdin) == {'status': 'ready'}"
-          curl --fail --silent --request POST --header 'Content-Type: application/json' --data @tests/fixtures/prediction_request.json http://127.0.0.1:8080/predict | python -c "import json, sys; response = json.load(sys.stdin); assert abs(response['probability_of_default'] - 0.44088) <= 1e-5"
+          curl --fail --silent --request POST --header 'Content-Type: application/json' --data @tests/fixtures/prediction_request.json http://127.0.0.1:8080/predict | python -c "import json, sys; response = json.load(sys.stdin); assert abs(response['probability_of_default'] - 0.190382) <= 1e-6; assert response['risk_band'] == 'standard'; assert response['model_id'] == 'catboost_fixed'; assert response['bundle_id'] == 'selected_v1'"
 
       - name: Remove test container
         if: always()

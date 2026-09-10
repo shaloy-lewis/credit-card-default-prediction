@@ -7,9 +7,9 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > complete. A simpler authoritative release protocol compared four fixed
 > classifiers, one fit each, one shared validation split, and no tuning, repeated
 > CV, calibration fit, or winner refit. It selected the exact fitted
-> `catboost_fixed` model. The test remains sealed and G2 remains
-> open. The committed compatibility model continues to serve the existing API
-> until a later, explicitly governed inference migration.
+> `catboost_fixed` model. One separately authorized, prediction-only evaluation
+> then passed every frozen test gate, closing G2 without training or refitting.
+> The API and Streamlit demo now serve that exact digest-verified winner.
 
 ## Product intent
 
@@ -36,11 +36,12 @@ The approved scope and delivery evidence are documented in:
 - [Reviewed candidate report](reports/modeling/candidate_v1/candidate-report.md)
 - [One-pass model selection protocol](docs/modeling/selection-protocol.md)
 - [Reviewed one-pass selection report](reports/modeling/selection_v1/selection-report.md)
+- [Reviewed one-time final-test report](reports/modeling/final_test_v1/final-test-report.md)
 
 ## Current capabilities
 
-- A legacy CatBoost default-probability model and preprocessing artifacts.
-- FastAPI inference plus separate liveness and inference-readiness endpoints.
+- A checksum-protected native CatBoost release bundle selected without refitting.
+- FastAPI inference plus separate liveness and selected-bundle readiness endpoints.
 - A local Streamlit demonstration.
 - A reproducible Python 3.12 environment managed through `pyproject.toml` and
   `uv.lock`.
@@ -48,8 +49,8 @@ The approved scope and delivery evidence are documented in:
   validation, deterministic quality evidence, and content-addressed quarantine.
 - A sealed 80/20 development/test holdout plus 5-fold × 3-repeat development
   cross-validation assignments tied to a reviewed lineage lock.
-- Unit and integration tests that protect the legacy transformation, artifact,
-  prediction, API-health, and CLI contracts.
+- Unit and integration tests that protect the selected-bundle, prediction,
+  API-health, CLI, and retained historical-artifact contracts.
 - Ruff, mypy, pytest, pre-commit, and GitHub Actions quality gates.
 - A non-root, locked-dependency Docker API image.
 - A versioned Week 3 experiment protocol that keeps baseline fitting and
@@ -68,10 +69,12 @@ The approved scope and delivery evidence are documented in:
   boosting, random forest, and fixed CatBoost, with an exact four-fit budget,
   validation guardrails, deterministic simplicity tie-break, and no winner refit.
 - A checksum-protected native CatBoost winner bundle tied to clean implementation
-  commit `f7c99f2` and reviewed validation evidence; it is not yet connected to the API.
+  commit `f7c99f2` and reviewed validation evidence.
+- One immutable prediction-only evaluation of exactly 6,000 test accounts. All
+  frozen gates passed, G2 closed, and the reviewed release bundle now serves the API.
 
-Planned releases add calibration, capacity-based policies, the model registry,
-model-risk gates, batch/API parity, monitoring, and incident exercises.
+Planned releases add governed explanations, subgroup analysis, the model
+registry, batch/API parity, monitoring, rollback, and incident exercises.
 
 ## Dataset and evidence limits
 
@@ -143,28 +146,27 @@ bootstrap evidence, and MLflow state remain ignored under `experiment/`.
 manifest and model digests. If a future selection produces joblib, it has pickle
 semantics and must be loaded only as a trusted local input after digest verification.
 
-After the evidence and bundle are reviewed and committed, freeze—but do not
-execute—the one-time test authorization:
+The one-time test gates were frozen independently from model selection:
 
 ```bash
 uv run credit-risk model freeze-test
 ```
 
-This command loads neither data nor the estimator. `credit-risk model final-test`
-is intentionally disabled until a separate explicit request implements and
-authorizes the one-time sealed-test evaluation. The reviewed authorization is
-now committed at `configs/modeling/final_test_v1.json`; it is explicitly marked
-not executed and not authorized. The historical baseline and
-candidate reports remain available, but their public fitting commands fail fast
-with guidance to use `model select`.
+That command loads neither data nor the estimator. A separate approval record
+then authorized exactly one `credit-risk model final-test` execution. It scored
+6,000 unique test accounts with the unchanged selected bundle, performed zero
+fits, and passed the frozen average-precision, Brier, and lift gates. Its durable
+receipts prevent reevaluation; the reviewed evidence is under
+`reports/modeling/final_test_v1/`. Historical baseline and candidate reports
+remain available, while their public fitting commands fail fast.
 
-### Check the local inference artifacts
+### Check the retired compatibility artifacts
 
 ```bash
 uv run credit-risk doctor
 ```
 
-`doctor` loads the model and preprocessor and validates their shared feature
+`doctor` loads the retained legacy model and preprocessor and validates their shared feature
 contract plus the outlier-threshold schema. Because pickle deserialization can
 execute code, use this command only with trusted project artifacts.
 
@@ -174,7 +176,7 @@ execute code, use this command only with trusted project artifacts.
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
 uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/cli.py api.py app.py
-uv run pytest --cov --cov-report=term-missing
+uv run pytest -m "not training" --cov --cov-report=term-missing
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
 ```
@@ -203,25 +205,27 @@ docker compose up --build
 ```
 
 The API is exposed at `http://localhost:8080`. The runtime image contains only
-`model.pkl`, `preprocessor.pkl`, and `outlier_threshold.json`; generated raw,
-train, and test datasets are excluded from the image.
+`models/selected_v1/manifest.json` and `model.cbm`; legacy artifacts, generated
+data, reports, training dependencies, and experiment state are excluded.
 
-## Legacy prediction request
+## Governed prediction request
 
-The compatibility endpoint remains `POST /predict` during the engineering
-foundation. It accepts six months of bill, payment, and repayment-status history
-plus the existing account attributes. Its current output should be treated as a
-legacy contract: the endpoint, schemas, calibrated policy output, and reviewed
-reason categories will be versioned in later phases.
+`POST /predict` accepts exactly the 19 operational features in the selected-model
+contract: credit limit plus six months each of repayment status, signed bill
+amount, and non-negative payment amount. Demographics, account ID, target, nulls,
+non-finite values, and unknown fields are rejected. The response returns the
+default probability, validation-frozen risk band, model ID, and bundle ID.
 
-The tests freeze the documented sample probability at `0.44088` so that package,
-dependency, and container refactors cannot silently change model behaviour.
+The synthetic request in `tests/fixtures/prediction_request.json` returns
+probability `0.190382` and risk band `standard`. Tests freeze this non-holdout
+example so package, dependency, and container changes cannot silently alter the
+released model contract.
 
 ## Repository structure
 
 ```text
 .
-├── api.py                     # Legacy-compatible FastAPI entrypoint
+├── api.py                     # Governed selected-model FastAPI entrypoint
 ├── app.py                     # Local Streamlit demonstration
 ├── artifacts/                 # Legacy compatibility artifacts
 ├── configs/data/              # Source manifest, split policy, and reviewed lock
@@ -229,6 +233,7 @@ dependency, and container refactors cannot silently change model behaviour.
 ├── data/                      # Ignored reproducible raw/processed/split products
 ├── docs/                      # Product, roadmap, governance, and ADR evidence
 ├── experiment/                # Ignored MLflow, OOF, and exploratory evidence
+├── models/selected_v1/        # Digest-protected released model bundle
 ├── reports/modeling/          # Reviewed aggregate experiment evidence
 ├── src/credit_risk/           # Installable application package
 ├── tests/                     # Unit, integration, and compatibility tests

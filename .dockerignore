@@ -19,9 +19,11 @@ htmlcov
 logs
 tests
 
-# The runtime image must contain inference artifacts only. Training outputs such
-# as raw.csv and train/test partitions must never enter the build context.
-artifacts/*
-!artifacts/model.pkl
-!artifacts/preprocessor.pkl
-!artifacts/outlier_threshold.json
+# The runtime image receives only the reviewed selected-model bundle. Legacy
+# pickles, raw data, reports, tracking state, and unrelated model files stay out.
+artifacts
+models/*
+!models/selected_v1/
+models/selected_v1/*
+!models/selected_v1/manifest.json
+!models/selected_v1/model.cbm
