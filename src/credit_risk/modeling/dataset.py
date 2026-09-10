@@ -119,6 +119,25 @@ class GovernedDevelopmentData:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class GovernedTestData:
+    """One-time sealed-test view exposed only by the final-test workflow."""
+
+    account_ids: pd.Index
+    predictors: pd.DataFrame
+    target: pd.Series
+    audit: pd.DataFrame
+    lineage: ModelingLineage
+
+    @property
+    def X(self) -> pd.DataFrame:
+        return self.predictors
+
+    @property
+    def y(self) -> pd.Series:
+        return self.target
+
+
 def load_governed_development_data(
     data_root: str | Path = "data",
     feature_contract_path: str | Path = DEFAULT_FEATURE_CONTRACT_PATH,
@@ -131,6 +150,78 @@ def load_governed_development_data(
     returned by this interface.
     """
 
+    verified = _load_verified_inputs(
+        data_root=data_root,
+        feature_contract_path=feature_contract_path,
+        manifest_path=manifest_path,
+        split_config_path=split_config_path,
+    )
+    return _build_development_view(
+        canonical=verified.canonical,
+        assignments=verified.assignments,
+        contract=verified.contract,
+        expected_canonical_columns=verified.expected_canonical_columns,
+        feature_contract_sha256=verified.feature_contract_sha256,
+        verification=verified.verification,
+        reviewed_lock_sha256=verified.reviewed_lock_sha256,
+    )
+
+
+def load_governed_test_data(
+    data_root: str | Path = "data",
+    feature_contract_path: str | Path = DEFAULT_FEATURE_CONTRACT_PATH,
+    manifest_path: str | Path = DEFAULT_DATASET_MANIFEST_PATH,
+    split_config_path: str | Path = DEFAULT_SPLIT_CONFIG_PATH,
+) -> GovernedTestData:
+    """Verify lineage and expose exactly the sealed test partition once requested."""
+
+    verified = _load_verified_inputs(
+        data_root=data_root,
+        feature_contract_path=feature_contract_path,
+        manifest_path=manifest_path,
+        split_config_path=split_config_path,
+    )
+    # Reuse the mature development boundary to validate full ID coverage, partition
+    # exclusivity, reviewed folds, and feature-contract parity before exposing test rows.
+    _build_development_view(
+        canonical=verified.canonical,
+        assignments=verified.assignments,
+        contract=verified.contract,
+        expected_canonical_columns=verified.expected_canonical_columns,
+        feature_contract_sha256=verified.feature_contract_sha256,
+        verification=verified.verification,
+        reviewed_lock_sha256=verified.reviewed_lock_sha256,
+    )
+    return _build_test_view(
+        canonical=verified.canonical,
+        assignments=verified.assignments,
+        contract=verified.contract,
+        split_config=verified.split_config,
+        feature_contract_sha256=verified.feature_contract_sha256,
+        verification=verified.verification,
+        reviewed_lock_sha256=verified.reviewed_lock_sha256,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifiedModelingInputs:
+    canonical: pd.DataFrame
+    assignments: pd.DataFrame
+    contract: FeatureContract
+    split_config: SplitConfig
+    expected_canonical_columns: tuple[str, ...]
+    feature_contract_sha256: str
+    reviewed_lock_sha256: str
+    verification: DataWorkflowResult
+
+
+def _load_verified_inputs(
+    *,
+    data_root: str | Path,
+    feature_contract_path: str | Path,
+    manifest_path: str | Path,
+    split_config_path: str | Path,
+) -> _VerifiedModelingInputs:
     contract_path = Path(feature_contract_path)
     try:
         contract_bytes = contract_path.read_bytes()
@@ -175,10 +266,11 @@ def load_governed_development_data(
         "split assignments",
         verification.assignment_sha256,
     )
-    return _build_development_view(
+    return _VerifiedModelingInputs(
         canonical=canonical,
         assignments=assignments,
         contract=contract,
+        split_config=split_config,
         expected_canonical_columns=tuple(
             column.canonical_name for column in manifest.canonical_contract.columns
         ),
@@ -409,6 +501,88 @@ def _build_development_view(
         lineage=lineage,
         n_splits=contract.cross_validation.n_splits,
         n_repeats=contract.cross_validation.n_repeats,
+    )
+
+
+def _build_test_view(
+    *,
+    canonical: pd.DataFrame,
+    assignments: pd.DataFrame,
+    contract: FeatureContract,
+    split_config: SplitConfig,
+    feature_contract_sha256: str,
+    verification: DataWorkflowResult,
+    reviewed_lock_sha256: str,
+) -> GovernedTestData:
+    """Construct the exact sealed-test predictor boundary after full verification."""
+
+    id_column = contract.columns.id_column
+    target_column = contract.columns.target_column
+    fold_columns = [f"cv_fold_r{repeat}" for repeat in range(contract.cross_validation.n_repeats)]
+    joined = canonical.merge(
+        assignments,
+        on=id_column,
+        how="inner",
+        sort=True,
+        validate="one_to_one",
+    )
+    test = joined.loc[joined["partition"].eq("test")].copy()
+    expected = split_config.expected_counts.test
+    if len(test) != expected.total:
+        raise ModelingDataError(
+            f"Sealed test row count differs from the split lock: expected={expected.total}, "
+            f"observed={len(test)}"
+        )
+    if test[fold_columns].notna().any().any():
+        raise ModelingDataError("Sealed test accounts must not contain development-fold values")
+    observed_counts = {
+        str(label): int(count)
+        for label, count in test[target_column].value_counts().sort_index().items()
+    }
+    if observed_counts != expected.target_counts:
+        raise ModelingDataError(
+            "Sealed test class counts differ from the split lock: "
+            f"expected={expected.target_counts}, observed={observed_counts}"
+        )
+
+    test = test.sort_values(id_column, kind="mergesort").reset_index(drop=True)
+    account_ids = pd.Index(test[id_column].astype("int64"), name=id_column)
+    if not account_ids.is_unique or len(account_ids) != expected.total:
+        raise ModelingDataError("Sealed test account IDs must be unique and complete")
+    predictors = test.loc[:, list(contract.columns.predictor_columns)].copy()
+    predictors.index = account_ids
+    if tuple(predictors.columns) != contract.columns.predictor_columns:
+        raise ModelingDataError("Sealed test predictors differ from the governed feature order")
+    numeric_predictors = predictors.apply(pd.to_numeric, errors="coerce")
+    if (
+        numeric_predictors.isna().any().any()
+        or not np.isfinite(numeric_predictors.to_numpy(dtype="float64")).all()
+    ):
+        raise ModelingDataError("Sealed test predictors must be numeric, finite, and complete")
+
+    target = test[target_column].astype("int8").copy()
+    target.index = account_ids
+    audit = test.loc[:, [id_column, target_column, *contract.columns.audit_columns]].copy()
+    audit.index = account_ids
+    lineage = ModelingLineage(
+        dataset_id=contract.dataset.dataset_id,
+        dataset_version=contract.dataset.dataset_version,
+        source_sha256=verification.source_sha256,
+        dataset_manifest_sha256=verification.dataset_manifest_sha256,
+        canonical_sha256=verification.canonical_sha256,
+        quality_report_sha256=verification.quality_report_sha256,
+        split_config_sha256=verification.split_config_sha256,
+        assignment_sha256=verification.assignment_sha256,
+        split_manifest_sha256=verification.split_manifest_sha256,
+        reviewed_split_lock_sha256=reviewed_lock_sha256,
+        feature_contract_sha256=feature_contract_sha256,
+    )
+    return GovernedTestData(
+        account_ids=account_ids,
+        predictors=numeric_predictors.loc[:, list(contract.columns.predictor_columns)].copy(),
+        target=target,
+        audit=audit,
+        lineage=lineage,
     )
 
 

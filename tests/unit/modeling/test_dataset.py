@@ -25,13 +25,16 @@ from credit_risk.modeling.contracts import (
 )
 from credit_risk.modeling.dataset import (
     GovernedDevelopmentData,
+    GovernedTestData,
     ModelingDataError,
     _build_development_view,
+    _build_test_view,
     _file_sha256,
     _read_csv,
     _read_verified_csv,
     _validate_contract_parity,
     load_governed_development_data,
+    load_governed_test_data,
 )
 from tests.unit.data.helpers import source_frame, write_json, write_workflow_contract
 
@@ -125,6 +128,17 @@ def governed_data(tmp_path: Path):
     )
 
 
+@pytest.fixture
+def governed_test_data(tmp_path: Path) -> GovernedTestData:
+    paths = _write_synthetic_modeling_contract(tmp_path)
+    return load_governed_test_data(
+        data_root=paths[0],
+        feature_contract_path=paths[3],
+        manifest_path=paths[1],
+        split_config_path=paths[2],
+    )
+
+
 def test_loader_exposes_only_governed_development_views(
     governed_data: GovernedDevelopmentData,
 ) -> None:
@@ -165,6 +179,56 @@ def test_loader_never_exposes_test_account_ids(tmp_path: Path) -> None:
 
     assert len(test_ids) == 20
     assert test_ids.isdisjoint(set(data.account_ids))
+
+
+def test_test_loader_exposes_only_the_sealed_operational_view(
+    governed_test_data: GovernedTestData,
+) -> None:
+    data = governed_test_data
+
+    assert data.predictors.shape == (20, 19)
+    assert tuple(data.predictors.columns) == PREDICTOR_COLUMNS
+    assert data.predictors.index.equals(data.account_ids)
+    assert data.target.index.equals(data.account_ids)
+    assert tuple(data.audit.columns) == (
+        "account_id",
+        "default_next_month",
+        *AUDIT_COLUMNS,
+    )
+    assert set(data.target.unique()) == {0, 1}
+    assert not hasattr(data, "assignments")
+    assert data.X is data.predictors
+    assert data.y is data.target
+
+
+@pytest.mark.parametrize("case", ("fold_leakage", "missing_test", "wrong_target_counts"))
+def test_test_view_rejects_sealed_partition_drift(
+    view_inputs: ViewInputs,
+    case: str,
+) -> None:
+    canonical = view_inputs.canonical.copy()
+    assignments = view_inputs.assignments.copy()
+    if case == "fold_leakage":
+        test_index = assignments.index[assignments["partition"].eq("test")][0]
+        assignments.loc[test_index, "cv_fold_r0"] = 0
+    elif case == "missing_test":
+        test_index = assignments.index[assignments["partition"].eq("test")][0]
+        assignments.loc[test_index, "partition"] = "development"
+    else:
+        test_id = assignments.loc[assignments["partition"].eq("test"), "account_id"].iloc[0]
+        row = canonical["account_id"].eq(test_id)
+        canonical.loc[row, "default_next_month"] = 1 - canonical.loc[row, "default_next_month"]
+
+    with pytest.raises(ModelingDataError):
+        _build_test_view(
+            canonical=canonical,
+            assignments=assignments,
+            contract=view_inputs.contract,
+            split_config=view_inputs.split_config,
+            feature_contract_sha256=view_inputs.feature_contract_sha256,
+            verification=view_inputs.verification,
+            reviewed_lock_sha256=view_inputs.reviewed_lock_sha256,
+        )
 
 
 def test_every_reviewed_fold_is_disjoint_and_complete(
