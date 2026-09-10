@@ -44,10 +44,13 @@ def doctor(
 
 @app.command()
 def train() -> None:
-    """Run the compatibility-only legacy training workflow."""
-    from credit_risk.pipeline.training_pipeline import run_training
-
-    run_training()
+    """Reject the retired legacy fitting path before importing training code."""
+    typer.echo(
+        "Legacy training is retired and cannot be rerun. Use 'credit-risk model select' for "
+        "the governed four-fit workflow.",
+        err=True,
+    )
+    raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

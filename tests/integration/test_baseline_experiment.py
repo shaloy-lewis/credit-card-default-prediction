@@ -16,7 +16,7 @@ from credit_risk.modeling.tracking import BASELINE_MODEL_NAMES, GitEvidence
 from credit_risk.modeling.workflow import run_baseline_experiment
 from tests.unit.data.helpers import source_frame, write_json, write_workflow_contract
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.training]
 
 
 def test_synthetic_offline_baseline_experiment_is_complete_and_reproducible(

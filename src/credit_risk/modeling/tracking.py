@@ -30,6 +30,7 @@ BASELINE_MODEL_NAMES: Final[tuple[str, ...]] = (
 )
 DEFAULT_EXPERIMENT_NAME: Final[str] = "credit-risk-baseline-v1"
 CANDIDATE_EXPERIMENT_NAME: Final[str] = "credit-risk-candidate-v1"
+SELECTION_EXPERIMENT_NAME: Final[str] = "credit-risk-selection-v1"
 MLFLOW_DATABASE_FILENAME: Final[str] = "mlflow.db"
 MLFLOW_ARTIFACT_DIRECTORY: Final[str] = "artifacts"
 ALLOWED_TRACKING_ARTIFACTS: Final[Mapping[str, str]] = {
@@ -44,8 +45,23 @@ CANDIDATE_TRACKING_ARTIFACTS: Final[Mapping[str, str]] = {
     "oof_predictions.csv": "runtime",
     "fold_diagnostics.json": "runtime",
 }
+SELECTION_MODEL_NAMES: Final[tuple[str, ...]] = (
+    "logistic_l2",
+    "random_forest",
+    "hist_gradient_boosting",
+    "catboost_fixed",
+)
+SELECTION_TRACKING_ARTIFACTS: Final[Mapping[str, str]] = {
+    "summary.json": "evidence",
+    "selection-report.md": "evidence",
+    "validation_predictions.csv": "runtime",
+    "bootstrap_intervals.json": "runtime",
+    "manifest.json": "bundle",
+}
 DEFAULT_VERSION_PACKAGES: Final[tuple[str, ...]] = (
+    "catboost",
     "credit-risk-early-warning",
+    "joblib",
     "mlflow",
     "numpy",
     "pandas",
@@ -356,6 +372,108 @@ def track_candidate_runs(
     return TrackingRunResult(
         tracking_uri=tracking_uri,
         experiment_name=CANDIDATE_EXPERIMENT_NAME,
+        parent_run_id=parent_run_id,
+        child_run_ids=tuple(child_run_ids),
+    )
+
+
+def track_selection_runs(
+    *,
+    tracking_root: str | Path,
+    parent_parameters: Mapping[str, ParameterValue],
+    parent_tags: Mapping[str, str],
+    model_runs: Sequence[ModelRunPayload],
+    artifacts: Sequence[str | Path],
+) -> TrackingRunResult:
+    """Record one parent and exactly four nested one-pass model runs."""
+
+    payloads = tuple(model_runs)
+    names = tuple(payload.model_name for payload in payloads)
+    if names != SELECTION_MODEL_NAMES:
+        raise TrackingError(
+            f"Selection tracking requires exactly the ordered model runs {SELECTION_MODEL_NAMES}; "
+            f"received {names}."
+        )
+    evidence_files = tuple(Path(path).resolve() for path in artifacts)
+    artifact_names = tuple(path.name for path in evidence_files)
+    expected_names = {*SELECTION_TRACKING_ARTIFACTS, "model.joblib", "model.cbm"}
+    if len(set(artifact_names)) != len(artifact_names):
+        raise TrackingError("Selection tracking artifact filenames must be unique.")
+    if not all(path.is_file() for path in evidence_files):
+        raise TrackingError("Every selection tracking artifact must be a regular file.")
+    models = set(artifact_names) & {"model.joblib", "model.cbm"}
+    required = set(SELECTION_TRACKING_ARTIFACTS)
+    if (
+        set(artifact_names) - expected_names
+        or not required.issubset(artifact_names)
+        or len(models) != 1
+    ):
+        raise TrackingError(
+            "Selection tracking artifact allowlist mismatch; require aggregate evidence, runtime "
+            "evidence, manifest, and exactly one model binary."
+        )
+    mlflow = _load_mlflow()
+    root = Path(tracking_root).resolve()
+    database_path = root / MLFLOW_DATABASE_FILENAME
+    artifact_root = root / MLFLOW_ARTIFACT_DIRECTORY
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        artifact_root.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise TrackingError(f"Unable to initialize MLflow tracking root {root}: {error}") from error
+
+    tracking_uri = _sqlite_tracking_uri(database_path)
+    with _MLFLOW_TRACKING_LOCK:
+        previous_tracking_uri: str | None = None
+        try:
+            previous_tracking_uri = str(mlflow.get_tracking_uri())
+            mlflow.set_tracking_uri(tracking_uri)
+            experiment_id = _resolve_experiment(
+                mlflow,
+                experiment_name=SELECTION_EXPERIMENT_NAME,
+                artifact_root=artifact_root,
+                tracking_uri=tracking_uri,
+            )
+            with mlflow.start_run(
+                experiment_id=experiment_id,
+                run_name="selection_v1",
+                tags={"run_role": "selection_parent", **dict(parent_tags)},
+            ) as parent_run:
+                parent_run_id = str(parent_run.info.run_id)
+                mlflow.log_params(_normalise_parameters(parent_parameters))
+                child_run_ids: list[tuple[str, str]] = []
+                for payload in payloads:
+                    with mlflow.start_run(
+                        experiment_id=experiment_id,
+                        run_name=payload.model_name,
+                        nested=True,
+                        tags={"run_role": "selection_model", "model_id": payload.model_name},
+                    ) as child_run:
+                        child_run_ids.append((payload.model_name, str(child_run.info.run_id)))
+                        mlflow.log_params(_normalise_parameters(payload.parameters))
+                        mlflow.log_metrics(_normalise_metrics(payload.metrics))
+                for artifact in evidence_files:
+                    artifact_path = (
+                        "bundle"
+                        if artifact.name in {"model.joblib", "model.cbm"}
+                        else SELECTION_TRACKING_ARTIFACTS[artifact.name]
+                    )
+                    mlflow.log_artifact(str(artifact), artifact_path=artifact_path)
+        except TrackingError:
+            raise
+        except Exception as error:
+            raise TrackingError(f"MLflow selection tracking failed: {error}") from error
+        finally:
+            if previous_tracking_uri is not None:
+                try:
+                    mlflow.set_tracking_uri(previous_tracking_uri)
+                except Exception as error:
+                    raise TrackingError(
+                        f"Unable to restore the previous MLflow tracking URI: {error}"
+                    ) from error
+    return TrackingRunResult(
+        tracking_uri=tracking_uri,
+        experiment_name=SELECTION_EXPERIMENT_NAME,
         parent_run_id=parent_run_id,
         child_run_ids=tuple(child_run_ids),
     )

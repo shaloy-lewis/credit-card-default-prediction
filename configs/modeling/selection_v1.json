@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.0.0",
+  "protocol_id": "selection_v1",
+  "status": "frozen_pre_selection",
+  "purpose": "one_pass_multi_model_release_selection",
+  "governance": {
+    "protocol_base_commit": "1024fece1baa50ca7f9d4d1bd4ad516b32f707ce",
+    "official_run_requires_clean_commit": true,
+    "parameter_tuning": "prohibited",
+    "cross_validation_iteration": "prohibited",
+    "winner_refit": "prohibited",
+    "test_access_during_selection": "prohibited"
+  },
+  "historical_evidence": {
+    "execution_status": "superseded_no_rerun",
+    "baseline_config_path": "configs/modeling/baseline_v1.json",
+    "baseline_config_sha256": "1666691fffea7d10debd233ed26114af74737bb8f66e0d442a7f4233d68762e0",
+    "baseline_summary_path": "reports/modeling/baseline_v1/summary.json",
+    "baseline_summary_sha256": "11e0332fc9df6f7abf36080a8d09304b3e975f34ad060f70f8611f4fc0ad69d6",
+    "candidate_config_path": "configs/modeling/candidate_v1.json",
+    "candidate_config_sha256": "4bd9a404064d410e0339e0638464aaf6c1ac0bca632156a47af14a822d7cb5f3",
+    "candidate_summary_path": "reports/modeling/candidate_v1/summary.json",
+    "candidate_summary_sha256": "55aaa971417bddbcad00b8bdf388f74baa13f6ad96304dd108227e48de23ea83"
+  },
+  "data": {
+    "dataset_id": "uci_credit_default",
+    "dataset_version": "v1",
+    "feature_contract_path": "configs/modeling/feature_contract_v1.json",
+    "dataset_manifest_path": "configs/data/uci_credit_default_v1.json",
+    "split_config_path": "configs/data/split_v1.json",
+    "feature_contract_sha256": "8978277ae1c92b6f0b8daed94cccf3cd51d8e6cae0aa9c0620d8cfb813384a4b",
+    "reviewed_split_lock_sha256": "b2312380fa46924ca414acbcfef63b0435d1321083e87e4df5ec04f18736093d",
+    "assignment_sha256": "2f6e2cdd0b29617a48ab6fcbdabd6859822c8ad2b6b5d77665967852cb4a034e",
+    "training_rule": "development_cv_fold_r0_not_0",
+    "validation_rule": "development_cv_fold_r0_equals_0",
+    "training_rows": 19200,
+    "training_target_counts": {"0": 14953, "1": 4247},
+    "validation_rows": 4800,
+    "validation_target_counts": {"0": 3738, "1": 1062},
+    "sealed_test_rows": 6000,
+    "holdout_access": "prohibited"
+  },
+  "features": {
+    "predictor_policy": "nineteen_operational_features",
+    "demographic_predictors": "prohibited",
+    "imputation": "none",
+    "clipping": "none",
+    "resampling": "none",
+    "target_encoding": "none",
+    "feature_selection": "none"
+  },
+  "models": [
+    {
+      "model_id": "logistic_l2",
+      "kind": "logistic_regression_pipeline",
+      "parameters": {"penalty": "l2", "C": 1.0, "solver": "lbfgs", "max_iter": 2000, "tol": 1e-8, "class_weight": null, "random_state": 42},
+      "feature_handling": "one_hot_status_standard_scale_monetary"
+    },
+    {
+      "model_id": "random_forest",
+      "kind": "random_forest_classifier",
+      "parameters": {"n_estimators": 100, "criterion": "gini", "max_depth": null, "max_features": "sqrt", "bootstrap": true, "class_weight": null, "random_state": 42, "n_jobs": 4},
+      "feature_handling": "validated_raw_numeric"
+    },
+    {
+      "model_id": "hist_gradient_boosting",
+      "kind": "hist_gradient_boosting_classifier",
+      "parameters": {"max_iter": 100, "learning_rate": 0.1, "max_leaf_nodes": 31, "l2_regularization": 0.0, "early_stopping": false, "class_weight": null, "random_state": 42},
+      "feature_handling": "validated_raw_numeric"
+    },
+    {
+      "model_id": "catboost_fixed",
+      "kind": "catboost_classifier",
+      "parameters": {"iterations": 300, "depth": 4, "learning_rate": 0.03, "l2_leaf_reg": 12.0, "random_strength": 0.0, "bagging_temperature": 0.0, "loss_function": "Logloss", "eval_metric": "Logloss", "bootstrap_type": "Bayesian", "random_seed": 42, "thread_count": 4, "allow_writing_files": false, "verbose": false, "use_best_model": false, "class_weights": null},
+      "feature_handling": "native_categorical_status_raw_monetary"
+    }
+  ],
+  "selection": {
+    "fit_budget": 4,
+    "fits_per_model": 1,
+    "winner_refit": false,
+    "primary_metric": "average_precision",
+    "brier_guardrail_relative_to_logistic": 0.005,
+    "lift_at_0_1_guardrail_relative_to_logistic": 0.10,
+    "average_precision_equivalence_band": 0.002,
+    "simplicity_order": ["logistic_l2", "hist_gradient_boosting", "random_forest", "catboost_fixed"],
+    "calibration": "identity",
+    "bootstrap_resamples": 500,
+    "bootstrap_random_state": 42,
+    "risk_band_quantiles": [0.8, 0.9, 0.95]
+  },
+  "dependencies": {
+    "catboost": "1.2.5",
+    "joblib": "1.5.3",
+    "mlflow": "3.15.0",
+    "numpy": "1.26.4",
+    "pandas": "2.2.2",
+    "pandera": "0.32.1",
+    "pydantic": "2.7.4",
+    "scikit-learn": "1.4.2"
+  },
+  "test_gate_deltas": {
+    "minimum_average_precision_delta": -0.03,
+    "maximum_brier_score_delta": 0.02,
+    "minimum_lift_at_0_1_delta": -0.30,
+    "required_rows": 6000
+  },
+  "evidence": {
+    "deterministic_outputs": ["summary.json", "selection-report.md", "manifest.json"],
+    "runtime_outputs": ["validation_predictions.csv", "bootstrap_intervals.json"],
+    "model_bundle": "versioned_local_trusted",
+    "forbidden_content": ["holdout_rows", "timestamps", "absolute_paths", "mlflow_identifiers"]
+  }
+}

@@ -14,6 +14,7 @@ dependencies = [
     "catboost==1.2.5",
     "click==8.1.7",
     "fastapi==0.111.0",
+    "joblib==1.5.3",
     "numpy==1.26.4",
     "pandas==2.2.2",
     "pydantic==2.7.4",
@@ -66,7 +67,7 @@ warn_unused_ignores = true
 exclude = ["catboost_info", "experiment"]
 
 [[tool.mypy.overrides]]
-module = ["catboost.*", "mlflow.*", "pandas.*", "pandera.*", "sklearn.*", "streamlit.*"]
+module = ["catboost.*", "joblib.*", "mlflow.*", "pandas.*", "pandera.*", "sklearn.*", "streamlit.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -75,6 +76,7 @@ testpaths = ["tests"]
 pythonpath = [".", "src"]
 markers = [
     "integration: exercises multiple application components or committed artifacts",
+    "training: performs real model fitting and is excluded from default CI",
 ]
 
 [tool.coverage.run]

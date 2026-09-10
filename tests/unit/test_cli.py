@@ -47,3 +47,12 @@ def test_doctor_rejects_corrupt_artifacts() -> None:
 
     assert result.exit_code == 1
     assert "Artifact validation failed" in result.output
+
+
+def test_legacy_train_is_retired_without_importing_training_code() -> None:
+    result = runner.invoke(app, ["train"])
+
+    assert result.exit_code == 1
+    assert "Legacy training is retired" in result.output
+    assert "credit-risk model select" in result.output
+    assert "Traceback" not in result.output

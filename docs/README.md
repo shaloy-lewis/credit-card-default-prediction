@@ -51,6 +51,22 @@ four CatBoost threads and was based only on runtime benchmarks; no candidate
 metric was observed before it was frozen. Two independent executions from clean
 commit `2b46d4c` produced byte-identical aggregate and runtime evidence.
 Configuration `cb_cfg_006` passed every development-CV advancement condition and
-is the Phase 4 candidate. The holdout remains unevaluated, and G2 remains open
-for calibration, uncertainty, operating-policy selection, and the one-time
-holdout evaluation.
+was the historical Phase 4 candidate. That expensive workflow is now superseded
+as an executable release process, while its evidence remains immutable.
+
+## One-pass release selection
+
+- [Frozen one-pass selection protocol](modeling/selection-protocol.md)
+- Machine-readable contract: `../configs/modeling/selection_v1.json`
+- [Reviewed aggregate selection report](../reports/modeling/selection_v1/selection-report.md)
+- [Reviewed machine-readable selection summary](../reports/modeling/selection_v1/summary.json)
+
+The authoritative workflow fits four fixed binary classifiers exactly once on
+the frozen training slice, selects on one shared validation slice, and bundles
+the exact winner without refitting. Calibration and bootstrap diagnostics reuse
+stored predictions. The clean four-fit run selected `catboost_fixed`; its exact
+native CBM is committed under `../models/selected_v1/` with digest-protected
+lineage. The holdout remains unevaluated and G2 stays open until a
+separately authorized one-time test passes gates frozen from validation.
+The immutable authorization contract is `../configs/modeling/final_test_v1.json`;
+it freezes gates but explicitly does not authorize or execute test scoring.
