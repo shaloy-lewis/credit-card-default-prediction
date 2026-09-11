@@ -24,12 +24,16 @@ def test_official_contract_is_complete_and_digest_protected() -> None:
     assert hashlib.sha256(path.read_bytes()).hexdigest() == OFFICIAL_PHASE5_CONFIG_SHA256
     assert config.features.predictor_columns == PREDICTOR_COLUMNS
     assert config.features.audit_columns == AUDIT_COLUMNS
+    assert config.population.development_rows == 24000
     assert config.population.rows == 4800
     assert config.population.target_counts == {"0": 3738, "1": 1062}
     assert config.explanation.sample_rows == 1000
     assert config.fairness.bootstrap.resamples == 500
+    assert "target_prevalence" not in config.fairness.bootstrap.metrics
+    assert config.fairness.prevalence_interval.method == "wilson_score"
     assert config.review.g3_result == "closed_with_conditions"
-    assert "test_partition_loading" in config.prohibitions
+    assert "test_partition_selection" in config.prohibitions
+    assert "test_partition_return" in config.prohibitions
     assert "training" in config.prohibitions
 
 
@@ -70,6 +74,7 @@ def test_contract_rejects_missing_file(tmp_path: Path) -> None:
         ),
         (lambda p: p["explanation"].update({"stratification": ["target"]}), "must stratify"),
         (lambda p: p["fairness"]["axes"].pop("sex_code"), "audit axes differ"),
+        (lambda p: p["fairness"]["bootstrap"]["metrics"].pop(), "bootstrap metrics differ"),
         (lambda p: p["prohibitions"].remove("training"), "prohibitions are missing"),
         (lambda p: p["outputs"]["committed"].pop(), "evidence allowlist differs"),
     ),

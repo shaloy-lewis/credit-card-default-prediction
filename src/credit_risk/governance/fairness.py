@@ -16,8 +16,7 @@ class FairnessAnalysisError(ValueError):
     """Raised when subgroup evidence cannot satisfy its frozen contract."""
 
 
-_MEASURE_NAMES = (
-    "target_prevalence",
+_PERFORMANCE_MEASURE_NAMES = (
     "mean_probability",
     "calibration_in_the_large",
     "brier_score",
@@ -65,6 +64,7 @@ def analyse_subgroups(
     group_results: list[dict[str, Any]] = []
     bootstrap_evidence: dict[str, Any] = {
         "confidence_level": contract.bootstrap.confidence_level,
+        "metrics": list(contract.bootstrap.metrics),
         "method": contract.bootstrap.method,
         "resamples": contract.bootstrap.resamples,
         "seed": contract.bootstrap.seed,
@@ -112,6 +112,12 @@ def analyse_subgroups(
                 resamples=contract.bootstrap.resamples,
                 confidence=contract.bootstrap.confidence_level,
                 seed=_stable_seed(contract.bootstrap.seed, axis_name, group_name),
+                measure_names=contract.bootstrap.metrics,
+            )
+            intervals["target_prevalence"] = _wilson_interval(
+                counts["positive_labels"],
+                counts["rows"],
+                z_value=contract.prevalence_interval.z_value,
             )
             group_triggers = _triggers(axis_name, group_name, measures, comparisons, contract)
             trigger_results.extend(group_triggers)
@@ -199,11 +205,12 @@ def _bootstrap_group(
     resamples: int,
     confidence: float,
     seed: int,
+    measure_names: tuple[str, ...] = _PERFORMANCE_MEASURE_NAMES,
 ) -> tuple[dict[str, dict[str, float]], dict[str, list[float]]]:
     rng = np.random.default_rng(seed)
     positive_indices = np.flatnonzero(labels == 1)
     negative_indices = np.flatnonzero(labels == 0)
-    distributions: dict[str, list[float]] = {name: [] for name in _MEASURE_NAMES}
+    distributions: dict[str, list[float]] = {name: [] for name in measure_names}
     for _ in range(resamples):
         sampled = np.concatenate(
             (
@@ -212,7 +219,7 @@ def _bootstrap_group(
             )
         )
         values = _metrics(labels[sampled], scores[sampled], scores[sampled] >= threshold)
-        for name in _MEASURE_NAMES:
+        for name in measure_names:
             distributions[name].append(float(values[name]))
     alpha = (1.0 - confidence) / 2.0
     intervals = {
@@ -223,6 +230,26 @@ def _bootstrap_group(
         for name, values in distributions.items()
     }
     return intervals, distributions
+
+
+def _wilson_interval(positive_labels: int, rows: int, *, z_value: float) -> dict[str, float]:
+    """Return a deterministic two-sided Wilson interval for a binomial proportion."""
+
+    if rows <= 0 or positive_labels < 0 or positive_labels > rows:
+        raise FairnessAnalysisError("Wilson prevalence counts are invalid.")
+    proportion = positive_labels / rows
+    z_squared = z_value * z_value
+    denominator = 1.0 + z_squared / rows
+    centre = (proportion + z_squared / (2.0 * rows)) / denominator
+    half_width = (
+        z_value
+        * np.sqrt(proportion * (1.0 - proportion) / rows + z_squared / (4.0 * rows * rows))
+        / denominator
+    )
+    return {
+        "lower": float(max(0.0, centre - half_width)),
+        "upper": float(min(1.0, centre + half_width)),
+    }
 
 
 def _triggers(

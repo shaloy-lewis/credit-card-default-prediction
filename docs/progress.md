@@ -271,32 +271,27 @@ deferred risks. It is not a substitute for commit history or CI results.
   receipts remain immutable. The one evaluation is permanently consumed and G2
   remains closed.
 - At the Phase 4 checkpoint, explanations, subgroup review, registry, monitoring,
-  rollback, and incident work had not started. Phase 5 subsequently completed
-  explanations and subgroup review; the later lifecycle controls remain open.
+  rollback, and incident work had not started. Phase 5 subsequently implemented
+  explanations and subgroup review; corrected aggregate evidence is pending, and
+  the later lifecycle controls remain open.
 
-## Phase 5 governance and explanation review — complete with conditions
+## Phase 5 governance remediation — corrected evidence pending
 
 - ADR 0002 replaces demographic model ablation with demographic exclusion,
   input-invariance tests, and validation-only subgroup analysis. No further
   model or calibrator fitting is authorized.
-- The frozen `phase5_v1` contract uses exactly 4,800 validation accounts and
-  prohibits final-test rows, predictions, and loaders.
+- Phase 1 full-file verification may parse the complete canonical snapshot for
+  integrity. The modelling boundary returns exactly 24,000 development accounts;
+  test accounts cannot be selected, returned, scored, explained, or audited by subgroup.
 - Native CatBoost SHAP additivity, reviewed reason categories, group support
-  rules, 500-resample uncertainty, and human-review triggers are fixed before
-  official evidence publication.
+  rules, Wilson prevalence intervals, 500-resample performance uncertainty, and
+  human-review triggers are fixed before corrected evidence publication.
 - A non-published planning preview occurred only after the trigger thresholds
   were selected. The thresholds remain unchanged and the expected education
   code 1/code 3 selection-rate triggers require documented disposition.
-- The clean prediction-only build from implementation commit `8989374` reproduced
-  validation AP `0.556510`, Brier score `0.133539`, and lift at 10% `3.210923`.
-- Exactly 1,000 deterministic explanation rows passed native-SHAP raw additivity
-  and sigmoid/probability parity at the frozen tolerance.
-- The only supported-group triggers were the predeclared education code 1 low
-  selection-rate ratio (`0.696014`) and code 3 high ratio (`1.256410`).
-- Aggregate evidence, the model card, risk register, and G3 checklist were
-  reviewed; row-level predictions, SHAP values, and bootstrap distributions remain ignored.
-- G3 is `closed_with_conditions`. Demographics remain audit-only, use remains
-  human-owned outreach prioritisation, and no fairness, India/compliance, or
-  production-suitability claim is made.
+- The superseded aggregate evidence was withdrawn after review identified an
+  ambiguous test-access claim and degenerate prevalence intervals. It remains
+  available in Git history and will not be presented as active evidence.
+- G3 republication is pending a clean corrected build and digest review.
 - The local API is technical portfolio integration, not evidence of external
   governance approval. Phase 6+ registry, parity, monitoring, and rollback work has not started.

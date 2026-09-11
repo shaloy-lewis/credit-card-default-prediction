@@ -9,6 +9,7 @@ from credit_risk.governance.fairness import (
     FairnessAnalysisError,
     _map_axis,
     _triggers,
+    _wilson_interval,
     analyse_subgroups,
 )
 
@@ -43,6 +44,17 @@ def test_subgroup_metrics_bootstrap_and_order_are_deterministic() -> None:
     assert [group["group"] for group in first.groups] == ["1", "2"]
     assert all(group["status"] == "reviewed" for group in first.groups)
     assert len(first.bootstrap["groups"]["sex_code"]["1"]["brier_score"]) == 20
+    assert "target_prevalence" not in first.bootstrap["groups"]["sex_code"]["1"]
+    prevalence_interval = first.groups[0]["confidence_intervals"]["target_prevalence"]
+    assert prevalence_interval["lower"] < 0.5 < prevalence_interval["upper"]
+
+
+def test_wilson_prevalence_interval_is_non_degenerate_and_validates_counts() -> None:
+    interval = _wilson_interval(50, 100, z_value=1.959963984540054)
+
+    assert interval == pytest.approx({"lower": 0.4038315303659957, "upper": 0.5961684696340044})
+    with pytest.raises(FairnessAnalysisError, match="counts are invalid"):
+        _wilson_interval(2, 1, z_value=1.959963984540054)
 
 
 def test_support_suppression_reports_counts_only() -> None:

@@ -174,7 +174,7 @@ and incident-response paths; those results will be labelled as operational tests
 | G0: scope approval | Decision contract, non-goals, evidence boundary, and accepted ADR |
 | G1: data readiness | Data card, schema results, lineage, feature-availability matrix, and leakage review |
 | G2: model candidate | Baselines, common validation protocol, experiment lineage, uncertainty, calibration, and stress tests |
-| G3: promotion review | `closed_with_conditions`: reviewed model card, subgroup evaluation, native-SHAP checks, policy threshold, risk register, and sign-off checklist |
+| G3: promotion review | Corrected model card, subgroup evaluation, native-SHAP checks, policy threshold, risk register, and sign-off checklist pending republication |
 | G4: release readiness | Batch/API parity, contract tests, container scan, monitoring, rollback evidence, and runbooks |
 | G5: ongoing review | Drift/performance report, incident log, retraining rationale, and updated approvals |
 
@@ -202,6 +202,6 @@ appropriate quasi-experiment. The portfolio deliverable will therefore specify:
    passed once; the final test is permanently consumed.
 5. The local service-level objectives after an initial benchmark.
 
-The validation-only Phase 5 review is complete with documented conditions. The
-remaining open decisions must be resolved before claims about a real operating
-policy or production use.
+The Phase 5 implementation is corrected, but active aggregate evidence and the
+G3 disposition remain pending republication. The remaining open decisions must
+be resolved before claims about a real operating policy or production use.

@@ -31,10 +31,12 @@ def build(
         Path, typer.Option(help="Reviewed selected-model bundle.")
     ] = DEFAULT_BUNDLE_ROOT,
     runtime_root: Annotated[
-        Path, typer.Option(help="Ignored row-level runtime evidence.")
+        Path,
+        typer.Option(help="Repository-relative runtime root beneath experiment/governance/."),
     ] = DEFAULT_RUNTIME_ROOT,
     output_root: Annotated[
-        Path, typer.Option(help="Aggregate governance evidence root.")
+        Path,
+        typer.Option(help="Repository-relative evidence root beneath reports/governance/."),
     ] = DEFAULT_OUTPUT_ROOT,
 ) -> None:
     """Publish validation-only subgroup and native-SHAP evidence."""

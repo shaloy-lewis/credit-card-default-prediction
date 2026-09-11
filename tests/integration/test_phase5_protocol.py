@@ -12,7 +12,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPOSITORY_ROOT / "configs" / "governance" / "phase5_v1.json"
 
 # Change only after a new governance protocol and explicit review.
-EXPECTED_CONFIG_SHA256 = "990f33b1f1389f0666a75400a5677f3bdac4b8a09a531b43e6262b5a44cb0e12"
+EXPECTED_CONFIG_SHA256 = "1717abd20e5dad6819d2f67fc13eecfa38a8800decf9e6954ffd0c74a913f68c"
 
 
 def test_phase5_protocol_is_complete_and_validation_only() -> None:
@@ -23,9 +23,9 @@ def test_phase5_protocol_is_complete_and_validation_only() -> None:
     assert config["status"] == "frozen_before_official_evidence"
     assert config["population"] == {
         "assignment_column": "cv_fold_r0",
+        "development_rows": 24000,
         "partition": "development_validation_only",
         "rows": 4800,
-        "sealed_test_access": "prohibited",
         "target_counts": {"0": 3738, "1": 1062},
         "validation_fold": 0,
     }
@@ -43,6 +43,28 @@ def test_phase5_protocol_is_complete_and_validation_only() -> None:
     assert config["explanation"]["shap_output_columns"] == 20
     assert config["explanation"]["additivity_absolute_tolerance"] == pytest.approx(1e-10)
     assert config["fairness"]["bootstrap"]["resamples"] == 500
+    assert config["fairness"]["bootstrap"]["metrics"] == [
+        "mean_probability",
+        "calibration_in_the_large",
+        "brier_score",
+        "selection_rate_at_q90",
+        "true_positive_rate_at_q90",
+        "false_positive_rate_at_q90",
+    ]
+    assert config["fairness"]["prevalence_interval"] == {
+        "confidence_level": 0.95,
+        "method": "wilson_score",
+        "z_value": pytest.approx(1.959963984540054),
+    }
+    assert config["test_boundary"] == {
+        "full_dataset_integrity_verification": "required",
+        "test_explanation_generation": "prohibited",
+        "test_partition_return": "prohibited",
+        "test_partition_selection": "prohibited",
+        "test_prediction_generation": "prohibited",
+        "test_prediction_loading": "prohibited",
+        "test_subgroup_analysis": "prohibited",
+    }
     assert config["review"]["g3_result"] == "closed_with_conditions"
     assert config["review"]["expected_triggers"] == [
         {
@@ -64,6 +86,9 @@ def test_phase5_protocol_is_complete_and_validation_only() -> None:
         "parameter_tuning",
         "cross_validation",
         "calibration_fitting",
-        "test_partition_loading",
+        "test_partition_selection",
+        "test_partition_return",
+        "test_prediction_generation",
+        "test_prediction_loading",
         "final_test_prediction_loading",
     } <= set(config["prohibitions"])

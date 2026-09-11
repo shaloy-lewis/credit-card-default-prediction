@@ -36,12 +36,18 @@ class _FakeModel:
 
 
 def _governed(config: Any) -> SimpleNamespace:
-    ids = pd.Index(range(1, 4801), name="account_id")
+    ids = pd.Index(range(1, 24001), name="account_id")
     predictors = pd.DataFrame(
         {column: np.zeros(len(ids), dtype=np.int64) for column in PREDICTOR_COLUMNS},
         index=ids,
     )
-    target_values = np.concatenate((np.zeros(3738, dtype=np.int8), np.ones(1062, dtype=np.int8)))
+    target_values = np.concatenate(
+        (
+            np.zeros(3738, dtype=np.int8),
+            np.ones(1062, dtype=np.int8),
+            np.zeros(len(ids) - 4800, dtype=np.int8),
+        )
+    )
     target = pd.Series(target_values, index=ids, name="default_next_month")
     audit = pd.DataFrame(
         {
@@ -54,7 +60,9 @@ def _governed(config: Any) -> SimpleNamespace:
         },
         index=ids,
     )
-    assignments = pd.DataFrame({"partition": "development", "cv_fold_r0": 0}, index=ids)
+    folds = np.ones(len(ids), dtype=np.int8)
+    folds[:4800] = 0
+    assignments = pd.DataFrame({"partition": "development", "cv_fold_r0": folds}, index=ids)
     lineage = SimpleNamespace(
         source_sha256=config.lineage["source_sha256"],
         canonical_sha256=config.lineage["canonical_sha256"],
@@ -63,6 +71,7 @@ def _governed(config: Any) -> SimpleNamespace:
         feature_contract_sha256=config.lineage["feature_contract_sha256"],
     )
     return SimpleNamespace(
+        account_ids=ids,
         X=predictors,
         y=target,
         audit=audit,
@@ -112,7 +121,8 @@ def _explanations(config: Any) -> ExplanationResult:
 def _patch_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     config = workflow.load_governance_config()
     governed = _governed(config)
-    target = governed.y.to_numpy()
+    validation_mask = governed.assignments["cv_fold_r0"].eq(0)
+    target = governed.y.loc[validation_mask].to_numpy()
     probabilities = np.where(target == 1, 0.7, 0.1).astype(float)
     fake_model = _FakeModel(probabilities)
     manifest = SimpleNamespace(
@@ -169,8 +179,8 @@ def test_build_scores_once_publishes_allowlisted_evidence_and_verifies(
     result = run_governance_build(
         data_root=tmp_path / "data",
         bundle_root=tmp_path / "models/selected_v1",
-        runtime_root=runtime,
-        output_root=output,
+        runtime_root=Path("experiment/governance/phase5_v1"),
+        output_root=Path("reports/governance/phase5_v1"),
     )
 
     assert model.calls == 1
@@ -182,7 +192,15 @@ def test_build_scores_once_publishes_allowlisted_evidence_and_verifies(
     assert not list(runtime.parent.glob(".phase5_v1.stage-*"))
     summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
     assert summary["execution"]["training_performed"] is False
-    assert summary["execution"]["sealed_test_accessed"] is False
+    assert summary["data_boundary"] == {
+        "full_dataset_integrity_verification_performed": True,
+        "test_explanations_generated": False,
+        "final_test_predictions_loaded": False,
+        "test_partition_returned": False,
+        "test_partition_selected": False,
+        "test_predictions_generated": False,
+        "test_subgroup_analysis_performed": False,
+    }
     assert summary["explanations"]["row_level_values_committed"] is False
     assert sum(summary["explanations"]["stratum_counts"].values()) == 1000
     assert summary["g3"]["result"] == "closed_with_conditions"
@@ -235,8 +253,69 @@ def test_dirty_and_unsafe_paths_fail_before_data(
         "collect_git_evidence",
         lambda _path: GitEvidence("a" * 40, False, "b" * 64, tmp_path),
     )
-    with pytest.raises(GovernanceWorkflowError, match="inside the repository"):
+    with pytest.raises(GovernanceWorkflowError, match="repository-relative"):
         run_governance_build(output_root=tmp_path.parent / "outside")
+    with pytest.raises(GovernanceWorkflowError, match="repository-relative"):
+        run_governance_build(runtime_root=tmp_path / "experiment/governance/absolute")
+
+
+@pytest.mark.parametrize(
+    ("keyword", "value", "message"),
+    (
+        ("output_root", Path("src/governance-evidence"), "beneath reports/governance"),
+        ("output_root", Path(".git/governance-evidence"), "beneath reports/governance"),
+        ("output_root", Path("models/selected_v1/evidence"), "beneath reports/governance"),
+        ("runtime_root", Path("data/governance-runtime"), "beneath experiment/governance"),
+        (
+            "output_root",
+            Path("reports/governance/../../configs/evidence"),
+            "beneath reports/governance",
+        ),
+    ),
+)
+def test_publication_paths_reject_protected_or_traversing_destinations(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    keyword: str,
+    value: Path,
+    message: str,
+) -> None:
+    _patch_success(tmp_path, monkeypatch)
+    arguments = {
+        "data_root": tmp_path / "data",
+        "bundle_root": tmp_path / "models/selected_v1",
+        "runtime_root": Path("experiment/governance/test-run"),
+        "output_root": Path("reports/governance/test-run"),
+    }
+    arguments[keyword] = value
+    with pytest.raises(GovernanceWorkflowError, match=message):
+        run_governance_build(**arguments)
+
+
+def test_publication_paths_reject_symlink_escape_and_overlap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_success(tmp_path, monkeypatch)
+    allowed = tmp_path / "reports/governance"
+    allowed.mkdir(parents=True)
+    escape = allowed / "escape"
+    try:
+        escape.symlink_to(tmp_path.parent, target_is_directory=True)
+    except OSError:
+        pytest.skip("directory symlinks are unavailable on this platform")
+    with pytest.raises(GovernanceWorkflowError, match="beneath reports/governance"):
+        run_governance_build(
+            data_root=tmp_path / "data",
+            bundle_root=tmp_path / "models/selected_v1",
+            runtime_root=Path("experiment/governance/test-run"),
+            output_root=Path("reports/governance/escape/evidence"),
+        )
+
+    with pytest.raises(GovernanceWorkflowError, match="must not overlap"):
+        workflow._validate_publication_separation(
+            tmp_path / "reports/governance/a",
+            tmp_path / "reports/governance/a/child",
+        )
 
 
 def test_atomic_failure_leaves_no_partial_publication(
@@ -255,8 +334,8 @@ def test_atomic_failure_leaves_no_partial_publication(
         run_governance_build(
             data_root=tmp_path / "data",
             bundle_root=tmp_path / "models/selected_v1",
-            runtime_root=runtime,
-            output_root=output,
+            runtime_root=Path("experiment/governance/phase5_v1"),
+            output_root=Path("reports/governance/phase5_v1"),
         )
 
     assert not output.exists()
@@ -273,8 +352,8 @@ def test_existing_destination_and_unexpected_failure_are_actionable(
         run_governance_build(
             data_root=tmp_path / "data",
             bundle_root=tmp_path / "models/selected_v1",
-            runtime_root=tmp_path / "experiment/governance/phase5_v1",
-            output_root=output,
+            runtime_root=Path("experiment/governance/phase5_v1"),
+            output_root=Path("reports/governance/phase5_v1"),
         )
 
     output.rmdir()
@@ -287,8 +366,8 @@ def test_existing_destination_and_unexpected_failure_are_actionable(
         run_governance_build(
             data_root=tmp_path / "data",
             bundle_root=tmp_path / "models/selected_v1",
-            runtime_root=tmp_path / "experiment/governance/phase5_v1",
-            output_root=output,
+            runtime_root=Path("experiment/governance/phase5_v1"),
+            output_root=Path("reports/governance/phase5_v1"),
         )
 
 
@@ -338,7 +417,7 @@ def test_validation_slice_rejects_wrong_partition_population_columns_and_ids() -
         workflow._validation_slice(governed, config)
 
     governed = _governed(config)
-    governed.assignments = governed.assignments.iloc[:-1]
+    governed.assignments = governed.assignments.drop(index=1)
     with pytest.raises(GovernanceWorkflowError, match="population differs"):
         workflow._validation_slice(governed, config)
 
@@ -351,6 +430,21 @@ def test_validation_slice_rejects_wrong_partition_population_columns_and_ids() -
     governed.assignments = governed.assignments.sort_index(ascending=False)
     with pytest.raises(GovernanceWorkflowError, match="unique and sorted"):
         workflow._validation_slice(governed, config)
+
+
+def test_development_boundary_rejects_test_rows_and_misaligned_population() -> None:
+    config = workflow.load_governance_config()
+    governed = _governed(config)
+    workflow._validate_development_boundary(governed, config)
+
+    governed.assignments.iloc[0, governed.assignments.columns.get_loc("partition")] = "test"
+    with pytest.raises(GovernanceWorkflowError, match="must not return any test-partition"):
+        workflow._validate_development_boundary(governed, config)
+
+    governed = _governed(config)
+    governed.X = governed.X.iloc[:-1]
+    with pytest.raises(GovernanceWorkflowError, match="complete, aligned development"):
+        workflow._validate_development_boundary(governed, config)
 
 
 def test_lineage_and_repository_evidence_are_strict() -> None:

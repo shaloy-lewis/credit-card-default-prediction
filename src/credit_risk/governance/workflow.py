@@ -70,15 +70,27 @@ def run_governance_build(
         if git.repository_root is None:
             raise GovernanceWorkflowError("Git repository root is unavailable.")
         repository = git.repository_root
-        output = _safe_destination(repository, output_root, "governance evidence root")
-        runtime = _safe_destination(repository, runtime_root, "governance runtime root")
-        bundle = _safe_destination(repository, bundle_root, "selected bundle root")
+        output = _safe_publication_destination(
+            repository,
+            output_root,
+            allowed_subtree=Path("reports/governance"),
+            description="governance evidence root",
+        )
+        runtime = _safe_publication_destination(
+            repository,
+            runtime_root,
+            allowed_subtree=Path("experiment/governance"),
+            description="governance runtime root",
+        )
+        _validate_publication_separation(output, runtime)
+        bundle = _safe_repository_input(repository, bundle_root, "selected bundle root")
         if output.exists() or runtime.exists():
             raise GovernanceWorkflowError(
                 "Refusing to overwrite existing Phase 5 evidence or runtime artifacts."
             )
 
         governed = load_governed_development_data(data_root=data_root)
+        _validate_development_boundary(governed, config)
         _validate_data_lineage(governed, config)
         _validate_repository_lineage(repository, config)
         predictors, target, audit = _validation_slice(governed, config)
@@ -180,8 +192,13 @@ def run_governance_build(
                 },
                 "prohibitions_verified": {
                     "fitting_performed": False,
-                    "sealed_test_accessed": False,
+                    "full_dataset_integrity_verification_performed": True,
+                    "test_explanations_generated": False,
                     "final_test_predictions_loaded": False,
+                    "test_partition_returned": False,
+                    "test_partition_selected": False,
+                    "test_predictions_generated": False,
+                    "test_subgroup_analysis_performed": False,
                 },
             }
             _write_json(staged_output / "evidence-manifest.json", evidence_manifest)
@@ -227,9 +244,10 @@ def verify_governance_evidence(
         if git.repository_root is None:
             raise GovernanceWorkflowError("Git repository root is unavailable.")
         repository = git.repository_root
-        evidence = _safe_destination(repository, evidence_root, "governance evidence root")
-        bundle = _safe_destination(repository, bundle_root, "selected bundle root")
+        evidence = _safe_repository_input(repository, evidence_root, "governance evidence root")
+        bundle = _safe_repository_input(repository, bundle_root, "selected bundle root")
         governed = load_governed_development_data(data_root=data_root)
+        _validate_development_boundary(governed, config)
         _validate_data_lineage(governed, config)
         _validate_repository_lineage(repository, config)
         manifest, _ = load_selected_bundle(
@@ -285,6 +303,34 @@ def _validation_slice(
     if not account_ids.is_unique or not account_ids.is_monotonic_increasing:
         raise GovernanceWorkflowError("Validation account IDs must be unique and sorted.")
     return predictors, target, audit
+
+
+def _validate_development_boundary(
+    governed: GovernedDevelopmentData, config: GovernanceConfig
+) -> None:
+    """Prove that the modelling boundary contains only the complete development partition."""
+
+    expected_index = governed.assignments.index
+    aligned_indexes = (
+        governed.account_ids,
+        governed.X.index,
+        governed.y.index,
+        governed.audit.index,
+    )
+    if (
+        len(expected_index) != config.population.development_rows
+        or any(not index.equals(expected_index) for index in aligned_indexes)
+        or not expected_index.is_unique
+        or not expected_index.is_monotonic_increasing
+    ):
+        raise GovernanceWorkflowError(
+            "Governance input must contain the complete, aligned development population."
+        )
+    partitions = governed.assignments["partition"]
+    if partitions.isna().any() or not partitions.eq("development").all():
+        raise GovernanceWorkflowError(
+            "The governance modelling boundary must not return any test-partition account."
+        )
 
 
 def _prove_audit_exclusion(
@@ -422,8 +468,15 @@ def _summary_payload(
             "cross_validation_performed": False,
             "calibration_fitting_performed": False,
             "validation_prediction_passes": 1,
-            "sealed_test_accessed": False,
+        },
+        "data_boundary": {
+            "full_dataset_integrity_verification_performed": True,
+            "test_explanations_generated": False,
             "final_test_predictions_loaded": False,
+            "test_partition_returned": False,
+            "test_partition_selected": False,
+            "test_predictions_generated": False,
+            "test_subgroup_analysis_performed": False,
         },
         "lineage": {
             "git_commit": git_commit,
@@ -477,7 +530,10 @@ def _summary_payload(
             "triggers": fairness.triggers,
             "trigger_policy": config.review.trigger_policy,
             "support_policy": config.fairness.support.model_dump(mode="json"),
-            "bootstrap": config.fairness.bootstrap.model_dump(mode="json"),
+            "uncertainty": {
+                "performance_intervals": config.fairness.bootstrap.model_dump(mode="json"),
+                "prevalence_interval": config.fairness.prevalence_interval.model_dump(mode="json"),
+            },
         },
         "explanations": {
             "method": config.explanation.method,
@@ -541,7 +597,9 @@ Status: **closed with conditions**
 Summary SHA-256: `{summary_sha}`
 
 The reviewed `selected_v1` bundle was scored once on the 4,800-row development-validation
-slice. No model fitting, calibration fitting, cross-validation, or sealed-test access occurred.
+slice. Full canonical-file verification was performed for integrity, but no test account was
+selected, returned, scored, explained, or included in subgroup analysis. No model fitting,
+calibration fitting, or cross-validation occurred.
 
 Validation AP was {metrics["average_precision"]:.6f}, Brier score was
 {metrics["brier_score"]:.6f}, and lift at 10% was {metrics["lift_at_0_1"]:.6f}.
@@ -564,7 +622,9 @@ or proof of production suitability. Demographics were excluded from the estimato
 only for audit.
 
 The q90 threshold represents 10% review capacity. Supported groups required at least 100 rows,
-25 defaults, and 25 non-defaults; smaller groups report counts only.
+25 defaults, and 25 non-defaults; smaller groups report counts only. Prevalence uses a two-sided
+95% Wilson score interval. The remaining measures use 500 seed-42 within-group stratified
+bootstrap resamples and percentile 95% intervals.
 
 ## Predeclared review triggers
 
@@ -634,8 +694,10 @@ real-world use.
 Decision: **closed_with_conditions**.
 
 The gate confirms demographic exclusion, predictor invariance to audit-field changes, validation
-subgroup evidence, native-SHAP numerical checks, and explicit prohibited uses. It does not certify
-fairness, regulatory compliance, or production suitability.
+subgroup evidence, native-SHAP numerical checks, and explicit prohibited uses. Full-file integrity
+verification parsed the canonical snapshot, but no test account was selected, returned, scored,
+explained, or audited by subgroup. This does not certify fairness, regulatory compliance, or
+production suitability.
 
 Predeclared triggers:
 
@@ -768,16 +830,30 @@ def _validate_staged_evidence(
             "parameter_tuning_performed",
             "cross_validation_performed",
             "calibration_fitting_performed",
-            "sealed_test_accessed",
-            "final_test_predictions_loaded",
         )
     ):
         raise GovernanceWorkflowError("Published evidence violates a no-training/no-test claim.")
+    expected_boundary = {
+        "full_dataset_integrity_verification_performed": True,
+        "test_explanations_generated": False,
+        "final_test_predictions_loaded": False,
+        "test_partition_returned": False,
+        "test_partition_selected": False,
+        "test_predictions_generated": False,
+        "test_subgroup_analysis_performed": False,
+    }
+    if summary.get("data_boundary") != expected_boundary:
+        raise GovernanceWorkflowError("Published evidence misstates the reviewed test boundary.")
+    if manifest.get("prohibitions_verified") != {
+        "fitting_performed": False,
+        **expected_boundary,
+    }:
+        raise GovernanceWorkflowError("Evidence manifest misstates the reviewed test boundary.")
     if summary.get("population", {}).get("rows") != config.population.rows:
         raise GovernanceWorkflowError("Published evidence has the wrong validation population.")
 
 
-def _safe_destination(repository: Path, path: str | Path, description: str) -> Path:
+def _safe_repository_input(repository: Path, path: str | Path, description: str) -> Path:
     candidate = Path(path)
     resolved = (
         (repository / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()
@@ -789,6 +865,42 @@ def _safe_destination(repository: Path, path: str | Path, description: str) -> P
             f"{description} must remain inside the repository."
         ) from error
     return resolved
+
+
+def _safe_publication_destination(
+    repository: Path,
+    path: str | Path,
+    *,
+    allowed_subtree: Path,
+    description: str,
+) -> Path:
+    candidate = Path(path)
+    if candidate.is_absolute() or candidate.drive:
+        raise GovernanceWorkflowError(f"{description} must be repository-relative.")
+    repository_root = repository.resolve()
+    allowed_root = (repository_root / allowed_subtree).resolve()
+    resolved = (repository_root / candidate).resolve()
+    try:
+        relative = resolved.relative_to(allowed_root)
+    except ValueError as error:
+        raise GovernanceWorkflowError(
+            f"{description} must remain beneath {allowed_subtree.as_posix()}/."
+        ) from error
+    if not relative.parts:
+        raise GovernanceWorkflowError(
+            f"{description} must name a child beneath {allowed_subtree.as_posix()}/."
+        )
+    return resolved
+
+
+def _validate_publication_separation(*paths: Path) -> None:
+    resolved = tuple(path.resolve() for path in paths)
+    for index, left in enumerate(resolved):
+        for right in resolved[index + 1 :]:
+            if left == right or left in right.parents or right in left.parents:
+                raise GovernanceWorkflowError(
+                    "Governance evidence and runtime publication roots must not overlap."
+                )
 
 
 def _promote_directories(pairs: tuple[tuple[Path, Path], ...]) -> None:

@@ -197,8 +197,8 @@ sealed.
 
 Calibration selection, bootstrap confidence intervals, simulated economics,
 operating-policy selection, and the one-time holdout evaluation belong to Week
-5. Week 6 completed demographic exclusion/invariance evidence, validation-only
-subgroup analysis, native-SHAP review, and the final audit-only feature decision.
+5. The corrected Week 6 protocol uses demographic exclusion/invariance evidence,
+validation-only subgroup analysis, native-SHAP review, and an audit-only feature decision.
 
 Week 4 passed after the implementation reproduced the frozen sampled
 configurations, all variants used the common folds, the fit budget was respected,

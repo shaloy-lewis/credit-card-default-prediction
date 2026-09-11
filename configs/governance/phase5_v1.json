@@ -128,6 +128,14 @@
     },
     "bootstrap": {
       "confidence_level": 0.95,
+      "metrics": [
+        "mean_probability",
+        "calibration_in_the_large",
+        "brier_score",
+        "selection_rate_at_q90",
+        "true_positive_rate_at_q90",
+        "false_positive_rate_at_q90"
+      ],
       "method": "within_group_stratified_percentile",
       "resamples": 500,
       "seed": 42
@@ -143,6 +151,11 @@
       "false_positive_rate_at_q90"
     ],
     "policy_threshold": "q90",
+    "prevalence_interval": {
+      "confidence_level": 0.95,
+      "method": "wilson_score",
+      "z_value": 1.959963984540054
+    },
     "support": {
       "minimum_negative_labels": 25,
       "minimum_positive_labels": 25,
@@ -230,9 +243,9 @@
   },
   "population": {
     "assignment_column": "cv_fold_r0",
+    "development_rows": 24000,
     "partition": "development_validation_only",
     "rows": 4800,
-    "sealed_test_access": "prohibited",
     "target_counts": {
       "0": 3738,
       "1": 1062
@@ -257,8 +270,13 @@
     "parameter_tuning",
     "cross_validation",
     "calibration_fitting",
-    "test_partition_loading",
+    "test_partition_selection",
+    "test_partition_return",
+    "test_prediction_generation",
+    "test_prediction_loading",
     "final_test_prediction_loading",
+    "test_explanation_generation",
+    "test_subgroup_analysis",
     "online_explanations",
     "fairness_certification",
     "regulatory_compliance_claim"
@@ -287,6 +305,15 @@
     ],
     "g3_result": "closed_with_conditions",
     "trigger_policy": "human_review_not_automatic_rejection"
+  },
+  "test_boundary": {
+    "full_dataset_integrity_verification": "required",
+    "test_explanation_generation": "prohibited",
+    "test_partition_return": "prohibited",
+    "test_partition_selection": "prohibited",
+    "test_prediction_generation": "prohibited",
+    "test_prediction_loading": "prohibited",
+    "test_subgroup_analysis": "prohibited"
   },
   "schema_version": "1.0.0",
   "status": "frozen_before_official_evidence"

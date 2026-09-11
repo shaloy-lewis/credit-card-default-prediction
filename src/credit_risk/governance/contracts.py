@@ -15,7 +15,7 @@ from credit_risk.modeling.contracts import (
 )
 
 DEFAULT_GOVERNANCE_CONFIG_PATH = Path("configs/governance/phase5_v1.json")
-OFFICIAL_PHASE5_CONFIG_SHA256 = "990f33b1f1389f0666a75400a5677f3bdac4b8a09a531b43e6262b5a44cb0e12"
+OFFICIAL_PHASE5_CONFIG_SHA256 = "1717abd20e5dad6819d2f67fc13eecfa38a8800decf9e6954ffd0c74a913f68c"
 
 
 class GovernanceContractError(ValueError):
@@ -28,11 +28,21 @@ class _FrozenModel(BaseModel):
 
 class PopulationContract(_FrozenModel):
     assignment_column: Literal["cv_fold_r0"]
+    development_rows: Literal[24000]
     partition: Literal["development_validation_only"]
     rows: Literal[4800]
-    sealed_test_access: Literal["prohibited"]
     target_counts: dict[str, int]
     validation_fold: Literal[0]
+
+
+class TestBoundaryContract(_FrozenModel):
+    full_dataset_integrity_verification: Literal["required"]
+    test_explanation_generation: Literal["prohibited"]
+    test_partition_return: Literal["prohibited"]
+    test_partition_selection: Literal["prohibited"]
+    test_prediction_generation: Literal["prohibited"]
+    test_prediction_loading: Literal["prohibited"]
+    test_subgroup_analysis: Literal["prohibited"]
 
 
 class FeatureContract(_FrozenModel):
@@ -75,9 +85,16 @@ class SupportContract(_FrozenModel):
 
 class BootstrapContract(_FrozenModel):
     confidence_level: float = Field(ge=0.95, le=0.95)
+    metrics: tuple[str, ...]
     method: Literal["within_group_stratified_percentile"]
     resamples: Literal[500]
     seed: Literal[42]
+
+
+class PrevalenceIntervalContract(_FrozenModel):
+    confidence_level: float = Field(ge=0.95, le=0.95)
+    method: Literal["wilson_score"]
+    z_value: float = Field(ge=1.959963984540054, le=1.959963984540054)
 
 
 class TriggerContract(_FrozenModel):
@@ -116,6 +133,7 @@ class FairnessContract(_FrozenModel):
     bootstrap: BootstrapContract
     metrics: tuple[str, ...]
     policy_threshold: Literal["q90"]
+    prevalence_interval: PrevalenceIntervalContract
     support: SupportContract
     triggers: TriggerContract
 
@@ -153,6 +171,7 @@ class GovernanceConfig(_FrozenModel):
     prediction: PredictionContract
     prohibitions: tuple[str, ...]
     review: ReviewContract
+    test_boundary: TestBoundaryContract
 
     @model_validator(mode="after")
     def frozen_semantics(self) -> GovernanceConfig:
@@ -200,13 +219,27 @@ class GovernanceConfig(_FrozenModel):
             "parameter_tuning",
             "cross_validation",
             "calibration_fitting",
-            "test_partition_loading",
+            "test_partition_selection",
+            "test_partition_return",
+            "test_prediction_generation",
+            "test_prediction_loading",
             "final_test_prediction_loading",
+            "test_explanation_generation",
+            "test_subgroup_analysis",
             "fairness_certification",
             "regulatory_compliance_claim",
         }
         if not required_prohibitions.issubset(self.prohibitions):
             raise ValueError("required no-training/no-test prohibitions are missing")
+        if self.fairness.bootstrap.metrics != (
+            "mean_probability",
+            "calibration_in_the_large",
+            "brier_score",
+            "selection_rate_at_q90",
+            "true_positive_rate_at_q90",
+            "false_positive_rate_at_q90",
+        ):
+            raise ValueError("stratified bootstrap metrics differ from the reviewed contract")
         if self.outputs.committed != (
             "summary.json",
             "governance-report.md",

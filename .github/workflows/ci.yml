@@ -79,7 +79,6 @@ jobs:
         run: >-
           uv run pytest tests/unit/governance tests/unit/test_governance_cli.py
           tests/integration/test_phase5_protocol.py
-          tests/integration/test_phase5_evidence.py
           tests/integration/test_governance_explanation_smoke.py -m "not training"
           --cov=credit_risk.governance --cov-branch --cov-report=term-missing
           --cov-fail-under=90

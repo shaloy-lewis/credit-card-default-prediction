@@ -2,17 +2,20 @@
 
 **Protocol:** `phase5_v1`
 
-**Status:** completed against the frozen contract; G3 closed with conditions
+**Status:** corrective evidence republication pending
 
 **Model:** reviewed `selected_v1` CatBoost bundle
 **Training budget:** zero fits
 
 ## Review boundary
 
-The review uses only the 4,800 development-validation accounts assigned to
-`cv_fold_r0 == 0`. The development loader must never return test rows. Aggregate
-metrics from the already-completed final test may be cited, but its row-level
-predictions and loader are prohibited.
+Phase 1 integrity verification parses the complete canonical snapshot and split
+assignments. After that verification boundary, the modelling loader must return
+exactly the 24,000 development accounts and no test account. The review then uses
+only the 4,800 development-validation accounts assigned to `cv_fold_r0 == 0`.
+Test accounts may not be selected, returned, scored, explained, or included in
+subgroup analysis. Aggregate metrics from the already-completed final test may
+be cited, but its row-level predictions and loader are prohibited.
 
 The selected bundle is scored once on validation. Its average precision, Brier
 score, and lift at 10% must reproduce the reviewed selection evidence within
@@ -41,9 +44,11 @@ performance metrics. Smaller groups disclose counts and `insufficient_support`
 only. No intersectional conclusion is made.
 
 At the frozen validation `q90` threshold, the review reports prevalence, mean
-probability, calibration-in-the-large, Brier score, selection rate, TPR, and FPR,
-with 500 seed-42 within-group stratified bootstrap resamples and percentile 95%
-intervals.
+probability, calibration-in-the-large, Brier score, selection rate, TPR, and FPR.
+Prevalence receives a two-sided 95% Wilson score interval. The other measures use
+500 seed-42 within-group stratified bootstrap resamples and percentile 95%
+intervals. The stratified bootstrap never represents its fixed class proportion
+as prevalence uncertainty.
 
 Human review is triggered by a selection-rate ratio outside `[0.80, 1.25]`, an
 absolute TPR/FPR gap above `0.10`, Brier degradation above `0.02`, or absolute
@@ -59,13 +64,10 @@ prohibit adverse action and India/compliance claims, and require representative
 data plus monitoring before any real use. This outcome is not a fairness or
 production certification.
 
-## Reviewed outcome
+## Remediation status
 
-The official prediction-only build from clean implementation commit `8989374`
-reproduced validation AP `0.556510`, Brier score `0.133539`, and lift at 10%
-`3.210923`. Native SHAP passed with maximum raw additivity error below `3.6e-15`
-and maximum sigmoid/probability error below `1.2e-16`.
-
-The predeclared selection-rate triggers fired for education code 1 (`0.696014`)
-and code 3 (`1.256410`). Both require human review; neither automatically rejects
-the model. G3 closed as `closed_with_conditions` under the documented disposition.
+The initial Phase 5 evidence was withdrawn after review identified an ambiguous
+test-access claim and degenerate prevalence intervals. The corrected workflow and
+contract are frozen before republication. G3 will return to
+`closed_with_conditions` only after a clean prediction-only build, independent
+verification, and digest review of the corrected aggregate evidence.

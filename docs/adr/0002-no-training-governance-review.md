@@ -19,7 +19,11 @@ separate governance review even though the bundle can already be served locally.
 ## Decision
 
 Phase 5 performs no training, refitting, tuning, cross-validation, calibration
-fitting, or test access. It replaces demographic model ablation with:
+fitting, or test evaluation. Phase 1 integrity verification necessarily parses
+the complete canonical snapshot, so Phase 5 does not claim that test bytes or
+rows are never inspected for integrity. The modelling boundary guarantees that
+test accounts are never selected, returned, scored, explained, or included in
+subgroup analysis. It replaces demographic model ablation with:
 
 1. contract proof that demographics cannot enter the estimator;
 2. input-invariance tests showing that audit-only values do not change the
@@ -31,8 +35,9 @@ Explanations use CatBoost's native SHAP values on a deterministic validation
 sample. They are model attributions in raw-score space, not causal findings,
 customer-facing reasons, or legally sufficient adverse-action reasons.
 
-Only aggregate committed final-test metrics may be cited. Phase 5 may not load,
-slice, regenerate, or republish final-test row-level predictions.
+Only aggregate committed final-test metrics may be cited. Phase 5 may not select
+or return test accounts, load final-test predictions, generate new test scores,
+or include test rows in explanations, subgroup analysis, or published evidence.
 
 ## Consequences
 
