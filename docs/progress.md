@@ -271,3 +271,19 @@ deferred risks. It is not a substitute for commit history or CI results.
   remains closed.
 - Phase 4 release hardening is complete. Explanations, fairness, registry,
   monitoring, rollback, and incident work have not started.
+
+## Phase 5 protocol — frozen before evidence
+
+- ADR 0002 replaces demographic model ablation with demographic exclusion,
+  input-invariance tests, and validation-only subgroup analysis. No further
+  model or calibrator fitting is authorized.
+- The frozen `phase5_v1` contract uses exactly 4,800 validation accounts and
+  prohibits final-test rows, predictions, and loaders.
+- Native CatBoost SHAP additivity, reviewed reason categories, group support
+  rules, 500-resample uncertainty, and human-review triggers are fixed before
+  official evidence publication.
+- A non-published planning preview occurred only after the trigger thresholds
+  were selected. The thresholds remain unchanged and the expected education
+  code 1/code 3 selection-rate triggers require documented disposition.
+- The local API is technical portfolio integration, not evidence of external
+  governance approval. G3 remains open until the Phase 5 evidence is reviewed.

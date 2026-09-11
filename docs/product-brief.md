@@ -127,7 +127,7 @@ baseline, the baseline remains eligible for selection.
 | Risk | Proposed control |
 | --- | --- |
 | Unnecessary or harmful customer contact | Capacity limit, risk bands, human-owned action policy, and complaint-rate guardrail in the experiment design |
-| Demographic discrimination | Separate predictive and audit datasets; demographic ablation; subgroup metrics with uncertainty; documented feature-use policy |
+| Demographic discrimination | Separate predictive and audit datasets; exclusion/invariance proof; validation-only subgroup metrics with uncertainty; documented feature-use policy |
 | Misleading explanations | Validate transformed feature names and SHAP additivity; aggregate to reviewed reason categories; do not call raw SHAP values adverse-action reasons |
 | Data leakage | Feature-availability table, `as_of_date` contract, sealed test set, and leakage tests |
 | Silent input failure | Versioned schema, range/category checks, quarantine path, and batch manifest |
@@ -160,7 +160,8 @@ and incident-response paths; those results will be labelled as operational tests
 - Use the fixed stratified holdout; retain the completed repeated-CV work as
   historical scientific evidence. The authoritative release workflow uses one
   frozen train/validation split and does not rerun cross-validation or tuning.
-- Keep `SEX`, `AGE`, and `MARRIAGE` available for audit and ablation analysis.
+- Keep `SEX`, `EDUCATION`, `AGE`, and `MARRIAGE` available for audit-only
+  subgroup analysis; no demographic-inclusive model is fitted after release.
 - Default proposal: exclude sensitive demographic attributes from the promoted
   predictive candidate unless evidence and a reviewed use policy justify them.
 - Fit every transformation, outlier rule, calibrator, and policy threshold using
@@ -190,14 +191,15 @@ appropriate quasi-experiment. The portfolio deliverable will therefore specify:
 - intention-to-treat analysis and stopping rules; and
 - explicit separation of observational lift from causal intervention impact.
 
-## Open decisions for later phases
+## Resolved and open decisions for later phases
 
 1. Whether a future stakeholder context should replace the 10% demonstration
    capacity assumption.
 2. The hypothetical intervention catalogue and cost assumptions.
-3. The final sensitive-feature policy after demographic ablation.
+3. **Resolved for Phase 5:** all four demographic fields remain audit-only and
+   are prohibited estimator inputs.
 4. The final model-promotion thresholds after calibration and policy evidence.
 5. The local service-level objectives after an initial benchmark.
 
-These decisions do not block Phase 1. They must be resolved before model
-promotion or claims about the operating policy.
+The remaining decisions do not block the validation-only Phase 5 review. They
+must be resolved before claims about a real operating policy or production use.

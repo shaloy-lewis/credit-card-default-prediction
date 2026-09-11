@@ -38,18 +38,19 @@ be fit within the relevant training fold.
 ## Demographic boundary
 
 The canonical dataset retains demographics because deleting them would prevent
-data-quality review, subgroup analysis, and the Week 6 ablation study. The
-future Phase 2 modelling interface must derive separate views from the canonical
-dataset:
+data-quality review and subgroup analysis. ADR 0002 replaced the planned Week 6
+model ablation with a no-training exclusion/invariance review because the
+released model already prohibits demographic inputs. The modelling interface
+derives separate views from the canonical dataset:
 
 - a predictor view that excludes `ID`, the target, and all four demographic
   fields; and
 - an audit view keyed by `ID` that contains the target and demographics.
 
 Joining the audit view into a feature matrix is a contract violation. A future
-change to demographic-feature use requires a recorded governance decision and
-new versioned feature contract; exploratory performance improvement alone is
-not sufficient.
+change to demographic-feature use requires a recorded governance decision, new
+versioned feature contract, separately authorized training, and independent
+review; exploratory performance improvement alone is not sufficient.
 
 The compatibility CatBoost model is exempt only so its frozen endpoint can be
 regression-tested. Its use of legacy inputs does not override the Phase 1 policy

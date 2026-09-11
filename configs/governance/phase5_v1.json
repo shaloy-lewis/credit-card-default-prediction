@@ -1,0 +1,293 @@
+{
+  "dependencies": {
+    "catboost": "1.2.5",
+    "joblib": "1.5.3",
+    "numpy": "1.26.4",
+    "pandas": "2.2.2",
+    "pydantic": "2.7.4",
+    "scikit-learn": "1.4.2"
+  },
+  "explanation": {
+    "additivity_absolute_tolerance": 1e-10,
+    "direction_labels": {
+      "negative": "risk_mitigating",
+      "positive": "risk_increasing"
+    },
+    "language_policy": "model_attribution_not_causal_or_adverse_action_reason",
+    "method": "catboost_native_shap_values",
+    "probability_absolute_tolerance": 1e-10,
+    "reason_categories": {
+      "billing_balance": [
+        "bill_amount_ntd_lag_0",
+        "bill_amount_ntd_lag_1",
+        "bill_amount_ntd_lag_2",
+        "bill_amount_ntd_lag_3",
+        "bill_amount_ntd_lag_4",
+        "bill_amount_ntd_lag_5"
+      ],
+      "credit_capacity": [
+        "credit_limit_ntd"
+      ],
+      "payment_behaviour": [
+        "payment_amount_ntd_lag_0",
+        "payment_amount_ntd_lag_1",
+        "payment_amount_ntd_lag_2",
+        "payment_amount_ntd_lag_3",
+        "payment_amount_ntd_lag_4",
+        "payment_amount_ntd_lag_5"
+      ],
+      "repayment_status": [
+        "repayment_status_lag_0",
+        "repayment_status_lag_1",
+        "repayment_status_lag_2",
+        "repayment_status_lag_3",
+        "repayment_status_lag_4",
+        "repayment_status_lag_5"
+      ]
+    },
+    "sample_rows": 1000,
+    "sampling_algorithm": "StratifiedShuffleSplit",
+    "sampling_seed": 42,
+    "shap_output_columns": 20,
+    "space": "raw_log_odds",
+    "stratification": [
+      "target",
+      "risk_band"
+    ]
+  },
+  "fairness": {
+    "axes": {
+      "age_band": {
+        "boundaries": [
+          18,
+          30,
+          40,
+          50,
+          60,
+          101
+        ],
+        "labels": [
+          "18_29",
+          "30_39",
+          "40_49",
+          "50_59",
+          "60_100"
+        ],
+        "source_column": "age_years"
+      },
+      "education_code": {
+        "groups": {
+          "1": [
+            1
+          ],
+          "2": [
+            2
+          ],
+          "3": [
+            3
+          ],
+          "4": [
+            4
+          ],
+          "undocumented_0_5_6": [
+            0,
+            5,
+            6
+          ]
+        },
+        "source_column": "education_code"
+      },
+      "marital_status_code": {
+        "groups": {
+          "1": [
+            1
+          ],
+          "2": [
+            2
+          ],
+          "3": [
+            3
+          ],
+          "undocumented_0": [
+            0
+          ]
+        },
+        "source_column": "marital_status_code"
+      },
+      "sex_code": {
+        "groups": {
+          "1": [
+            1
+          ],
+          "2": [
+            2
+          ]
+        },
+        "source_column": "sex_code"
+      }
+    },
+    "bootstrap": {
+      "confidence_level": 0.95,
+      "method": "within_group_stratified_percentile",
+      "resamples": 500,
+      "seed": 42
+    },
+    "metrics": [
+      "rows",
+      "target_prevalence",
+      "mean_probability",
+      "calibration_in_the_large",
+      "brier_score",
+      "selection_rate_at_q90",
+      "true_positive_rate_at_q90",
+      "false_positive_rate_at_q90"
+    ],
+    "policy_threshold": "q90",
+    "support": {
+      "minimum_negative_labels": 25,
+      "minimum_positive_labels": 25,
+      "minimum_rows": 100,
+      "unsupported_status": "insufficient_support"
+    },
+    "triggers": {
+      "absolute_calibration_in_the_large": 0.05,
+      "absolute_false_positive_rate_gap": 0.1,
+      "absolute_true_positive_rate_gap": 0.1,
+      "maximum_brier_degradation": 0.02,
+      "selection_rate_ratio_lower": 0.8,
+      "selection_rate_ratio_upper": 1.25
+    }
+  },
+  "features": {
+    "audit_columns": [
+      "sex_code",
+      "education_code",
+      "marital_status_code",
+      "age_years"
+    ],
+    "demographic_policy": "audit_only_excluded_from_estimator",
+    "forbidden_predictor_columns": [
+      "account_id",
+      "default_next_month",
+      "sex_code",
+      "education_code",
+      "marital_status_code",
+      "age_years"
+    ],
+    "predictor_columns": [
+      "credit_limit_ntd",
+      "repayment_status_lag_0",
+      "repayment_status_lag_1",
+      "repayment_status_lag_2",
+      "repayment_status_lag_3",
+      "repayment_status_lag_4",
+      "repayment_status_lag_5",
+      "bill_amount_ntd_lag_0",
+      "bill_amount_ntd_lag_1",
+      "bill_amount_ntd_lag_2",
+      "bill_amount_ntd_lag_3",
+      "bill_amount_ntd_lag_4",
+      "bill_amount_ntd_lag_5",
+      "payment_amount_ntd_lag_0",
+      "payment_amount_ntd_lag_1",
+      "payment_amount_ntd_lag_2",
+      "payment_amount_ntd_lag_3",
+      "payment_amount_ntd_lag_4",
+      "payment_amount_ntd_lag_5"
+    ]
+  },
+  "governance_id": "phase5_v1",
+  "lineage": {
+    "assignment_sha256": "2f6e2cdd0b29617a48ab6fcbdabd6859822c8ad2b6b5d77665967852cb4a034e",
+    "bundle_manifest_sha256": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+    "canonical_sha256": "75b2a746781a584b0456f843f1f269190b51e90983cba44c4ed6c4a8685e6c1c",
+    "feature_contract_sha256": "8978277ae1c92b6f0b8daed94cccf3cd51d8e6cae0aa9c0620d8cfb813384a4b",
+    "final_test_report_sha256": "cb2410b288b1b11e73b37c591b3a129e2dce1abc8ba9ce2969217f15344aab54",
+    "final_test_summary_sha256": "8b5e018f5e29a5128285afb877e0adaeca35f4b450061cac21e08ea3a51bda56",
+    "model_sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c",
+    "phase4_merge_commit": "9c4e5995a598d38bb8f5171eeaad21a57f2b01d1",
+    "reviewed_split_lock_sha256": "b2312380fa46924ca414acbcfef63b0435d1321083e87e4df5ec04f18736093d",
+    "selection_report_sha256": "16c8748e76002ebedd5c41938df7364e493af590461d03a926a2aab3d801cee1",
+    "selection_summary_sha256": "8c11b1d443c782a8ef14aa3e708e3fffa064ecb4c9fe58d3e51a6effa46efbd7",
+    "selection_validation_predictions_sha256": "9637e6ca404c58e4b7edb0f3f1c035279b2e6efb2ee27a6cda1cf8433b438312",
+    "source_sha256": "45bcf4df62ff2e237a74eb155cabfb4bbbc171219a0637daef44fdad07503dd0"
+  },
+  "outputs": {
+    "committed": [
+      "summary.json",
+      "governance-report.md",
+      "fairness-report.md",
+      "model-card.md",
+      "risk-register.md",
+      "g3-review.md",
+      "evidence-manifest.json"
+    ],
+    "runtime": [
+      "validation_predictions.csv",
+      "sampled_shap_values.csv",
+      "subgroup_bootstrap.json"
+    ]
+  },
+  "population": {
+    "assignment_column": "cv_fold_r0",
+    "partition": "development_validation_only",
+    "rows": 4800,
+    "sealed_test_access": "prohibited",
+    "target_counts": {
+      "0": 3738,
+      "1": 1062
+    },
+    "validation_fold": 0
+  },
+  "prediction": {
+    "bundle_id": "selected_v1",
+    "calibration": "identity",
+    "expected_validation_metrics": {
+      "average_precision": 0.5565104548302114,
+      "brier_score": 0.13353854208377516,
+      "lift_at_0_1": 3.210922787193974
+    },
+    "metric_absolute_tolerance": 1e-12,
+    "model_id": "catboost_fixed",
+    "q90": 0.5858430725164706
+  },
+  "prohibitions": [
+    "training",
+    "refitting",
+    "parameter_tuning",
+    "cross_validation",
+    "calibration_fitting",
+    "test_partition_loading",
+    "final_test_prediction_loading",
+    "online_explanations",
+    "fairness_certification",
+    "regulatory_compliance_claim"
+  ],
+  "review": {
+    "disposition": [
+      "retain_all_demographics_as_audit_only",
+      "restrict_use_to_human_owned_outreach_prioritisation",
+      "prohibit_adverse_action",
+      "prohibit_india_or_compliance_claims",
+      "require_representative_data_and_monitoring_before_real_use"
+    ],
+    "expected_triggers": [
+      {
+        "axis": "education_code",
+        "direction": "below_lower_bound",
+        "group": "1",
+        "metric": "selection_rate_ratio"
+      },
+      {
+        "axis": "education_code",
+        "direction": "above_upper_bound",
+        "group": "3",
+        "metric": "selection_rate_ratio"
+      }
+    ],
+    "g3_result": "closed_with_conditions",
+    "trigger_policy": "human_review_not_automatic_rejection"
+  },
+  "schema_version": "1.0.0",
+  "status": "frozen_before_official_evidence"
+}

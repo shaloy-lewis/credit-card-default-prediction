@@ -10,6 +10,7 @@ against model accuracy.
 - [Product and decision brief](product-brief.md)
 - [Twelve-week delivery roadmap](roadmap.md)
 - [ADR 0001: batch-first scoring architecture](adr/0001-batch-first-scoring.md)
+- [ADR 0002: no-training governance review](adr/0002-no-training-governance-review.md)
 - [Delivery progress and verification evidence](progress.md)
 
 The Phase 0 product brief and batch-first architecture decision were accepted on
@@ -78,4 +79,15 @@ ignored. Phase 4 release hardening additionally replaced the active evaluator
 with a no-option permanent tombstone while preserving its approved source
 byte-for-byte as a non-importable evidence artifact. Serving readiness now
 requires exact versions for the six runtime dependencies recorded in the bundle
-manifest. G2 remains closed, Phase 4 is complete, and Phase 5+ work has not begun.
+manifest. G2 remains closed and Phase 4 is complete; the Phase 5 protocol below
+starts the governance review without beginning later lifecycle work.
+
+## Phase 5 governance protocol
+
+- [Frozen validation-only governance protocol](governance/phase5-protocol.md)
+- Machine-readable contract: `../configs/governance/phase5_v1.json`
+
+The protocol uses the existing selected bundle for validation inference and
+native CatBoost explanations only. It prohibits further fitting and final-test
+access, replaces demographic ablation with exclusion/invariance evidence, and
+freezes subgroup review triggers before official evidence is published.
