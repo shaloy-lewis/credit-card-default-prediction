@@ -23,8 +23,9 @@ The predictor view contains exactly 19 operational columns, in governed order:
 
 `account_id`, `default_next_month`, sex, education, marital status, and age are
 forbidden predictors. The latter six fields form a separate development-only
-audit view. Demographics are retained for the later ablation and fairness gate,
-not for baseline fitting.
+audit view. Demographics were retained for a later governance gate, which ADR
+0002 completed through exclusion, invariance, and subgroup review rather than a
+new fitted ablation model. They were never baseline predictors.
 
 ## Common validation protocol
 

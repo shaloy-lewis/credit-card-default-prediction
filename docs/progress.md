@@ -122,8 +122,9 @@ deferred risks. It is not a substitute for commit history or CI results.
 - The source is a static 2005 Taiwan sample with no event timestamps, India
   validation, or defensible out-of-time split. It supports engineering and
   governance demonstrations, not contemporary portfolio-performance claims.
-- Demographic columns are retained for audit and ablation but excluded from the
-  default predictive policy until the fairness decision is completed.
+- Demographic columns are retained for audit only and excluded from the released
+  model. ADR 0002 superseded the earlier ablation plan with no-training
+  exclusion/invariance evidence and subgroup review.
 - Generated data remains intentionally Git-ignored; a clean checkout must fetch
   the exact pinned public bytes before building, then can verify fully offline.
 - Legacy training and committed pickle artifacts are not connected to the new
@@ -217,8 +218,8 @@ deferred risks. It is not a substitute for commit history or CI results.
   capacity-based operating-policy selection, and sealed-holdout evaluation were
   pending and G2 was open. The later one-pass release workflow below superseded
   this handoff and closed G2.
-- Demographic ablation, subgroup analysis, explanations, and the final feature-use
-  decision remain Week 6 work.
+- Demographic exclusion/invariance, subgroup analysis, explanations, and the
+  final feature-use decision were subsequently completed in Week 6.
 - The selected estimator is not connected to the compatibility `/predict`
   endpoint and no fitted CatBoost artifact is committed by this checkpoint.
 
@@ -269,10 +270,11 @@ deferred risks. It is not a substitute for commit history or CI results.
 - Authorization, approval, final-test evidence, model bundle, and started/completed
   receipts remain immutable. The one evaluation is permanently consumed and G2
   remains closed.
-- Phase 4 release hardening is complete. Explanations, fairness, registry,
-  monitoring, rollback, and incident work have not started.
+- At the Phase 4 checkpoint, explanations, subgroup review, registry, monitoring,
+  rollback, and incident work had not started. Phase 5 subsequently completed
+  explanations and subgroup review; the later lifecycle controls remain open.
 
-## Phase 5 protocol — frozen before evidence
+## Phase 5 governance and explanation review — complete with conditions
 
 - ADR 0002 replaces demographic model ablation with demographic exclusion,
   input-invariance tests, and validation-only subgroup analysis. No further
@@ -285,5 +287,16 @@ deferred risks. It is not a substitute for commit history or CI results.
 - A non-published planning preview occurred only after the trigger thresholds
   were selected. The thresholds remain unchanged and the expected education
   code 1/code 3 selection-rate triggers require documented disposition.
+- The clean prediction-only build from implementation commit `8989374` reproduced
+  validation AP `0.556510`, Brier score `0.133539`, and lift at 10% `3.210923`.
+- Exactly 1,000 deterministic explanation rows passed native-SHAP raw additivity
+  and sigmoid/probability parity at the frozen tolerance.
+- The only supported-group triggers were the predeclared education code 1 low
+  selection-rate ratio (`0.696014`) and code 3 high ratio (`1.256410`).
+- Aggregate evidence, the model card, risk register, and G3 checklist were
+  reviewed; row-level predictions, SHAP values, and bootstrap distributions remain ignored.
+- G3 is `closed_with_conditions`. Demographics remain audit-only, use remains
+  human-owned outreach prioritisation, and no fairness, India/compliance, or
+  production-suitability claim is made.
 - The local API is technical portfolio integration, not evidence of external
-  governance approval. G3 remains open until the Phase 5 evidence is reviewed.
+  governance approval. Phase 6+ registry, parity, monitoring, and rollback work has not started.

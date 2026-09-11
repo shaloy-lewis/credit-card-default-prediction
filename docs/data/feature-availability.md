@@ -19,10 +19,10 @@ prediction.
 | --- | --- | --- | --- | --- |
 | `ID` | Published row/account identifier | Present in the snapshot | Lineage and split joins only | Never a predictor; sequential values could encode row order without business meaning |
 | `LIMIT_BAL` | Published credit limit | Current snapshot | Candidate predictor | A limit is not EAD and must not be presented as realised exposure |
-| `SEX` | Published binary sex code | Current snapshot | Audit and ablation only | Excluded from promoted predictive candidates; categories are coarse |
-| `EDUCATION` | Published education code | Current snapshot | Audit and ablation only | Excluded; undocumented codes 0, 5, and 6 are retained and reported |
-| `MARRIAGE` | Published marital-status code | Current snapshot | Audit and ablation only | Excluded; undocumented code 0 is retained and reported |
-| `AGE` | Published age in years | Current snapshot | Audit and ablation only | Excluded under the current demographic-feature policy |
+| `SEX` | Published binary sex code | Current snapshot | Audit only | Excluded from the released model; categories are coarse |
+| `EDUCATION` | Published education code | Current snapshot | Audit only | Excluded; undocumented codes 0, 5, and 6 are retained and reported |
+| `MARRIAGE` | Published marital-status code | Current snapshot | Audit only | Excluded; undocumented code 0 is retained and reported |
+| `AGE` | Published age in years | Current snapshot | Audit only | Excluded under the released demographic-feature policy |
 | `PAY_0` | September 2005 repayment status | Most recent published period | Candidate predictor | Name is intentional; no `PAY_1`. Codes -2 and 0 are undocumented by UCI |
 | `PAY_2`–`PAY_6` | August through April 2005 repayment status | Prior five published periods | Candidate predictors | Suffix is not months-ago uniformly with `PAY_0`; mapping must remain explicit |
 | `BILL_AMT1`–`BILL_AMT6` | September through April statement balances | Current/prior six periods | Candidate predictors | Negative amounts are valid source values, not automatic quality failures |

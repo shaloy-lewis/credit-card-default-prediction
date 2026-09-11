@@ -162,8 +162,8 @@ and incident-response paths; those results will be labelled as operational tests
   frozen train/validation split and does not rerun cross-validation or tuning.
 - Keep `SEX`, `EDUCATION`, `AGE`, and `MARRIAGE` available for audit-only
   subgroup analysis; no demographic-inclusive model is fitted after release.
-- Default proposal: exclude sensitive demographic attributes from the promoted
-  predictive candidate unless evidence and a reviewed use policy justify them.
+- Exclude sensitive demographic attributes from the released model. Any future
+  change requires a new ADR, separately authorized training, and independent review.
 - Fit every transformation, outlier rule, calibrator, and policy threshold using
   training or validation data only.
 
@@ -174,7 +174,7 @@ and incident-response paths; those results will be labelled as operational tests
 | G0: scope approval | Decision contract, non-goals, evidence boundary, and accepted ADR |
 | G1: data readiness | Data card, schema results, lineage, feature-availability matrix, and leakage review |
 | G2: model candidate | Baselines, common validation protocol, experiment lineage, uncertainty, calibration, and stress tests |
-| G3: promotion review | Model card, subgroup evaluation, reason-code tests, policy evaluation, risk register, and sign-off checklist |
+| G3: promotion review | `closed_with_conditions`: reviewed model card, subgroup evaluation, native-SHAP checks, policy threshold, risk register, and sign-off checklist |
 | G4: release readiness | Batch/API parity, contract tests, container scan, monitoring, rollback evidence, and runbooks |
 | G5: ongoing review | Drift/performance report, incident log, retraining rationale, and updated approvals |
 
@@ -198,8 +198,10 @@ appropriate quasi-experiment. The portfolio deliverable will therefore specify:
 2. The hypothetical intervention catalogue and cost assumptions.
 3. **Resolved for Phase 5:** all four demographic fields remain audit-only and
    are prohibited estimator inputs.
-4. The final model-promotion thresholds after calibration and policy evidence.
+4. **Resolved in Phase 4:** identity calibration and frozen model-promotion gates
+   passed once; the final test is permanently consumed.
 5. The local service-level objectives after an initial benchmark.
 
-The remaining decisions do not block the validation-only Phase 5 review. They
-must be resolved before claims about a real operating policy or production use.
+The validation-only Phase 5 review is complete with documented conditions. The
+remaining open decisions must be resolved before claims about a real operating
+policy or production use.

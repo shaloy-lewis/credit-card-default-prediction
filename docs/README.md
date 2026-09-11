@@ -80,14 +80,25 @@ with a no-option permanent tombstone while preserving its approved source
 byte-for-byte as a non-importable evidence artifact. Serving readiness now
 requires exact versions for the six runtime dependencies recorded in the bundle
 manifest. G2 remains closed and Phase 4 is complete; the Phase 5 protocol below
-starts the governance review without beginning later lifecycle work.
+governs the completed review without beginning later lifecycle work.
 
 ## Phase 5 governance protocol
 
 - [Frozen validation-only governance protocol](governance/phase5-protocol.md)
 - Machine-readable contract: `../configs/governance/phase5_v1.json`
+- [Reviewed aggregate governance report](../reports/governance/phase5_v1/governance-report.md)
+- [Validation subgroup report](../reports/governance/phase5_v1/fairness-report.md)
+- [Selected-model card](../reports/governance/phase5_v1/model-card.md)
+- [Risk register](../reports/governance/phase5_v1/risk-register.md)
+- [G3 decision](../reports/governance/phase5_v1/g3-review.md)
+- [G3 checklist](governance/g3-checklist.md)
+- [Model-governance status](governance/model-governance-status.md)
 
 The protocol uses the existing selected bundle for validation inference and
 native CatBoost explanations only. It prohibits further fitting and final-test
 access, replaces demographic ablation with exclusion/invariance evidence, and
-freezes subgroup review triggers before official evidence is published.
+froze subgroup review triggers before official evidence was published. The clean
+prediction-only build reproduced the selected validation metrics, verified native
+SHAP additivity, and produced the two predeclared education selection-rate triggers.
+G3 is `closed_with_conditions`; fairness, compliance, and production approval are
+not claimed. Row-level runtime evidence remains ignored.

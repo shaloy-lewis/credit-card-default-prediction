@@ -2,7 +2,7 @@
 
 **Protocol:** `phase5_v1`
 
-**Status:** frozen before official evidence
+**Status:** completed against the frozen contract; G3 closed with conditions
 
 **Model:** reviewed `selected_v1` CatBoost bundle
 **Training budget:** zero fits
@@ -58,3 +58,14 @@ all demographics audit-only, restrict use to human-owned outreach prioritisation
 prohibit adverse action and India/compliance claims, and require representative
 data plus monitoring before any real use. This outcome is not a fairness or
 production certification.
+
+## Reviewed outcome
+
+The official prediction-only build from clean implementation commit `8989374`
+reproduced validation AP `0.556510`, Brier score `0.133539`, and lift at 10%
+`3.210923`. Native SHAP passed with maximum raw additivity error below `3.6e-15`
+and maximum sigmoid/probability error below `1.2e-16`.
+
+The predeclared selection-rate triggers fired for education code 1 (`0.696014`)
+and code 3 (`1.256410`). Both require human review; neither automatically rejects
+the model. G3 closed as `closed_with_conditions` under the documented disposition.
