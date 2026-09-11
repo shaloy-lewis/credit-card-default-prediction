@@ -14,6 +14,14 @@ from credit_risk.modeling.selected_bundle import (
 )
 
 SELECTED_V1_MANIFEST_SHA256 = "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88"
+SERVING_DEPENDENCIES = (
+    "catboost",
+    "joblib",
+    "numpy",
+    "pandas",
+    "pydantic",
+    "scikit-learn",
+)
 
 
 class SelectedPredictPipeline:
@@ -25,6 +33,7 @@ class SelectedPredictPipeline:
             self.bundle_root,
             trusted=True,
             expected_manifest_sha256=SELECTED_V1_MANIFEST_SHA256,
+            required_dependencies=SERVING_DEPENDENCIES,
         )
         if self.manifest.selected_model_id != "catboost_fixed":
             raise SelectedBundleError(

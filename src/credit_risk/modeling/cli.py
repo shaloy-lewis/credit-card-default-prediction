@@ -154,25 +154,8 @@ def freeze_test(
 
 
 @model_app.command("final-test")
-def final_test(
-    data_root: Annotated[Path, typer.Option(help="Verified governed data root.")] = Path("data"),
-    authorization: Annotated[Path, typer.Option(help="Frozen validation-derived gates.")] = Path(
-        "configs/modeling/final_test_v1.json"
-    ),
-    approval: Annotated[Path, typer.Option(help="Reviewed one-time execution approval.")] = Path(
-        "configs/modeling/final_test_v1.approval.json"
-    ),
-    bundle_root: Annotated[Path, typer.Option(help="Reviewed selected-model bundle.")] = Path(
-        "models/selected_v1"
-    ),
-    runtime_root: Annotated[Path, typer.Option(help="Ignored row-level prediction root.")] = Path(
-        "experiment/final-test-v1"
-    ),
-    output_root: Annotated[Path, typer.Option(help="Immutable aggregate test evidence.")] = Path(
-        "reports/modeling/final_test_v1"
-    ),
-) -> None:
-    """Run the explicitly approved, prediction-only sealed test exactly once."""
+def final_test() -> None:
+    """Report that the one authorized sealed-test evaluation is consumed."""
 
     try:
         from credit_risk.modeling.final_test_workflow import (
@@ -180,30 +163,7 @@ def final_test(
             run_final_test,
         )
 
-        result = run_final_test(
-            data_root=data_root,
-            authorization_path=authorization,
-            approval_path=approval,
-            bundle_root=bundle_root,
-            runtime_root=runtime_root,
-            output_root=output_root,
-        )
-    except ModuleNotFoundError as error:
-        extra = "data" if error.name == "pandera" else "modeling"
-        typer.echo(
-            f"Final-test failed: dependency {error.name!r} is unavailable; install the project "
-            f"with the '{extra}' extra.",
-            err=True,
-        )
-        raise typer.Exit(code=1) from None
+        run_final_test()
     except FinalTestWorkflowError as error:
         typer.echo(f"Final-test failed: {error}", err=True)
         raise typer.Exit(code=1) from None
-
-    typer.echo(
-        "Final-test completed: evaluation_count=1, training=false, "
-        f"g2_closed={str(result.g2_closed).lower()}, summary_sha256={result.summary_sha256}"
-    )
-    typer.echo(f"Summary: {result.summary_path.resolve()}")
-    typer.echo(f"Report: {result.report_path.resolve()}")
-    typer.echo(f"Completed receipt: {result.completed_receipt_path.resolve()}")

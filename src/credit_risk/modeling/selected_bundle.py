@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import math
+from collections.abc import Collection
 from pathlib import Path
 from typing import Any, Literal
 
@@ -108,8 +110,9 @@ def load_selected_bundle(
     *,
     trusted: bool = False,
     expected_manifest_sha256: str | None = None,
+    required_dependencies: Collection[str] | None = None,
 ) -> tuple[BundleManifest, FittedSelectionModel]:
-    """Load a digest-verified bundle; joblib requires explicit trust acknowledgement."""
+    """Load a digest-verified bundle with optional exact dependency validation."""
 
     root = Path(bundle_root)
     try:
@@ -131,6 +134,7 @@ def load_selected_bundle(
         raise SelectedBundleError(f"Invalid selected bundle manifest: {error}") from error
     if manifest.feature_order != PREDICTOR_COLUMNS or manifest.class_order != (0, 1):
         raise SelectedBundleError("Selected bundle feature or class order is incompatible.")
+    _validate_required_dependencies(manifest, required_dependencies)
     expected_files = {"manifest.json", manifest.model_filename}
     try:
         observed_files = {path.name for path in root.iterdir() if path.is_file()}
@@ -175,6 +179,34 @@ def load_selected_bundle(
         estimator=estimator,
         feature_handling=manifest.feature_handling,
     )
+
+
+def _validate_required_dependencies(
+    manifest: BundleManifest, required_dependencies: Collection[str] | None
+) -> None:
+    """Require exact reviewed versions before any model deserialization occurs."""
+
+    if required_dependencies is None:
+        return
+    if isinstance(required_dependencies, str):
+        raise SelectedBundleError("Required dependencies must be a collection of package names.")
+    for dependency in sorted(set(required_dependencies)):
+        expected_version = manifest.dependencies.get(dependency)
+        if expected_version is None:
+            raise SelectedBundleError(
+                f"Selected bundle manifest is missing required dependency {dependency!r}."
+            )
+        try:
+            installed_version = importlib.metadata.version(dependency)
+        except importlib.metadata.PackageNotFoundError as error:
+            raise SelectedBundleError(
+                f"Required serving dependency {dependency!r} is not installed."
+            ) from error
+        if installed_version != expected_version:
+            raise SelectedBundleError(
+                f"Serving dependency {dependency!r} version mismatch: "
+                f"expected={expected_version}, observed={installed_version}."
+            )
 
 
 def population_sha256(account_ids: np.ndarray, target: np.ndarray) -> str:

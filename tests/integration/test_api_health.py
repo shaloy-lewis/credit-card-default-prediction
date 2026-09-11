@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+import credit_risk.modeling.selected_bundle as selected_bundle
 from api import create_app
 from credit_risk.modeling.selected_bundle import SelectedBundleError
 
@@ -57,6 +58,23 @@ def test_semantically_valid_manifest_edit_fails_application_startup(tmp_path: Pa
 
     with pytest.raises(SelectedBundleError, match="manifest digest mismatch"):
         with TestClient(create_app(tmp_path)):
+            pass
+
+
+def test_dependency_version_mismatch_fails_application_startup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    installed_version = selected_bundle.importlib.metadata.version
+
+    def mismatched_version(distribution_name: str) -> str:
+        if distribution_name == "catboost":
+            return "0.0.0"
+        return installed_version(distribution_name)
+
+    monkeypatch.setattr(selected_bundle.importlib.metadata, "version", mismatched_version)
+
+    with pytest.raises(SelectedBundleError, match="'catboost' version mismatch"):
+        with TestClient(create_app()):
             pass
 
 

@@ -163,7 +163,8 @@ jobs:
           final_test_status=$?
           set -e
           test "$final_test_status" -eq 1
-          grep --fixed-strings "install the project with the 'data' extra" <<<"$final_test_output"
+          grep --fixed-strings "Final-test evaluation was permanently consumed" <<<"$final_test_output"
+          grep --fixed-strings "No reevaluation is permitted" <<<"$final_test_output"
           ! grep --fixed-strings "Traceback" <<<"$final_test_output"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert all(not Path('/app', name).exists() for name in ('data', 'experiment', 'mlruns'))"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert not Path('/app/artifacts').exists()"

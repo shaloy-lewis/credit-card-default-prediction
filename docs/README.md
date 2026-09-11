@@ -63,6 +63,7 @@ as an executable release process, while its evidence remains immutable.
 - [Reviewed machine-readable selection summary](../reports/modeling/selection_v1/summary.json)
 - [Reviewed one-time final-test report](../reports/modeling/final_test_v1/final-test-report.md)
 - [Reviewed one-time final-test summary](../reports/modeling/final_test_v1/summary.json)
+- [Archived executed final-test source](modeling/evidence/final_test_workflow_v1_executed.py.txt)
 
 The authoritative workflow fits four fixed binary classifiers exactly once on
 the frozen training slice, selects on one shared validation slice, and bundles
@@ -73,4 +74,8 @@ lineage. A separately reviewed approval authorized one prediction-only test
 evaluation. The unchanged bundle scored exactly 6,000 test accounts, passed all
 three frozen gates, and closed G2 with zero fitting, refitting, or retuning.
 Durable receipts prevent reevaluation, and row-level test predictions remain
-ignored. The API now serves this exact reviewed bundle.
+ignored. Phase 4 release hardening additionally replaced the active evaluator
+with a no-option permanent tombstone while preserving its approved source
+byte-for-byte as a non-importable evidence artifact. Serving readiness now
+requires exact versions for the six runtime dependencies recorded in the bundle
+manifest. G2 remains closed, Phase 4 is complete, and Phase 5+ work has not begun.

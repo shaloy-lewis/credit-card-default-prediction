@@ -209,13 +209,14 @@ deferred risks. It is not a substitute for commit history or CI results.
 | Evaluation boundary | 24,000 development rows; holdout unfitted, unscored, and unevaluated |
 | Published artifacts | Aggregate JSON and Markdown only; no estimator or row-level evidence committed |
 
-### Phase 4 handoff and deferred work
+### Historical Phase 3 handoff (superseded)
 
 - Phase 4 must reuse only `cb_cfg_006`; it must not repeat the eight-variant
   search or reinterpret the diagnostic feature views as advancement candidates.
-- Calibration, bootstrap uncertainty, capacity-based operating-policy selection,
-  and the one-time sealed-holdout evaluation remain pending. G2 therefore stays
-  open.
+- At this historical checkpoint, calibration, bootstrap uncertainty,
+  capacity-based operating-policy selection, and sealed-holdout evaluation were
+  pending and G2 was open. The later one-pass release workflow below superseded
+  this handoff and closed G2.
 - Demographic ablation, subgroup analysis, explanations, and the final feature-use
   decision remain Week 6 work.
 - The selected estimator is not connected to the compatibility `/predict`
@@ -253,3 +254,20 @@ deferred risks. It is not a substitute for commit history or CI results.
 - The API and Streamlit demo now use the unchanged `selected_v1` native CatBoost
   bundle and the 19-feature operational schema. The pinned synthetic API example
   returns probability `0.190382` and risk band `standard`.
+
+## Phase 4 release hardening — complete
+
+- Release hardening completed: 2026-09-11
+- The approved evaluator source is preserved byte-for-byte as a non-importable
+  text artifact with SHA-256 `13ff9d3b...ab2aaa`, matching the immutable approval.
+- The active workflow and no-option `credit-risk model final-test` command now
+  reject every invocation before data, model, prediction, or caller-path access.
+  Fresh output or runtime roots can no longer create a reevaluation path.
+- Serving startup requires exact manifest agreement for `catboost`, `joblib`,
+  `numpy`, `pandas`, `pydantic`, and `scikit-learn` before model deserialization.
+  `mlflow` and `pandera` remain intentionally absent from the runtime readiness set.
+- Authorization, approval, final-test evidence, model bundle, and started/completed
+  receipts remain immutable. The one evaluation is permanently consumed and G2
+  remains closed.
+- Phase 4 release hardening is complete. Explanations, fairness, registry,
+  monitoring, rollback, and incident work have not started.
