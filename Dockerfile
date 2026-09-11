@@ -29,7 +29,7 @@ RUN addgroup --system app && \
 
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --chown=app:app api.py ./api.py
-COPY --chown=app:app artifacts/model.pkl artifacts/preprocessor.pkl artifacts/outlier_threshold.json ./artifacts/
+COPY --chown=app:app models/selected_v1/manifest.json models/selected_v1/model.cbm ./models/selected_v1/
 
 USER app
 

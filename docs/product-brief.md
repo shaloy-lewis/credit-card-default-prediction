@@ -157,8 +157,9 @@ and incident-response paths; those results will be labelled as operational tests
 - Preserve an immutable source snapshot and checksum.
 - Record dataset hash, code commit, configuration, folds, dependencies, and
   environment with every training run.
-- Use a fixed stratified holdout and repeated stratified cross-validation; do
-  not create a chronological split from row order.
+- Use the fixed stratified holdout; retain the completed repeated-CV work as
+  historical scientific evidence. The authoritative release workflow uses one
+  frozen train/validation split and does not rerun cross-validation or tuning.
 - Keep `SEX`, `AGE`, and `MARRIAGE` available for audit and ablation analysis.
 - Default proposal: exclude sensitive demographic attributes from the promoted
   predictive candidate unless evidence and a reviewed use policy justify them.

@@ -62,13 +62,12 @@ and reviewed evidence remain available for audit.
 
 ## One-time test boundary
 
-After selection evidence and the bundle are reviewed and committed,
-`credit-risk model freeze-test` freezes absolute test gates from validation
-without loading data or the estimator. `final-test` remains disabled in this
-delivery. A separate explicit request is required to implement and execute the
-single 6,000-account test evaluation. G2 remains open until that evaluation
-passes; no force, retraining, retuning, refitting, or reevaluation path is
-permitted.
+After selection evidence and the bundle were reviewed and committed,
+`credit-risk model freeze-test` froze absolute test gates from validation
+without loading data or the estimator. A separate digest-protected approval then
+authorized exactly one `final-test` prediction pass over 6,000 accounts. The
+workflow exposes no force, dirty-run, training, retuning, refitting, or
+reevaluation path.
 
 ## Reviewed selection outcome
 
@@ -82,11 +81,22 @@ precision `0.554306`; random forest failed the lift guardrail.
 The selected native CBM has SHA-256
 `844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c`.
 The aggregate summary, report, manifest, and model binary are protected by
-complete-file integrity tests. These are validation results only; the test
-partition remains sealed and G2 remains open.
+complete-file integrity tests. These selection results remained validation-only
+until the separately authorized final test described below.
 
-The reviewed `final_test_v1.json` authorization was generated from evidence
+The reviewed `final_test_v1.json` gate contract was generated from evidence
 commit `d334b88` without loading data or the model. It freezes minimum average
 precision `0.526510`, maximum Brier score `0.153539`, minimum lift at 10%
 `2.910923`, identity calibration, the three validation risk thresholds, and
-exactly 6,000 unique test accounts. Its execution flag remains false.
+exactly 6,000 unique test accounts.
+
+## One-time final-test outcome
+
+Approval commit `d001d21` pinned the gate contract, bundle manifest, native CBM,
+and final-test workflow digests before test features were loaded. The single
+prediction-only execution then achieved average precision `0.542867`, Brier
+score `0.136304`, and lift at 10% `3.089676`; all frozen gates passed and G2
+closed. The evaluated artifact was the exact validation winner, with no model
+fit, refit, tuning, calibration fit, or cross-validation. Aggregate evidence and
+durable started/completed receipts are committed under
+`reports/modeling/final_test_v1/`; row-level predictions remain ignored.

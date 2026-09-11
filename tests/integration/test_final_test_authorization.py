@@ -8,11 +8,16 @@ from pathlib import Path
 
 import pytest
 
+from credit_risk.modeling.final_test_workflow import FinalTestApproval
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 AUTHORIZATION_PATH = REPOSITORY_ROOT / "configs" / "modeling" / "final_test_v1.json"
+APPROVAL_PATH = REPOSITORY_ROOT / "configs" / "modeling" / "final_test_v1.approval.json"
+WORKFLOW_PATH = REPOSITORY_ROOT / "src" / "credit_risk" / "modeling" / "final_test_workflow.py"
 
 # Change only after a separately reviewed selection release and explicit gate review.
 EXPECTED_SHA256 = "58f9566e37883d8955d4b10b3b82de1fa164909adae79985bf3eb668ce1c9251"
+EXPECTED_APPROVAL_SHA256 = "4c803d44d85b31e51237d2f6b591a6cb53ecb038718becf5c263ff61e9d75e12"
 
 
 def test_final_test_authorization_is_frozen_validation_evidence_only() -> None:
@@ -48,3 +53,24 @@ def test_final_test_authorization_is_frozen_validation_evidence_only() -> None:
         "holdout_loaded_during_freeze": False,
         "requires_separate_explicit_request": True,
     }
+
+
+def test_final_test_approval_pins_reviewed_prediction_only_code_and_bundle() -> None:
+    content = APPROVAL_PATH.read_bytes()
+    assert hashlib.sha256(content).hexdigest() == EXPECTED_APPROVAL_SHA256
+    approval = FinalTestApproval.model_validate_json(content)
+
+    assert approval.frozen_authorization_sha256 == EXPECTED_SHA256
+    assert approval.workflow_sha256 == hashlib.sha256(WORKFLOW_PATH.read_bytes()).hexdigest()
+    assert approval.manifest_sha256 == (
+        "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88"
+    )
+    assert approval.model_sha256 == (
+        "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
+    )
+    assert approval.maximum_evaluations == 1
+    assert approval.training == "prohibited"
+    assert approval.refitting == "prohibited"
+    assert approval.retuning == "prohibited"
+    assert approval.force_override == "prohibited"
+    assert approval.dirty_execution == "prohibited"

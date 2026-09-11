@@ -221,28 +221,35 @@ deferred risks. It is not a substitute for commit history or CI results.
 - The selected estimator is not connected to the compatibility `/predict`
   endpoint and no fitted CatBoost artifact is committed by this checkpoint.
 
-## Simplified release workflow — selection complete
+## Simplified release workflow — selection and final test complete
 
-**Completed:** 2026-09-02
+- Selection completed: 2026-09-02
+- Final test and serving migration completed: 2026-09-10
 
 - Historical Phase 2/3 evidence remains immutable, but the expensive baseline,
   candidate, candidate-evidence, and legacy train commands are retired.
 - The authoritative selection budget is four fits: one fixed logistic, random
   forest, histogram gradient boosting, and historical `cb_cfg_006` CatBoost.
-- Existing `cv_fold_r0` assignments create 19,200 training and 4,800 validation
-  rows. The 6,000-row test partition remains sealed.
+- Existing `cv_fold_r0` assignments created 19,200 training and 4,800 validation
+  rows. Test data remained isolated throughout selection.
 - Selection uses validation average precision, Brier/lift guardrails, a fixed
   0.002 equivalence band, and a simplicity tie-break. The winner is never refit.
 - Identity-calibration diagnostics, bootstrap intervals, and risk bands operate
   only on stored validation predictions. The selected bundle is digest protected.
-- Final-test authorization was frozen separately from clean evidence commit
-  `d334b88` without loading data or the model. Test execution remains disabled,
-  requires another explicit request, and G2 remains open.
+- Final-test gates were frozen separately from clean evidence commit `d334b88`
+  without loading data or the model. Approval commit `d001d21` then pinned the
+  workflow and selected-bundle digests and authorized exactly one evaluation.
 - The official clean run at implementation commit `f7c99f2` completed four fits
   and selected `catboost_fixed` without refit. Validation average precision was
   `0.556510`, Brier score `0.133539`, and lift at 10% `3.210923`.
 - Reviewed file digests are: summary `8c11b1d4...efbd7`, report
   `16c8748e...cee1`, bundle manifest `df5ce6ce...cd88`, and native CBM
   `844ec1c3...d88c`. Runtime validation predictions and bootstrap evidence remain ignored.
-- The selected model is not connected to `/predict`; the existing compatibility
-  probability `0.44088` remains the serving contract until a later migration.
+- The one prediction-only evaluation scored exactly 6,000 unique test accounts
+  with zero fits. Average precision `0.542867`, Brier score `0.136304`, and lift
+  at 10% `3.089676` passed all frozen gates, so G2 is closed.
+- Durable started/completed receipts prevent reevaluation. The aggregate summary
+  and report are committed; row-level test predictions remain ignored.
+- The API and Streamlit demo now use the unchanged `selected_v1` native CatBoost
+  bundle and the 19-feature operational schema. The pinned synthetic API example
+  returns probability `0.190382` and risk band `standard`.

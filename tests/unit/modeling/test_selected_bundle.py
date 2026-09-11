@@ -31,6 +31,13 @@ def test_joblib_bundle_requires_trust_and_digest_validation(tmp_path: Path) -> N
     assert manifest.model_sha256 == hashlib.sha256(model_path.read_bytes()).hexdigest()
     assert loaded.model_id == "logistic_l2"
 
+    with pytest.raises(SelectedBundleError, match="manifest digest mismatch"):
+        load_selected_bundle(
+            tmp_path,
+            trusted=True,
+            expected_manifest_sha256="0" * 64,
+        )
+
     model_path.write_bytes(model_path.read_bytes() + b"corrupt")
     with pytest.raises(SelectedBundleError, match="digest mismatch"):
         load_selected_bundle(tmp_path, trusted=True)

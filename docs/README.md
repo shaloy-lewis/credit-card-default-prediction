@@ -34,8 +34,9 @@ the reviewed split lock is version controlled with the configuration.
 Phase 2 completed the Week 3 baseline and tracking slice from clean reviewed commit
 `c695c60`. Runtime MLflow state and row-level predictions remain ignored; the
 deterministic aggregate result is version-controlled and protected by complete
-file digests. Candidate modelling, calibration, and the sealed holdout remain
-outside this checkpoint, so G2 is still open.
+file digests. Candidate modelling, calibration, and the sealed holdout remained
+outside that historical checkpoint; G2 was closed later by the governed release
+workflow documented below.
 
 ## Phase 3 candidate-modelling evidence
 
@@ -60,13 +61,16 @@ as an executable release process, while its evidence remains immutable.
 - Machine-readable contract: `../configs/modeling/selection_v1.json`
 - [Reviewed aggregate selection report](../reports/modeling/selection_v1/selection-report.md)
 - [Reviewed machine-readable selection summary](../reports/modeling/selection_v1/summary.json)
+- [Reviewed one-time final-test report](../reports/modeling/final_test_v1/final-test-report.md)
+- [Reviewed one-time final-test summary](../reports/modeling/final_test_v1/summary.json)
 
 The authoritative workflow fits four fixed binary classifiers exactly once on
 the frozen training slice, selects on one shared validation slice, and bundles
 the exact winner without refitting. Calibration and bootstrap diagnostics reuse
 stored predictions. The clean four-fit run selected `catboost_fixed`; its exact
 native CBM is committed under `../models/selected_v1/` with digest-protected
-lineage. The holdout remains unevaluated and G2 stays open until a
-separately authorized one-time test passes gates frozen from validation.
-The immutable authorization contract is `../configs/modeling/final_test_v1.json`;
-it freezes gates but explicitly does not authorize or execute test scoring.
+lineage. A separately reviewed approval authorized one prediction-only test
+evaluation. The unchanged bundle scored exactly 6,000 test accounts, passed all
+three frozen gates, and closed G2 with zero fitting, refitting, or retuning.
+Durable receipts prevent reevaluation, and row-level test predictions remain
+ignored. The API now serves this exact reviewed bundle.
