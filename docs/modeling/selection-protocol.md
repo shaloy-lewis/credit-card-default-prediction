@@ -66,8 +66,10 @@ After selection evidence and the bundle were reviewed and committed,
 `credit-risk model freeze-test` froze absolute test gates from validation
 without loading data or the estimator. A separate digest-protected approval then
 authorized exactly one `final-test` prediction pass over 6,000 accounts. The
-workflow exposes no force, dirty-run, training, retuning, refitting, or
-reevaluation path.
+approved workflow exposed no force, dirty-run, training, retuning, or refitting
+path. After that authorization was consumed, release hardening replaced the
+active command with a no-option tombstone so no fresh destination can be used to
+attempt reevaluation.
 
 ## Reviewed selection outcome
 
@@ -100,3 +102,21 @@ closed. The evaluated artifact was the exact validation winner, with no model
 fit, refit, tuning, calibration fit, or cross-validation. Aggregate evidence and
 durable started/completed receipts are committed under
 `reports/modeling/final_test_v1/`; row-level predictions remain ignored.
+
+## Phase 4 release hardening
+
+The exact source that executed the authorized evaluation is retained as the
+non-importable artifact `docs/modeling/evidence/final_test_workflow_v1_executed.py.txt`.
+Its complete SHA-256 is
+`13ff9d3bc99fb554f2eb22dc4544ff1762726b3cab50a0c18b2c9f1629ab2aaa`,
+the digest pinned by the immutable approval record.
+The active evaluator now rejects every call before importing or accessing data,
+models, predictions, or configurable paths, and the CLI exposes no execution
+options. The single evaluation is therefore permanently consumed.
+
+Serving validates the reviewed manifest before deserialization and requires
+exact installed-version matches for `catboost`, `joblib`, `numpy`, `pandas`,
+`pydantic`, and `scikit-learn`. `mlflow` and `pandera` remain outside serving
+readiness because the runtime image intentionally excludes them. G2 remains
+closed, Phase 4 release hardening is complete, and no Phase 5 or later lifecycle
+work has started.

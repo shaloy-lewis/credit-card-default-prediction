@@ -29,7 +29,7 @@ def test_selected_pipeline_returns_probability_and_frozen_band(
     monkeypatch.setattr(
         serving,
         "load_selected_bundle",
-        lambda _root, trusted, expected_manifest_sha256: (
+        lambda _root, trusted, expected_manifest_sha256, required_dependencies: (
             manifest,
             _Model(np.asarray([0.6])),
         ),
@@ -51,7 +51,7 @@ def test_selected_pipeline_rejects_batch_online_request(
     monkeypatch.setattr(
         serving,
         "load_selected_bundle",
-        lambda _root, trusted, expected_manifest_sha256: (
+        lambda _root, trusted, expected_manifest_sha256, required_dependencies: (
             manifest,
             _Model(np.asarray([0.1, 0.2])),
         ),
@@ -73,7 +73,7 @@ def test_selected_pipeline_rejects_a_different_bundle_winner(
     monkeypatch.setattr(
         serving,
         "load_selected_bundle",
-        lambda _root, trusted, expected_manifest_sha256: (
+        lambda _root, trusted, expected_manifest_sha256, required_dependencies: (
             manifest,
             _Model(np.asarray([0.1])),
         ),
@@ -81,3 +81,25 @@ def test_selected_pipeline_rejects_a_different_bundle_winner(
 
     with pytest.raises(SelectedBundleError, match="requires the reviewed catboost_fixed"):
         serving.SelectedPredictPipeline("bundle")
+
+
+def test_selected_pipeline_requires_only_runtime_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+    manifest = SimpleNamespace(
+        selected_model_id="catboost_fixed",
+        risk_band_thresholds={"q80": 0.2, "q90": 0.5, "q95": 0.8},
+    )
+
+    def fake_load(_root: str, **kwargs: object) -> tuple[object, _Model]:
+        captured.update(kwargs)
+        return manifest, _Model(np.asarray([0.1]))
+
+    monkeypatch.setattr(serving, "load_selected_bundle", fake_load)
+
+    serving.SelectedPredictPipeline("bundle")
+
+    assert captured["required_dependencies"] == serving.SERVING_DEPENDENCIES
+    assert "mlflow" not in serving.SERVING_DEPENDENCIES
+    assert "pandera" not in serving.SERVING_DEPENDENCIES

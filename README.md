@@ -9,7 +9,10 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > CV, calibration fit, or winner refit. It selected the exact fitted
 > `catboost_fixed` model. One separately authorized, prediction-only evaluation
 > then passed every frozen test gate, closing G2 without training or refitting.
-> The API and Streamlit demo now serve that exact digest-verified winner.
+> Phase 4 release hardening has permanently retired that consumed evaluator and
+> requires exact serving-library compatibility before loading the model. The API
+> and Streamlit demo now serve that exact digest-verified winner. Phase 5 work has
+> not started.
 
 ## Product intent
 
@@ -72,9 +75,14 @@ The approved scope and delivery evidence are documented in:
   commit `f7c99f2` and reviewed validation evidence.
 - One immutable prediction-only evaluation of exactly 6,000 test accounts. All
   frozen gates passed, G2 closed, and the reviewed release bundle now serves the API.
+- A byte-preserved, non-importable archive of the executed evaluator plus a
+  no-option tombstone that rejects every final-test replay before data or model access.
+- Exact startup checks for the six inference dependencies recorded by the reviewed
+  bundle; intentionally absent modelling and data-validation extras are excluded.
 
-Planned releases add governed explanations, subgroup analysis, the model
-registry, batch/API parity, monitoring, rollback, and incident exercises.
+No Phase 5 or later lifecycle implementation has started. Planned releases add
+governed explanations, subgroup analysis, the model registry, batch/API parity,
+monitoring, rollback, and incident exercises.
 
 ## Dataset and evidence limits
 
@@ -156,9 +164,11 @@ That command loads neither data nor the estimator. A separate approval record
 then authorized exactly one `credit-risk model final-test` execution. It scored
 6,000 unique test accounts with the unchanged selected bundle, performed zero
 fits, and passed the frozen average-precision, Brier, and lift gates. Its durable
-receipts prevent reevaluation; the reviewed evidence is under
-`reports/modeling/final_test_v1/`. Historical baseline and candidate reports
-remain available, while their public fitting commands fail fast.
+receipts and the active no-option tombstone permanently prevent reevaluation; the
+reviewed evidence is under `reports/modeling/final_test_v1/`. The exact executed
+source is preserved as a non-importable text artifact under
+`docs/modeling/evidence/`. Historical baseline and candidate reports remain
+available, while their public fitting commands fail fast.
 
 ### Check the retired compatibility artifacts
 
@@ -189,7 +199,10 @@ uv run uvicorn api:app --host 0.0.0.0 --port 8080
 
 Open `http://localhost:8080/docs` for the generated API documentation. `GET /ping`
 reports process liveness; `GET /ready` reports that the inference bundle
-loaded and passed its compatibility checks. Invalid artifacts fail application
+loaded and passed its compatibility checks. Readiness requires exact agreement
+between the bundle manifest and installed `catboost`, `joblib`, `numpy`, `pandas`,
+`pydantic`, and `scikit-learn` versions. `mlflow` and `pandera` are intentionally
+not runtime requirements. Invalid artifacts or dependency drift fail application
 startup instead of leaving a non-functional service marked ready.
 
 ### Run the Streamlit demo
@@ -232,6 +245,7 @@ released model contract.
 ├── configs/modeling/          # Feature and scientific-baseline contracts
 ├── data/                      # Ignored reproducible raw/processed/split products
 ├── docs/                      # Product, roadmap, governance, and ADR evidence
+│   └── modeling/evidence/     # Non-importable archive of the consumed evaluator
 ├── experiment/                # Ignored MLflow, OOF, and exploratory evidence
 ├── models/selected_v1/        # Digest-protected released model bundle
 ├── reports/modeling/          # Reviewed aggregate experiment evidence

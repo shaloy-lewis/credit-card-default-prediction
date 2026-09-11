@@ -88,6 +88,72 @@ def test_native_catboost_bundle_uses_canonical_format(
     assert loaded.model_id == "catboost_fixed"
 
 
+def test_required_dependencies_must_match_manifest_exactly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fitted = FittedSelectionModel("logistic_l2", Pipeline([]), "handling")
+    _, model_sha = write_model_artifact(fitted, tmp_path)
+    write_manifest(_manifest(model_sha), tmp_path)
+    monkeypatch.setattr(bundles.importlib.metadata, "version", lambda name: "1.5.3")
+
+    manifest, loaded = load_selected_bundle(
+        tmp_path,
+        trusted=True,
+        required_dependencies=("joblib",),
+    )
+
+    assert manifest.dependencies["joblib"] == "1.5.3"
+    assert loaded.model_id == "logistic_l2"
+
+
+def test_required_dependency_must_be_declared_installed_and_version_matched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fitted = FittedSelectionModel("logistic_l2", Pipeline([]), "handling")
+    _, model_sha = write_model_artifact(fitted, tmp_path)
+    write_manifest(_manifest(model_sha), tmp_path)
+
+    with pytest.raises(SelectedBundleError, match="missing required dependency 'numpy'"):
+        load_selected_bundle(
+            tmp_path,
+            trusted=True,
+            required_dependencies=("numpy",),
+        )
+
+    def missing(_name: str) -> str:
+        raise bundles.importlib.metadata.PackageNotFoundError("joblib")
+
+    monkeypatch.setattr(bundles.importlib.metadata, "version", missing)
+    with pytest.raises(SelectedBundleError, match="'joblib' is not installed"):
+        load_selected_bundle(
+            tmp_path,
+            trusted=True,
+            required_dependencies=("joblib",),
+        )
+
+    monkeypatch.setattr(bundles.importlib.metadata, "version", lambda _name: "0.0.0")
+    monkeypatch.setattr(
+        bundles.joblib,
+        "load",
+        lambda _path: pytest.fail("model deserialization must follow dependency validation"),
+    )
+    with pytest.raises(SelectedBundleError, match="version mismatch"):
+        load_selected_bundle(
+            tmp_path,
+            trusted=True,
+            required_dependencies=("joblib",),
+        )
+
+
+def test_required_dependencies_rejects_a_bare_string(tmp_path: Path) -> None:
+    fitted = FittedSelectionModel("logistic_l2", Pipeline([]), "handling")
+    _, model_sha = write_model_artifact(fitted, tmp_path)
+    write_manifest(_manifest(model_sha), tmp_path)
+
+    with pytest.raises(SelectedBundleError, match="collection of package names"):
+        load_selected_bundle(tmp_path, trusted=True, required_dependencies="joblib")
+
+
 def test_bundle_rejects_invalid_manifest_features_type_and_population(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
