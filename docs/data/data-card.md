@@ -12,9 +12,10 @@ ranking for existing credit-card accounts. It may be used to compare models,
 calibration, capacity-based ranking policies, and governed ML workflows.
 
 The source contains four demographic attributes: `SEX`, `EDUCATION`,
-`MARRIAGE`, and `AGE`. They are retained for data-quality review, subgroup audit,
-and demographic ablation only. They are not permitted inputs to a promoted
-predictive candidate under the current feature policy. `ID` is used for lineage
+`MARRIAGE`, and `AGE`. They are retained for data-quality review and subgroup
+audit only. ADR 0002 replaced the earlier demographic-ablation plan with
+exclusion and input-invariance evidence because further fitting is prohibited.
+They are not permitted inputs to the released model. `ID` is used for lineage
 and split assignment only and is never a predictor.
 
 The committed CatBoost artifacts and `credit-risk train` path predate this data

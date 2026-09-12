@@ -197,8 +197,8 @@ sealed.
 
 Calibration selection, bootstrap confidence intervals, simulated economics,
 operating-policy selection, and the one-time holdout evaluation belong to Week
-5. Demographic ablation, subgroup analysis, explanations, and the final feature
-use decision belong to Week 6.
+5. The corrected Week 6 protocol uses demographic exclusion/invariance evidence,
+validation-only subgroup analysis, native-SHAP review, and an audit-only feature decision.
 
 Week 4 passed after the implementation reproduced the frozen sampled
 configurations, all variants used the common folds, the fit budget was respected,

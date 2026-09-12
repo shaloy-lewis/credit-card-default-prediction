@@ -27,7 +27,7 @@
 | 3: Historical baseline evidence | 10 h | Reviewed repeated-CV baseline and MLflow evidence retained as an immutable scientific record | Evidence records data hash, code, configuration, folds, metrics, and artifacts; public rerun is retired | Scientific discipline and auditability |
 | 4: Historical candidate evidence | 10 h | Reviewed CatBoost search and ablations retained as immutable evidence; no routine rerun | Search outcome remains auditable but is superseded as the executable release workflow | Transparent protocol evolution |
 | 5: Four-fit governed selection | 10 h | One fixed fit each for logistic, histogram boosting, random forest, and CatBoost; validation selection; identity calibration; bundle; separately authorized one-time test | Exactly four fits, no tuning/CV/refit; one prediction-only test pass; checksum-protected winner and evidence | Efficient model governance and controlled release |
-| 6: Governance and explanation | 10 h | Correct SHAP feature mapping; additivity tests; reason categories; demographic ablation; fairness report; model card; risk register | Explanations are dimensionally correct and feature use is governed | Responsible AI and model-risk ownership |
+| 6: Governance and explanation | 10 h | Correct SHAP feature mapping; additivity tests; reason categories; demographic exclusion/invariance review; validation-only subgroup report; model card; risk register | Corrected evidence is digest-protected; two predeclared education triggers have documented conditions; G3 is closed with conditions | Responsible AI and model-risk ownership |
 | 7: Batch and API inference | 10 h | Versioned model bundle; idempotent monthly scorer; `/v1` API; validated contracts; model/trace metadata; structured safe logs | Offline, batch, and API probabilities and policies agree within tolerance | Production inference and parity |
 | 8: Registry, CI, and rollback | 10 h | MLflow registry; candidate/champion workflow; promotion checklist; unit/integration/contract/model tests; GitHub Actions; image scan | A model can be registered, promoted, deployed locally, and rolled back without replacing files by hand | Controlled software and model delivery |
 | 9: Local MLOps platform | 10 h | Docker Compose stack for API, UI, MLflow, PostgreSQL, and MinIO; persistent volumes; health checks; one-command startup | A fresh machine can start the stack and reproduce the demo using documented commands | Platform architecture without paid infrastructure |
@@ -39,13 +39,24 @@
 
 ### Release A: defensible model — end of Week 5
 
+**Status: complete.** The consolidated [Release A dossier](../reports/releases/release_a_v1/release-a-report.md)
+and externally authenticated evidence manifest bind the complete reviewed chain.
+
 - Reproducible data and split protocol.
 - Fixed four-model comparison and the exact serialized validation winner.
 - Identity-calibration diagnostics, prediction-only uncertainty, capacity metrics, and a documented selection rule.
 - One authorized prediction-only test evaluation with frozen gates, durable receipts, and no rerun path.
 - No unsupported temporal, causal, India-specific, or compliance claim.
 
+Uncertainty intervals are validation-only. Robustness and population-shift
+stress evidence is not part of this milestone and is deferred to G4/Release B.
+
 This release is the minimum scientifically credible senior-data-science story.
+
+The local API demonstrates technical integration of the reviewed bundle. Week 6
+closed G3 with documented conditions after correcting the test-boundary language
+and prevalence uncertainty. Local serving is not presented as external production
+approval or a fairness/compliance certification.
 
 ### Release B: governed ML product — end of Week 8
 
@@ -106,7 +117,7 @@ The final repository should contain:
 - Product and decision brief.
 - Data card and feature-availability matrix.
 - Experiment protocol and result report.
-- Model card and demographic-ablation report.
+- Model card and demographic exclusion/invariance plus subgroup report.
 - Risk register and responsible-use statement.
 - Model-inventory entry and version manifest.
 - Promotion checklist and approval record template.

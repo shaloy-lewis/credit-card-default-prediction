@@ -118,5 +118,8 @@ Serving validates the reviewed manifest before deserialization and requires
 exact installed-version matches for `catboost`, `joblib`, `numpy`, `pandas`,
 `pydantic`, and `scikit-learn`. `mlflow` and `pandera` remain outside serving
 readiness because the runtime image intentionally excludes them. G2 remains
-closed, Phase 4 release hardening is complete, and no Phase 5 or later lifecycle
-work has started.
+closed and Phase 4 release hardening is complete. Phase 5 subsequently completed
+validation-only explanations and subgroup review with conditions; the authenticated
+Release A dossier now consolidates this model-selection chain without performing
+new computation. Registry, parity, monitoring, rollback, and other G4 work has
+not started.

@@ -122,8 +122,9 @@ deferred risks. It is not a substitute for commit history or CI results.
 - The source is a static 2005 Taiwan sample with no event timestamps, India
   validation, or defensible out-of-time split. It supports engineering and
   governance demonstrations, not contemporary portfolio-performance claims.
-- Demographic columns are retained for audit and ablation but excluded from the
-  default predictive policy until the fairness decision is completed.
+- Demographic columns are retained for audit only and excluded from the released
+  model. ADR 0002 superseded the earlier ablation plan with no-training
+  exclusion/invariance evidence and subgroup review.
 - Generated data remains intentionally Git-ignored; a clean checkout must fetch
   the exact pinned public bytes before building, then can verify fully offline.
 - Legacy training and committed pickle artifacts are not connected to the new
@@ -217,8 +218,8 @@ deferred risks. It is not a substitute for commit history or CI results.
   capacity-based operating-policy selection, and sealed-holdout evaluation were
   pending and G2 was open. The later one-pass release workflow below superseded
   this handoff and closed G2.
-- Demographic ablation, subgroup analysis, explanations, and the final feature-use
-  decision remain Week 6 work.
+- Demographic exclusion/invariance, subgroup analysis, explanations, and the
+  final feature-use decision were subsequently completed in Week 6.
 - The selected estimator is not connected to the compatibility `/predict`
   endpoint and no fitted CatBoost artifact is committed by this checkpoint.
 
@@ -269,5 +270,64 @@ deferred risks. It is not a substitute for commit history or CI results.
 - Authorization, approval, final-test evidence, model bundle, and started/completed
   receipts remain immutable. The one evaluation is permanently consumed and G2
   remains closed.
-- Phase 4 release hardening is complete. Explanations, fairness, registry,
-  monitoring, rollback, and incident work have not started.
+- At the Phase 4 checkpoint, explanations, subgroup review, registry, monitoring,
+  rollback, and incident work had not started. Phase 5 subsequently completed
+  explanations and subgroup review; the later lifecycle controls remain open.
+
+## Phase 5 governance and explanation review — complete with conditions
+
+- ADR 0002 replaces demographic model ablation with demographic exclusion,
+  input-invariance tests, and validation-only subgroup analysis. No further
+  model or calibrator fitting is authorized.
+- Phase 1 full-file verification may parse the complete canonical snapshot for
+  integrity. The modelling boundary returns exactly 24,000 development accounts;
+  test accounts cannot be selected, returned, scored, explained, or audited by subgroup.
+- Native CatBoost SHAP additivity, reviewed reason categories, group support
+  rules, Wilson prevalence intervals, 500-resample performance uncertainty, and
+  human-review triggers are fixed before corrected evidence publication.
+- A non-published planning preview occurred only after the trigger thresholds
+  were selected. The thresholds remain unchanged and the expected education
+  code 1/code 3 selection-rate triggers require documented disposition.
+- The superseded aggregate evidence was withdrawn after review identified an
+  ambiguous test-access claim and degenerate prevalence intervals. It remains
+  available in Git history and is not presented as active evidence.
+- The clean prediction-only authenticated build from implementation commit `226b7d7`
+  reproduced validation AP `0.556510`, Brier score `0.133539`, and lift at 10%
+  `3.210923` without fitting or final-test scoring.
+- Exactly 1,000 deterministic explanation rows passed native-SHAP raw additivity
+  and sigmoid/probability parity at the frozen tolerance.
+- Supported-group prevalence uses non-degenerate Wilson intervals; the other
+  measures retain the frozen 500-resample within-group stratified bootstrap.
+- The two predeclared education selection-rate triggers received documented
+  human-review conditions. G3 is `closed_with_conditions`, not a fairness,
+  regulatory, production, or India-validity certification.
+- The local API is technical portfolio integration, not evidence of external
+  governance approval. Phase 6+ registry, parity, monitoring, and rollback work has not started.
+
+## Release A audit closure — complete
+
+**Completed:** 2026-09-12
+
+- ADR 0003 fixes the Release A boundary to the milestone's five existing
+  defensible-model criteria and assigns robustness/population-shift stress
+  evidence to G4/Release B without claiming it was already completed.
+- A frozen release contract binds the reviewed source manifest, split lock,
+  feature contract, baseline and selection evidence, selected bundle, final-test
+  authorization, approval, durable receipts, executed evaluator, and final evidence.
+- The clean build from implementation commit `20186ad` copied the reviewed
+  500-resample validation uncertainty byte-for-byte and assembled the dossier
+  without model loading, prediction, fitting, bootstrap generation, test-row
+  selection, or final-test reevaluation.
+- The dossier reports validation AP `0.556510` with 95% interval
+  `[0.525431, 0.587755]`, Brier `0.133539` with interval
+  `[0.128826, 0.137924]`, and lift at 10% `3.210923` with interval
+  `[3.027072, 3.375942]`.
+- It also binds ten reliability bins, validation and final-test capacities at
+  5%, 10%, and 20%, the four-fit/no-refit selection rule, and the one permanently
+  consumed final-test evaluation that closed G2.
+- Complete artifact digests are summary `a8cfdd1f...19acb`, report
+  `7d5873bf...73a86`, uncertainty `187004bd...0ffa2`, and manifest
+  `7e65c7b8...4edf7`. The last digest is the external verification trust anchor.
+- Release A is `complete`; G1 and G2 remain closed and G3 remains
+  `closed_with_conditions`. G4 stress, parity, registry, rollback, monitoring,
+  and runbook work remains open.

@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0.0",
+  "release_id": "release_a_v1",
+  "milestone": "defensible_model",
+  "status": "frozen_for_audit_closure",
+  "source_artifacts": {
+    "data_manifest": {
+      "path": "configs/data/uci_credit_default_v1.json",
+      "sha256": "4e6463e3acce879e00435f21b64cc905b11dc5fd894b20a32cddd0f775be6979"
+    },
+    "split_lock": {
+      "path": "configs/data/split_v1.lock.json",
+      "sha256": "b2312380fa46924ca414acbcfef63b0435d1321083e87e4df5ec04f18736093d"
+    },
+    "split_config": {
+      "path": "configs/data/split_v1.json",
+      "sha256": "36d8bb9ae6221a60dafa389a0bdf65796bd726d4a96413f810c002de43842398"
+    },
+    "feature_contract": {
+      "path": "configs/modeling/feature_contract_v1.json",
+      "sha256": "8978277ae1c92b6f0b8daed94cccf3cd51d8e6cae0aa9c0620d8cfb813384a4b"
+    },
+    "baseline_config": {
+      "path": "configs/modeling/baseline_v1.json",
+      "sha256": "1666691fffea7d10debd233ed26114af74737bb8f66e0d442a7f4233d68762e0"
+    },
+    "baseline_summary": {
+      "path": "reports/modeling/baseline_v1/summary.json",
+      "sha256": "11e0332fc9df6f7abf36080a8d09304b3e975f34ad060f70f8611f4fc0ad69d6"
+    },
+    "baseline_report": {
+      "path": "reports/modeling/baseline_v1/baseline-report.md",
+      "sha256": "2830b4080f954e773dfdf0c37ed6eaabeaa31917f32071c783ec36abafb63a10"
+    },
+    "selection_config": {
+      "path": "configs/modeling/selection_v1.json",
+      "sha256": "2c85c6c0c07fa875256f2d861e2ded24a96532395c93f975d40886b0d6dc8c09"
+    },
+    "selection_summary": {
+      "path": "reports/modeling/selection_v1/summary.json",
+      "sha256": "8c11b1d443c782a8ef14aa3e708e3fffa064ecb4c9fe58d3e51a6effa46efbd7"
+    },
+    "selection_report": {
+      "path": "reports/modeling/selection_v1/selection-report.md",
+      "sha256": "16c8748e76002ebedd5c41938df7364e493af590461d03a926a2aab3d801cee1"
+    },
+    "bundle_manifest": {
+      "path": "models/selected_v1/manifest.json",
+      "sha256": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88"
+    },
+    "bundle_model": {
+      "path": "models/selected_v1/model.cbm",
+      "sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
+    },
+    "final_test_authorization": {
+      "path": "configs/modeling/final_test_v1.json",
+      "sha256": "58f9566e37883d8955d4b10b3b82de1fa164909adae79985bf3eb668ce1c9251"
+    },
+    "final_test_approval": {
+      "path": "configs/modeling/final_test_v1.approval.json",
+      "sha256": "4c803d44d85b31e51237d2f6b591a6cb53ecb038718becf5c263ff61e9d75e12"
+    },
+    "final_test_started_receipt": {
+      "path": "reports/modeling/final_test_v1/evaluation-started.json",
+      "sha256": "2eb8e4ae9f31c1b5afa0cd7cd63a2db4ed7103eca692cdc8530a1156c7103aef"
+    },
+    "final_test_completed_receipt": {
+      "path": "reports/modeling/final_test_v1/evaluation-completed.json",
+      "sha256": "eca1cfb2741645f1eb40a84c6a8a0528a31e101d67ae7e664a317d5d696bf581"
+    },
+    "final_test_summary": {
+      "path": "reports/modeling/final_test_v1/summary.json",
+      "sha256": "8b5e018f5e29a5128285afb877e0adaeca35f4b450061cac21e08ea3a51bda56"
+    },
+    "final_test_report": {
+      "path": "reports/modeling/final_test_v1/final-test-report.md",
+      "sha256": "cb2410b288b1b11e73b37c591b3a129e2dce1abc8ba9ce2969217f15344aab54"
+    },
+    "executed_evaluator_source": {
+      "path": "docs/modeling/evidence/final_test_workflow_v1_executed.py.txt",
+      "sha256": "13ff9d3bc99fb554f2eb22dc4544ff1762726b3cab50a0c18b2c9f1629ab2aaa"
+    }
+  },
+  "uncertainty_source": {
+    "path": "experiment/mlflow/selection-runtime/f7c99f257fe756f6db6bac449a7ef4f48a899ea4/bootstrap_intervals.json",
+    "sha256": "187004bd3cb646279977b24e34d16bb8f097f27edeb0edc88a1ad1bc6c50ffa2",
+    "population": "development_validation_only",
+    "method": "stratified_prediction_only_percentile_bootstrap",
+    "confidence_level": 0.95,
+    "resamples": 500,
+    "random_state": 42
+  },
+  "release_criteria": [
+    "reproducible_data_and_split_protocol",
+    "fixed_four_model_comparison_and_exact_serialized_winner",
+    "identity_calibration_prediction_only_uncertainty_and_capacity_evaluation",
+    "single_authorized_final_test_with_frozen_gates_and_no_rerun",
+    "unsupported_claims_prohibited"
+  ],
+  "governance": {
+    "full_dataset_integrity_verification_permitted": true,
+    "model_loading": "prohibited",
+    "prediction": "prohibited",
+    "training": "prohibited",
+    "refitting": "prohibited",
+    "parameter_tuning": "prohibited",
+    "cross_validation": "prohibited",
+    "calibration_fitting": "prohibited",
+    "bootstrap_generation": "prohibited",
+    "test_partition_selection": "prohibited",
+    "test_predictions_loading": "prohibited",
+    "final_test_reevaluation": "prohibited",
+    "stress_evidence": "deferred_to_g4_release_b"
+  },
+  "outputs": [
+    "summary.json",
+    "release-a-report.md",
+    "validation-uncertainty.json",
+    "evidence-manifest.json"
+  ]
+}

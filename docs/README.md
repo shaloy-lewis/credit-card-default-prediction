@@ -10,6 +10,8 @@ against model accuracy.
 - [Product and decision brief](product-brief.md)
 - [Twelve-week delivery roadmap](roadmap.md)
 - [ADR 0001: batch-first scoring architecture](adr/0001-batch-first-scoring.md)
+- [ADR 0002: no-training governance review](adr/0002-no-training-governance-review.md)
+- [ADR 0003: Release A audit closure](adr/0003-release-a-audit-closure.md)
 - [Delivery progress and verification evidence](progress.md)
 
 The Phase 0 product brief and batch-first architecture decision were accepted on
@@ -78,4 +80,46 @@ ignored. Phase 4 release hardening additionally replaced the active evaluator
 with a no-option permanent tombstone while preserving its approved source
 byte-for-byte as a non-importable evidence artifact. Serving readiness now
 requires exact versions for the six runtime dependencies recorded in the bundle
-manifest. G2 remains closed, Phase 4 is complete, and Phase 5+ work has not begun.
+manifest. G2 remains closed and Phase 4 is complete. Corrected Phase 5 evidence
+is reviewed below without beginning later lifecycle work.
+
+## Phase 5 governance protocol
+
+- [Frozen validation-only governance protocol](governance/phase5-protocol.md)
+- Machine-readable contract: `../configs/governance/phase5_v1.json`
+- [Reviewed governance report](../reports/governance/phase5_v1/governance-report.md)
+- [Validation subgroup report](../reports/governance/phase5_v1/fairness-report.md)
+- [Model card](../reports/governance/phase5_v1/model-card.md)
+- [Risk register](../reports/governance/phase5_v1/risk-register.md)
+- [G3 review decision](../reports/governance/phase5_v1/g3-review.md)
+- [G3 checklist](governance/g3-checklist.md)
+- [Model-governance status](governance/model-governance-status.md)
+
+The protocol uses the existing selected bundle for validation inference and
+native CatBoost explanations only. It permits complete-snapshot integrity
+verification but prohibits selecting, returning, scoring, explaining, or auditing
+test accounts. It also prohibits further fitting, replaces demographic ablation
+with exclusion/invariance evidence, and freezes subgroup review triggers before
+corrected official evidence is published. The clean authenticated build from commit
+`226b7d7` was verified against an external manifest trust anchor and full-file digests, uses Wilson intervals for
+prevalence and stratified-percentile intervals for performance measures, and
+closes G3 as `closed_with_conditions`. Row-level runtime evidence remains ignored.
+The verifier requires an externally reviewed manifest digest. By default it also
+hashes the ignored prediction, SHAP, and bootstrap artifacts; an explicit
+aggregate-only mode supports clean checkouts without overstating its scope.
+
+## Release A audit dossier
+
+- Machine-readable contract: `../configs/releases/release_a_v1.json`
+- [Consolidated Release A report](../reports/releases/release_a_v1/release-a-report.md)
+- [Machine-readable Release A summary](../reports/releases/release_a_v1/summary.json)
+- [Externally authenticated evidence manifest](../reports/releases/release_a_v1/evidence-manifest.json)
+- [Published validation-only uncertainty](../reports/releases/release_a_v1/validation-uncertainty.json)
+
+The dossier was assembled from clean implementation commit `20186ad` without
+model loading, prediction, fitting, bootstrap generation, test-row selection,
+or final-test reevaluation. The uncertainty file is byte-identical to the
+reviewed 500-resample selection-runtime artifact. The external manifest digest
+is `7e65c7b854de15742f05c4b8c2de891f50512518f8eb2339241f87f98754edf7`.
+Release A is complete; robustness and population-shift stress evidence remains
+explicitly deferred to G4/Release B.

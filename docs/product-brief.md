@@ -107,11 +107,11 @@ calibration, decision utility, stability, and governance evidence.
 | Layer | Measures | How it will be used |
 | --- | --- | --- |
 | Baseline | Target prevalence and simple policy performance | Establish the minimum credible comparison |
-| Discrimination | PR-AUC, ROC-AUC, KS/Gini with bootstrap confidence intervals | Compare candidates on common folds and the sealed holdout |
-| Calibration | Brier score, log loss, reliability curve, calibration slope/intercept | Determine whether probabilities support policy and risk bands |
+| Discrimination | PR-AUC, ROC-AUC, and KS/Gini; prediction-only bootstrap intervals on validation and point estimates on the consumed final test | Compare fixed candidates without overstating final-test uncertainty |
+| Calibration | Identity-calibration Brier score, log loss, ECE, reliability bins, and mean probability versus prevalence | Assess whether unadjusted probabilities support policy and risk bands |
 | Capacity decision | Recall, precision, and lift at 5%, 10%, and 20% capacity; default rate by risk band | Evaluate the 10% demonstration policy and its sensitivity |
 | Simulated economics | Expected loss captured, intervention cost, sensitivity ranges | Explore decisions without claiming realised impact |
-| Robustness | Missingness, category, range, and plausible population-shift stress tests | Identify failure modes and monitoring requirements |
+| Robustness | Missingness, category, range, and plausible population-shift stress tests, deferred to G4/Release B | Identify failure modes and monitoring requirements |
 | Fairness audit | Group calibration, TPR/FPR, contact-selection rates, uncertainty, sample sizes | Detect material subgroup differences and inform use restrictions |
 | Operations | Batch completeness, idempotency, latency, failures, lineage, rollback time | Demonstrate service ownership rather than only model development |
 
@@ -127,7 +127,7 @@ baseline, the baseline remains eligible for selection.
 | Risk | Proposed control |
 | --- | --- |
 | Unnecessary or harmful customer contact | Capacity limit, risk bands, human-owned action policy, and complaint-rate guardrail in the experiment design |
-| Demographic discrimination | Separate predictive and audit datasets; demographic ablation; subgroup metrics with uncertainty; documented feature-use policy |
+| Demographic discrimination | Separate predictive and audit datasets; exclusion/invariance proof; validation-only subgroup metrics with uncertainty; documented feature-use policy |
 | Misleading explanations | Validate transformed feature names and SHAP additivity; aggregate to reviewed reason categories; do not call raw SHAP values adverse-action reasons |
 | Data leakage | Feature-availability table, `as_of_date` contract, sealed test set, and leakage tests |
 | Silent input failure | Versioned schema, range/category checks, quarantine path, and batch manifest |
@@ -160,9 +160,10 @@ and incident-response paths; those results will be labelled as operational tests
 - Use the fixed stratified holdout; retain the completed repeated-CV work as
   historical scientific evidence. The authoritative release workflow uses one
   frozen train/validation split and does not rerun cross-validation or tuning.
-- Keep `SEX`, `AGE`, and `MARRIAGE` available for audit and ablation analysis.
-- Default proposal: exclude sensitive demographic attributes from the promoted
-  predictive candidate unless evidence and a reviewed use policy justify them.
+- Keep `SEX`, `EDUCATION`, `AGE`, and `MARRIAGE` available for audit-only
+  subgroup analysis; no demographic-inclusive model is fitted after release.
+- Exclude sensitive demographic attributes from the released model. Any future
+  change requires a new ADR, separately authorized training, and independent review.
 - Fit every transformation, outlier rule, calibrator, and policy threshold using
   training or validation data only.
 
@@ -172,9 +173,9 @@ and incident-response paths; those results will be labelled as operational tests
 | --- | --- |
 | G0: scope approval | Decision contract, non-goals, evidence boundary, and accepted ADR |
 | G1: data readiness | Data card, schema results, lineage, feature-availability matrix, and leakage review |
-| G2: model candidate | Baselines, common validation protocol, experiment lineage, uncertainty, calibration, and stress tests |
-| G3: promotion review | Model card, subgroup evaluation, reason-code tests, policy evaluation, risk register, and sign-off checklist |
-| G4: release readiness | Batch/API parity, contract tests, container scan, monitoring, rollback evidence, and runbooks |
+| G2: model candidate | Baselines, common validation protocol, experiment lineage, validation-only uncertainty, calibration, capacity evidence, and one frozen final test |
+| G3: promotion review | Closed with conditions: corrected model card, subgroup evaluation, native-SHAP checks, policy threshold, risk register, and sign-off checklist |
+| G4: release readiness | Robustness and population-shift stress evidence, batch/API parity, contract tests, container scan, monitoring, rollback evidence, and runbooks |
 | G5: ongoing review | Drift/performance report, incident log, retraining rationale, and updated approvals |
 
 ## Impact measurement plan
@@ -190,14 +191,22 @@ appropriate quasi-experiment. The portfolio deliverable will therefore specify:
 - intention-to-treat analysis and stopping rules; and
 - explicit separation of observational lift from causal intervention impact.
 
-## Open decisions for later phases
+## Resolved and open decisions for later phases
 
 1. Whether a future stakeholder context should replace the 10% demonstration
    capacity assumption.
 2. The hypothetical intervention catalogue and cost assumptions.
-3. The final sensitive-feature policy after demographic ablation.
-4. The final model-promotion thresholds after calibration and policy evidence.
+3. **Resolved for Phase 5:** all four demographic fields remain audit-only and
+   are prohibited estimator inputs.
+4. **Resolved in Phase 4:** identity calibration and frozen model-promotion gates
+   passed once; the final test is permanently consumed.
 5. The local service-level objectives after an initial benchmark.
 
-These decisions do not block Phase 1. They must be resolved before model
-promotion or claims about the operating policy.
+The corrected Phase 5 aggregate evidence closes G3 with conditions. The education
+review triggers, representative-data requirement, and monitoring requirement must
+be resolved before claims about a real operating policy or production use.
+
+ADR 0003 corrects the milestone boundary retrospectively: Release A closes on
+the five reviewed defensible-model criteria, while robustness and population-shift
+stress evidence remains open work for G4/Release B. This does not claim that those
+stress tests were previously completed.

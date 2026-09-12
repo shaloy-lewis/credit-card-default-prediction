@@ -41,7 +41,7 @@ jobs:
         run: uv run ruff check api.py app.py src/credit_risk tests
 
       - name: Type-check maintained boundaries
-        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/cli.py api.py app.py
+        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
         run: uv run pytest -m "not training" --cov --cov-report=term-missing
@@ -73,6 +73,23 @@ jobs:
           --cov=credit_risk.modeling.final_test_workflow
           --cov=credit_risk.modeling.risk_policy
           --cov-branch --cov-report=term-missing
+          --cov-fail-under=90
+
+      - name: Enforce Phase 5 governance branch coverage
+        run: >-
+          uv run pytest tests/unit/governance tests/unit/test_governance_cli.py
+          tests/integration/test_phase5_protocol.py
+          tests/integration/test_phase5_evidence.py
+          tests/integration/test_governance_explanation_smoke.py -m "not training"
+          --cov=credit_risk.governance --cov-branch --cov-report=term-missing
+          --cov-fail-under=90
+
+      - name: Enforce Release A evidence branch coverage
+        run: >-
+          uv run pytest tests/unit/release tests/unit/test_release_cli.py
+          tests/integration/test_release_a_protocol.py
+          tests/integration/test_release_a_evidence.py -m "not training"
+          --cov=credit_risk.release --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
   container:
@@ -166,6 +183,13 @@ jobs:
           grep --fixed-strings "Final-test evaluation was permanently consumed" <<<"$final_test_output"
           grep --fixed-strings "No reevaluation is permitted" <<<"$final_test_output"
           ! grep --fixed-strings "Traceback" <<<"$final_test_output"
+          set +e
+          governance_output="$(docker exec credit-risk-api-ci credit-risk governance build 2>&1)"
+          governance_status=$?
+          set -e
+          test "$governance_status" -eq 1
+          grep --fixed-strings "install the project with the 'data' extra" <<<"$governance_output"
+          ! grep --fixed-strings "Traceback" <<<"$governance_output"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert all(not Path('/app', name).exists() for name in ('data', 'experiment', 'mlruns'))"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert not Path('/app/artifacts').exists()"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/models/selected_v1').iterdir()) == ['manifest.json', 'model.cbm']"

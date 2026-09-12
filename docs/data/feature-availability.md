@@ -19,10 +19,10 @@ prediction.
 | --- | --- | --- | --- | --- |
 | `ID` | Published row/account identifier | Present in the snapshot | Lineage and split joins only | Never a predictor; sequential values could encode row order without business meaning |
 | `LIMIT_BAL` | Published credit limit | Current snapshot | Candidate predictor | A limit is not EAD and must not be presented as realised exposure |
-| `SEX` | Published binary sex code | Current snapshot | Audit and ablation only | Excluded from promoted predictive candidates; categories are coarse |
-| `EDUCATION` | Published education code | Current snapshot | Audit and ablation only | Excluded; undocumented codes 0, 5, and 6 are retained and reported |
-| `MARRIAGE` | Published marital-status code | Current snapshot | Audit and ablation only | Excluded; undocumented code 0 is retained and reported |
-| `AGE` | Published age in years | Current snapshot | Audit and ablation only | Excluded under the current demographic-feature policy |
+| `SEX` | Published binary sex code | Current snapshot | Audit only | Excluded from the released model; categories are coarse |
+| `EDUCATION` | Published education code | Current snapshot | Audit only | Excluded; undocumented codes 0, 5, and 6 are retained and reported |
+| `MARRIAGE` | Published marital-status code | Current snapshot | Audit only | Excluded; undocumented code 0 is retained and reported |
+| `AGE` | Published age in years | Current snapshot | Audit only | Excluded under the released demographic-feature policy |
 | `PAY_0` | September 2005 repayment status | Most recent published period | Candidate predictor | Name is intentional; no `PAY_1`. Codes -2 and 0 are undocumented by UCI |
 | `PAY_2`–`PAY_6` | August through April 2005 repayment status | Prior five published periods | Candidate predictors | Suffix is not months-ago uniformly with `PAY_0`; mapping must remain explicit |
 | `BILL_AMT1`–`BILL_AMT6` | September through April statement balances | Current/prior six periods | Candidate predictors | Negative amounts are valid source values, not automatic quality failures |
@@ -38,18 +38,19 @@ be fit within the relevant training fold.
 ## Demographic boundary
 
 The canonical dataset retains demographics because deleting them would prevent
-data-quality review, subgroup analysis, and the Week 6 ablation study. The
-future Phase 2 modelling interface must derive separate views from the canonical
-dataset:
+data-quality review and subgroup analysis. ADR 0002 replaced the planned Week 6
+model ablation with a no-training exclusion/invariance review because the
+released model already prohibits demographic inputs. The modelling interface
+derives separate views from the canonical dataset:
 
 - a predictor view that excludes `ID`, the target, and all four demographic
   fields; and
 - an audit view keyed by `ID` that contains the target and demographics.
 
 Joining the audit view into a feature matrix is a contract violation. A future
-change to demographic-feature use requires a recorded governance decision and
-new versioned feature contract; exploratory performance improvement alone is
-not sufficient.
+change to demographic-feature use requires a recorded governance decision, new
+versioned feature contract, separately authorized training, and independent
+review; exploratory performance improvement alone is not sufficient.
 
 The compatibility CatBoost model is exempt only so its frozen endpoint can be
 regression-tested. Its use of legacy inputs does not override the Phase 1 policy
