@@ -2,7 +2,7 @@
 
 Status: **closed with conditions**
 
-Summary SHA-256: `436887fa956b263eacc63dd96551003ff7fac87062d298bcce48fc451dbcdd64`
+Summary SHA-256: `9173ce26d9821aea6fc1744dc07b3d504888e074532703f9dd80a3e706e97c73`
 
 The reviewed `selected_v1` bundle was scored once on the 4,800-row development-validation
 slice. Full canonical-file verification was performed for integrity, but no test account was

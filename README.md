@@ -181,7 +181,7 @@ available, while their public fitting commands fail fast.
 
 ```bash
 uv run credit-risk governance verify \
-  --expected-manifest-sha256 0f91021de1760bccb2849cb9b40b68c44879b65b7cb003013c4b04b1b2bb70d7 \
+  --expected-manifest-sha256 6df8745f6deefcd138d7d1c821e6ad38ca7762aa7581fa0fae28042cf7f2b853 \
   --aggregate-only
 ```
 
@@ -191,7 +191,7 @@ evidence, and refuses dirty worktrees, existing destinations, or paths outside
 the approved governance report/runtime subtrees. Phase 1 may parse the complete
 snapshot for integrity; test accounts are never selected, returned, scored,
 explained, or audited by subgroup. Row-level evidence remains ignored under
-`experiment/`. The corrected official build from commit `9b156c5` reproduced the
+`experiment/`. The authenticated official build from commit `226b7d7` reproduced the
 reviewed validation metrics, generated non-degenerate Wilson prevalence intervals,
 and retained the two predeclared education-group review triggers.
 

@@ -68,7 +68,7 @@ production certification.
 
 The initial Phase 5 evidence was withdrawn after review identified an ambiguous
 test-access claim and degenerate prevalence intervals. It remains available only
-in Git history. The clean corrected build from implementation commit `9b156c5`
+in Git history. The clean authenticated build from implementation commit `226b7d7`
 reproduced validation AP `0.556510`, Brier score `0.133539`, and lift at 10%
 `3.210923`. Complete-file integrity and semantic tests protect all seven aggregate
 artifacts, and offline verification reproduced their manifest.

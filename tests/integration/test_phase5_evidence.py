@@ -14,13 +14,13 @@ EVIDENCE_ROOT = REPOSITORY_ROOT / "reports" / "governance" / "phase5_v1"
 # Change only after a clean prediction-only build, offline verification, and explicit
 # review of all aggregate evidence. Never update these for provisional evidence.
 EXPECTED_DIGESTS = {
-    "evidence-manifest.json": "0f91021de1760bccb2849cb9b40b68c44879b65b7cb003013c4b04b1b2bb70d7",
-    "fairness-report.md": "39691271491e4c878f1f3ea90c31b1704af18b0e7beb881458f44f8bfc68b6a7",
+    "evidence-manifest.json": "6df8745f6deefcd138d7d1c821e6ad38ca7762aa7581fa0fae28042cf7f2b853",
+    "fairness-report.md": "5ce92624532618fd1493a3ff0b9dd12657fba77a04a44a6ed8c624439337fd3e",
     "g3-review.md": "f8ed2da0f5cbea29eb0107cc2ffb9cc2c40f1d40ba42d9ab95eed2a06ca38bbf",
-    "governance-report.md": "e94cfca6d10f4bbf2c9f3ead03c40e517ef02fe18a5fafbc6c28bb7bc0ff90d8",
+    "governance-report.md": "3bc6ed154b4ae850810db4945f16642c00aa3413c8af314fcf1739748a1282fb",
     "model-card.md": "6ff8af6e92be11434fa54f99bcae0c844f0b953bee59f4ec7762064032e89171",
     "risk-register.md": "239b35a44d46b153b9d55174a54f31632b30ded06daa50fbb2a6053478b3cdc0",
-    "summary.json": "436887fa956b263eacc63dd96551003ff7fac87062d298bcce48fc451dbcdd64",
+    "summary.json": "9173ce26d9821aea6fc1744dc07b3d504888e074532703f9dd80a3e706e97c73",
 }
 
 
@@ -59,7 +59,7 @@ def test_phase5_evidence_closes_g3_with_review_conditions_only() -> None:
         "final_test_summary_sha256": (
             "8b5e018f5e29a5128285afb877e0adaeca35f4b450061cac21e08ea3a51bda56"
         ),
-        "git_commit": "9b156c5f3a7667d835a5069ce988995364691e19",
+        "git_commit": "226b7d7dd295d2d07b0eb567b228bfc2615ac5c7",
         "git_dirty": False,
         "model_sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c",
         "reviewed_split_lock_sha256": (
@@ -208,3 +208,7 @@ def test_phase5_evidence_closes_g3_with_review_conditions_only() -> None:
         assert forbidden not in deterministic_text
     assert "not a fairness certification" in reports
     assert "human-owned outreach" in reports
+    fairness_report = (EVIDENCE_ROOT / "fairness-report.md").read_text(encoding="utf-8")
+    assert "Prevalence [95% CI]" in fairness_report
+    assert "Mean probability [95% CI]" in fairness_report
+    assert "0.2358 [0.2154, 0.2574]" in fairness_report

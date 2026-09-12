@@ -99,8 +99,8 @@ native CatBoost explanations only. It permits complete-snapshot integrity
 verification but prohibits selecting, returning, scoring, explaining, or auditing
 test accounts. It also prohibits further fitting, replaces demographic ablation
 with exclusion/invariance evidence, and freezes subgroup review triggers before
-corrected official evidence is published. The clean corrected build from commit
-`9b156c5` was verified against full-file digests, uses Wilson intervals for
+corrected official evidence is published. The clean authenticated build from commit
+`226b7d7` was verified against an external manifest trust anchor and full-file digests, uses Wilson intervals for
 prevalence and stratified-percentile intervals for performance measures, and
 closes G3 as `closed_with_conditions`. Row-level runtime evidence remains ignored.
 The verifier requires an externally reviewed manifest digest. By default it also

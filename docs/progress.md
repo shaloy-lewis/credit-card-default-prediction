@@ -291,7 +291,7 @@ deferred risks. It is not a substitute for commit history or CI results.
 - The superseded aggregate evidence was withdrawn after review identified an
   ambiguous test-access claim and degenerate prevalence intervals. It remains
   available in Git history and is not presented as active evidence.
-- The clean prediction-only corrected build from implementation commit `9b156c5`
+- The clean prediction-only authenticated build from implementation commit `226b7d7`
   reproduced validation AP `0.556510`, Brier score `0.133539`, and lift at 10%
   `3.210923` without fitting or final-test scoring.
 - Exactly 1,000 deterministic explanation rows passed native-SHAP raw additivity
