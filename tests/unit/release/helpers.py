@@ -12,6 +12,9 @@ from credit_risk.release.contracts import load_release_config
 
 SOURCE_ROOT = Path(__file__).resolve().parents[3]
 SOURCE_CONFIG = SOURCE_ROOT / "configs" / "releases" / "release_a_v1.json"
+COMMITTED_UNCERTAINTY = (
+    SOURCE_ROOT / "reports" / "releases" / "release_a_v1" / "validation-uncertainty.json"
+)
 
 
 def copy_release_repository(root: Path) -> Path:
@@ -29,7 +32,9 @@ def copy_release_repository(root: Path) -> Path:
         shutil.copyfile(SOURCE_ROOT / reference.path, destination)
     uncertainty = root / config.uncertainty_source.path
     uncertainty.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(SOURCE_ROOT / config.uncertainty_source.path, uncertainty)
+    # The official runtime source is intentionally ignored. Release A publishes
+    # an exact byte copy, making this committed artifact the clean-checkout fixture.
+    shutil.copyfile(COMMITTED_UNCERTAINTY, uncertainty)
     return config_path
 
 

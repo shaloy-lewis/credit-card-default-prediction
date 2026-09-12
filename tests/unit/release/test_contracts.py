@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,12 @@ from credit_risk.release.contracts import (
     load_release_config,
     release_config_sha256,
 )
-from tests.unit.release.helpers import SOURCE_CONFIG, config_payload, write_config
+from tests.unit.release.helpers import (
+    COMMITTED_UNCERTAINTY,
+    SOURCE_CONFIG,
+    config_payload,
+    write_config,
+)
 
 
 def test_load_release_config_accepts_exact_reviewed_contract() -> None:
@@ -24,6 +30,14 @@ def test_load_release_config_accepts_exact_reviewed_contract() -> None:
     assert config.release_criteria == RELEASE_CRITERIA
     assert config.outputs == RELEASE_OUTPUTS
     assert len(release_config_sha256(SOURCE_CONFIG)) == 64
+
+
+def test_committed_uncertainty_fixture_matches_the_reviewed_runtime_digest() -> None:
+    config = load_release_config(SOURCE_CONFIG)
+
+    assert hashlib.sha256(COMMITTED_UNCERTAINTY.read_bytes()).hexdigest() == (
+        config.uncertainty_source.sha256
+    )
 
 
 @pytest.mark.parametrize(
