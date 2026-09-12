@@ -180,7 +180,9 @@ available, while their public fitting commands fail fast.
 ### Verify Phase 5 governance evidence
 
 ```bash
-uv run credit-risk governance verify
+uv run credit-risk governance verify \
+  --expected-manifest-sha256 0f91021de1760bccb2849cb9b40b68c44879b65b7cb003013c4b04b1b2bb70d7 \
+  --aggregate-only
 ```
 
 `governance build` is the controlled prediction-only reproduction interface. It
@@ -192,6 +194,12 @@ explained, or audited by subgroup. Row-level evidence remains ignored under
 `experiment/`. The corrected official build from commit `9b156c5` reproduced the
 reviewed validation metrics, generated non-degenerate Wilson prevalence intervals,
 and retained the two predeclared education-group review triggers.
+
+Verification requires the externally reviewed manifest digest, preventing a
+modified artifact and self-updated manifest from authenticating each other. A
+normal verification also requires and hashes the three ignored runtime artifacts.
+The explicit `--aggregate-only` mode is intended for a clean checkout where those
+row-level files are deliberately absent; it reports that narrower scope.
 
 ### Check the retired compatibility artifacts
 

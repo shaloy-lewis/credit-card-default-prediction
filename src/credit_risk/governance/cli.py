@@ -63,6 +63,10 @@ def build(
 
 @governance_app.command("verify")
 def verify(
+    expected_manifest_sha256: Annotated[
+        str,
+        typer.Option(help="Externally reviewed SHA-256 of evidence-manifest.json."),
+    ],
     data_root: Annotated[
         Path, typer.Option(help="Verified Phase 1 data root.")
     ] = DEFAULT_DATA_ROOT,
@@ -72,18 +76,32 @@ def verify(
     bundle_root: Annotated[
         Path, typer.Option(help="Reviewed selected-model bundle.")
     ] = DEFAULT_BUNDLE_ROOT,
+    runtime_root: Annotated[
+        Path,
+        typer.Option(help="Repository-relative runtime root beneath experiment/governance/."),
+    ] = DEFAULT_RUNTIME_ROOT,
     evidence_root: Annotated[
         Path, typer.Option(help="Aggregate governance evidence root.")
     ] = DEFAULT_OUTPUT_ROOT,
+    aggregate_only: Annotated[
+        bool,
+        typer.Option(
+            "--aggregate-only",
+            help="Verify aggregate files without requiring ignored runtime evidence.",
+        ),
+    ] = False,
 ) -> None:
     """Verify Phase 5 evidence without rescoring validation rows."""
 
     try:
         result = _run_verify(
+            expected_manifest_sha256=expected_manifest_sha256,
             data_root=data_root,
             config_path=config,
             bundle_root=bundle_root,
+            runtime_root=runtime_root,
             evidence_root=evidence_root,
+            aggregate_only=aggregate_only,
         )
     except (RuntimeError, ModuleNotFoundError) as error:
         message = str(error)
@@ -93,6 +111,7 @@ def verify(
         raise typer.Exit(code=1) from None
     typer.echo(
         f"Phase 5 evidence verified: g3={result.g3_result}, "
+        f"scope={'aggregate_only' if aggregate_only else 'aggregate_and_runtime'}, "
         f"manifest_sha256={result.evidence_manifest_sha256}"
     )
 

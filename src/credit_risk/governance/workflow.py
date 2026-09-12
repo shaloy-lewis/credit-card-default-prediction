@@ -231,12 +231,15 @@ def run_governance_build(
 
 def verify_governance_evidence(
     *,
+    expected_manifest_sha256: str,
     data_root: str | Path = DEFAULT_DATA_ROOT,
     config_path: str | Path = DEFAULT_GOVERNANCE_CONFIG_PATH,
     bundle_root: str | Path = DEFAULT_BUNDLE_ROOT,
+    runtime_root: str | Path = DEFAULT_RUNTIME_ROOT,
     evidence_root: str | Path = DEFAULT_OUTPUT_ROOT,
+    aggregate_only: bool = False,
 ) -> GovernanceWorkflowResult:
-    """Verify committed evidence, data lineage, and bundle without rescoring any row."""
+    """Verify reviewed evidence, data lineage, and bundle without rescoring any row."""
 
     try:
         config = load_governance_config(config_path)
@@ -245,6 +248,12 @@ def verify_governance_evidence(
             raise GovernanceWorkflowError("Git repository root is unavailable.")
         repository = git.repository_root
         evidence = _safe_repository_input(repository, evidence_root, "governance evidence root")
+        runtime = _safe_publication_destination(
+            repository,
+            runtime_root,
+            allowed_subtree=Path("experiment/governance"),
+            description="governance runtime root",
+        )
         bundle = _safe_repository_input(repository, bundle_root, "selected bundle root")
         governed = load_governed_development_data(data_root=data_root)
         _validate_development_boundary(governed, config)
@@ -260,16 +269,21 @@ def verify_governance_evidence(
             raise GovernanceWorkflowError(
                 "Selected model digest differs from the Phase 5 contract."
             )
-        _validate_staged_evidence(
-            evidence, config, configuration_sha256=governance_config_sha256(config_path)
+        evidence_manifest = _validate_staged_evidence(
+            evidence,
+            config,
+            configuration_sha256=governance_config_sha256(config_path),
+            expected_manifest_sha256=expected_manifest_sha256,
         )
+        if not aggregate_only:
+            _validate_runtime_evidence(runtime, config, evidence_manifest)
         summary = _read_json(evidence / "summary.json")
         if summary.get("g3", {}).get("result") != config.review.g3_result:
             raise GovernanceWorkflowError("Published G3 result differs from the frozen protocol.")
         trigger_count = len(summary.get("subgroup_review", {}).get("triggers", []))
         return GovernanceWorkflowResult(
             evidence_root=evidence,
-            runtime_root=Path("experiment/governance/phase5_v1"),
+            runtime_root=runtime,
             evidence_manifest_sha256=_sha256_file(evidence / "evidence-manifest.json"),
             summary_sha256=_sha256_file(evidence / "summary.json"),
             g3_result=config.review.g3_result,
@@ -635,7 +649,7 @@ after the two triggers became visible.
 
 ## Group evidence
 
-| Axis | Group | Support | Rows | Prevalence | Mean probability | Calibration gap | Brier | Selection | TPR | FPR |
+| Axis | Group | Support | Rows | Prevalence [95% CI] | Mean probability [95% CI] | Calibration gap [95% CI] | Brier [95% CI] | Selection [95% CI] | TPR [95% CI] | FPR [95% CI] |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 {fairness_rows}
 
@@ -740,13 +754,18 @@ def _fairness_row(group: dict[str, Any]) -> str:
             "— | — | — | — |"
         )
     metrics = group["metrics"]
+    intervals = group["confidence_intervals"]
+
+    def estimate(name: str) -> str:
+        interval = intervals[name]
+        return f"{metrics[name]:.4f} [{interval['lower']:.4f}, {interval['upper']:.4f}]"
+
     return (
         f"| {group['axis']} | {group['group']} | reviewed | {group['rows']} | "
-        f"{metrics['target_prevalence']:.4f} | {metrics['mean_probability']:.4f} | "
-        f"{metrics['calibration_in_the_large']:.4f} | {metrics['brier_score']:.4f} | "
-        f"{metrics['selection_rate_at_q90']:.4f} | "
-        f"{metrics['true_positive_rate_at_q90']:.4f} | "
-        f"{metrics['false_positive_rate_at_q90']:.4f} |"
+        f"{estimate('target_prevalence')} | {estimate('mean_probability')} | "
+        f"{estimate('calibration_in_the_large')} | {estimate('brier_score')} | "
+        f"{estimate('selection_rate_at_q90')} | {estimate('true_positive_rate_at_q90')} | "
+        f"{estimate('false_positive_rate_at_q90')} |"
     )
 
 
@@ -792,8 +811,12 @@ def _write_shap(path: Path, result: ExplanationResult) -> None:
 
 
 def _validate_staged_evidence(
-    root: Path, config: GovernanceConfig, *, configuration_sha256: str
-) -> None:
+    root: Path,
+    config: GovernanceConfig,
+    *,
+    configuration_sha256: str,
+    expected_manifest_sha256: str | None = None,
+) -> dict[str, Any]:
     try:
         observed = {path.name for path in root.iterdir() if path.is_file()}
     except OSError as error:
@@ -802,7 +825,16 @@ def _validate_staged_evidence(
         raise GovernanceWorkflowError(
             f"Governance evidence differs from the allowlist: {sorted(observed)}"
         )
-    manifest = _read_json(root / "evidence-manifest.json")
+    manifest_path = root / "evidence-manifest.json"
+    if expected_manifest_sha256 is not None:
+        _validate_sha256(expected_manifest_sha256, "Expected evidence manifest digest")
+        observed_manifest_sha256 = _sha256_file(manifest_path)
+        if observed_manifest_sha256 != expected_manifest_sha256:
+            raise GovernanceWorkflowError(
+                "Evidence manifest digest differs from the reviewed digest: "
+                f"expected={expected_manifest_sha256}, observed={observed_manifest_sha256}"
+            )
+    manifest = _read_json(manifest_path)
     if (
         manifest.get("schema_version") != "1.0.0"
         or manifest.get("governance_id") != config.governance_id
@@ -851,6 +883,49 @@ def _validate_staged_evidence(
         raise GovernanceWorkflowError("Evidence manifest misstates the reviewed test boundary.")
     if summary.get("population", {}).get("rows") != config.population.rows:
         raise GovernanceWorkflowError("Published evidence has the wrong validation population.")
+    return manifest
+
+
+def _validate_runtime_evidence(
+    root: Path, config: GovernanceConfig, evidence_manifest: dict[str, Any]
+) -> None:
+    try:
+        observed = {path.name for path in root.iterdir()}
+    except OSError as error:
+        raise GovernanceWorkflowError(
+            f"Unable to inspect governance runtime evidence: {error}"
+        ) from error
+    expected = set(config.outputs.runtime)
+    if observed != expected:
+        raise GovernanceWorkflowError(
+            f"Governance runtime evidence differs from the allowlist: {sorted(observed)}"
+        )
+    runtime_artifacts = evidence_manifest.get("runtime_artifacts", {})
+    if set(runtime_artifacts) != expected:
+        raise GovernanceWorkflowError(
+            "Evidence manifest does not cover every governance runtime artifact."
+        )
+    for filename in expected:
+        item = runtime_artifacts[filename]
+        if item.get("committed") is not False:
+            raise GovernanceWorkflowError(
+                f"Governance runtime artifact has an unsafe publication claim: {filename}"
+            )
+        if item.get("sha256") != _sha256_file(root / filename):
+            raise GovernanceWorkflowError(
+                f"Governance runtime artifact digest mismatch: {filename}"
+            )
+
+
+def _validate_sha256(value: str, description: str) -> None:
+    if len(value) != 64:
+        raise GovernanceWorkflowError(f"{description} must contain 64 hexadecimal characters.")
+    try:
+        int(value, 16)
+    except ValueError as error:
+        raise GovernanceWorkflowError(
+            f"{description} must contain 64 hexadecimal characters."
+        ) from error
 
 
 def _safe_repository_input(repository: Path, path: str | Path, description: str) -> Path:

@@ -204,30 +204,87 @@ def test_build_scores_once_publishes_allowlisted_evidence_and_verifies(
     assert summary["explanations"]["row_level_values_committed"] is False
     assert sum(summary["explanations"]["stratum_counts"].values()) == 1000
     assert summary["g3"]["result"] == "closed_with_conditions"
-    assert "## Group evidence" in (output / "fairness-report.md").read_text(encoding="utf-8")
+    fairness_report = (output / "fairness-report.md").read_text(encoding="utf-8")
+    assert "## Group evidence" in fairness_report
+    assert "\n| Axis | Group | Support | Rows | Prevalence [95% CI] |" in fairness_report
     assert "Prohibit India-specific" in (output / "governance-report.md").read_text(
         encoding="utf-8"
     )
 
     verified = verify_governance_evidence(
+        expected_manifest_sha256=result.evidence_manifest_sha256,
         data_root=tmp_path / "data",
         bundle_root=tmp_path / "models/selected_v1",
+        runtime_root=Path("experiment/governance/phase5_v1"),
         evidence_root=output,
     )
     assert verified.summary_sha256 == result.summary_sha256
+
+    runtime_file = runtime / "validation_predictions.csv"
+    original_runtime = runtime_file.read_bytes()
+    runtime_file.write_bytes(b"corrupt\n")
+    with pytest.raises(GovernanceWorkflowError, match="runtime artifact digest mismatch"):
+        verify_governance_evidence(
+            expected_manifest_sha256=result.evidence_manifest_sha256,
+            data_root=tmp_path / "data",
+            bundle_root=tmp_path / "models/selected_v1",
+            runtime_root=Path("experiment/governance/phase5_v1"),
+            evidence_root=output,
+        )
+    aggregate = verify_governance_evidence(
+        expected_manifest_sha256=result.evidence_manifest_sha256,
+        data_root=tmp_path / "data",
+        bundle_root=tmp_path / "models/selected_v1",
+        runtime_root=Path("experiment/governance/phase5_v1"),
+        evidence_root=output,
+        aggregate_only=True,
+    )
+    assert aggregate.summary_sha256 == result.summary_sha256
+    runtime_file.write_bytes(original_runtime)
+
+    runtime_file.unlink()
+    with pytest.raises(
+        GovernanceWorkflowError, match="runtime evidence differs from the allowlist"
+    ):
+        verify_governance_evidence(
+            expected_manifest_sha256=result.evidence_manifest_sha256,
+            data_root=tmp_path / "data",
+            bundle_root=tmp_path / "models/selected_v1",
+            runtime_root=Path("experiment/governance/phase5_v1"),
+            evidence_root=output,
+        )
+    runtime_file.write_bytes(original_runtime)
+
     (output / "unexpected.txt").write_text("not allowlisted", encoding="utf-8")
     with pytest.raises(GovernanceWorkflowError, match="differs from the allowlist"):
         verify_governance_evidence(
+            expected_manifest_sha256=result.evidence_manifest_sha256,
             data_root=tmp_path / "data",
             bundle_root=tmp_path / "models/selected_v1",
+            runtime_root=Path("experiment/governance/phase5_v1"),
             evidence_root=output,
         )
     (output / "unexpected.txt").unlink()
     (output / "model-card.md").write_text("tampered", encoding="utf-8")
     with pytest.raises(GovernanceWorkflowError, match="digest mismatch"):
         verify_governance_evidence(
+            expected_manifest_sha256=result.evidence_manifest_sha256,
             data_root=tmp_path / "data",
             bundle_root=tmp_path / "models/selected_v1",
+            runtime_root=Path("experiment/governance/phase5_v1"),
+            evidence_root=output,
+        )
+    altered_manifest = json.loads((output / "evidence-manifest.json").read_bytes())
+    altered_manifest["artifacts"]["model-card.md"]["sha256"] = workflow._sha256_file(
+        output / "model-card.md"
+    )
+    workflow._write_json(output / "evidence-manifest.json", altered_manifest)
+    with pytest.raises(GovernanceWorkflowError, match="manifest digest differs"):
+        verify_governance_evidence(
+            expected_manifest_sha256=result.evidence_manifest_sha256,
+            data_root=tmp_path / "data",
+            bundle_root=tmp_path / "models/selected_v1",
+            runtime_root=Path("experiment/governance/phase5_v1"),
             evidence_root=output,
         )
 
@@ -472,6 +529,9 @@ def test_json_helpers_reject_invalid_or_missing_files(tmp_path: Path) -> None:
         workflow._read_json(array)
     with pytest.raises(GovernanceWorkflowError, match="Unable to hash"):
         workflow._sha256_file(tmp_path / "missing")
+    for digest in ("short", "g" * 64):
+        with pytest.raises(GovernanceWorkflowError, match="64 hexadecimal"):
+            workflow._validate_sha256(digest, "Test digest")
 
 
 def test_document_helpers_render_supported_and_suppressed_groups() -> None:
@@ -489,6 +549,15 @@ def test_document_helpers_render_supported_and_suppressed_groups() -> None:
             "true_positive_rate_at_q90": 0.3,
             "false_positive_rate_at_q90": 0.05,
         },
+        "confidence_intervals": {
+            "target_prevalence": {"lower": 0.12, "upper": 0.29},
+            "mean_probability": {"lower": 0.18, "upper": 0.24},
+            "calibration_in_the_large": {"lower": -0.01, "upper": 0.03},
+            "brier_score": {"lower": 0.11, "upper": 0.15},
+            "selection_rate_at_q90": {"lower": 0.07, "upper": 0.13},
+            "true_positive_rate_at_q90": {"lower": 0.22, "upper": 0.38},
+            "false_positive_rate_at_q90": {"lower": 0.02, "upper": 0.08},
+        },
     }
     unsupported = {
         "axis": "age_band",
@@ -498,6 +567,7 @@ def test_document_helpers_render_supported_and_suppressed_groups() -> None:
     }
 
     assert "| reviewed | 100 |" in workflow._fairness_row(supported)
+    assert "0.2000 [0.1200, 0.2900]" in workflow._fairness_row(supported)
     assert "| insufficient | 56 |" in workflow._fairness_row(unsupported)
     assert workflow._condition_sentence("prohibit_india_or_compliance_claims") == (
         "Prohibit India-specific or compliance claims."

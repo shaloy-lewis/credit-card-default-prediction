@@ -78,3 +78,12 @@ sigmoid/probability error below `1.2e-16`. The supported-group prevalence interv
 are non-degenerate Wilson intervals. The predeclared selection-rate triggers fired
 for education code 1 (`0.696014`) and code 3 (`1.256410`); both require human
 review and neither automatically rejects the model.
+
+## Evidence verification
+
+The evidence manifest cannot authenticate itself. Verification therefore requires
+its externally reviewed SHA-256 before trusting any artifact digest. Complete
+verification also requires exact allowlisting and digest parity for the ignored
+validation-prediction, native-SHAP, and subgroup-bootstrap artifacts. An explicit
+aggregate-only mode verifies the reviewed committed files when runtime evidence is
+deliberately absent and labels that narrower scope in its result.

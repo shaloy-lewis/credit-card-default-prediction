@@ -103,3 +103,6 @@ corrected official evidence is published. The clean corrected build from commit
 `9b156c5` was verified against full-file digests, uses Wilson intervals for
 prevalence and stratified-percentile intervals for performance measures, and
 closes G3 as `closed_with_conditions`. Row-level runtime evidence remains ignored.
+The verifier requires an externally reviewed manifest digest. By default it also
+hashes the ignored prediction, SHAP, and bootstrap artifacts; an explicit
+aggregate-only mode supports clean checkouts without overstating its scope.
