@@ -271,11 +271,10 @@ deferred risks. It is not a substitute for commit history or CI results.
   receipts remain immutable. The one evaluation is permanently consumed and G2
   remains closed.
 - At the Phase 4 checkpoint, explanations, subgroup review, registry, monitoring,
-  rollback, and incident work had not started. Phase 5 subsequently implemented
-  explanations and subgroup review; corrected aggregate evidence is pending, and
-  the later lifecycle controls remain open.
+  rollback, and incident work had not started. Phase 5 subsequently completed
+  explanations and subgroup review; the later lifecycle controls remain open.
 
-## Phase 5 governance remediation — corrected evidence pending
+## Phase 5 governance and explanation review — complete with conditions
 
 - ADR 0002 replaces demographic model ablation with demographic exclusion,
   input-invariance tests, and validation-only subgroup analysis. No further
@@ -291,7 +290,16 @@ deferred risks. It is not a substitute for commit history or CI results.
   code 1/code 3 selection-rate triggers require documented disposition.
 - The superseded aggregate evidence was withdrawn after review identified an
   ambiguous test-access claim and degenerate prevalence intervals. It remains
-  available in Git history and will not be presented as active evidence.
-- G3 republication is pending a clean corrected build and digest review.
+  available in Git history and is not presented as active evidence.
+- The clean prediction-only corrected build from implementation commit `9b156c5`
+  reproduced validation AP `0.556510`, Brier score `0.133539`, and lift at 10%
+  `3.210923` without fitting or final-test scoring.
+- Exactly 1,000 deterministic explanation rows passed native-SHAP raw additivity
+  and sigmoid/probability parity at the frozen tolerance.
+- Supported-group prevalence uses non-degenerate Wilson intervals; the other
+  measures retain the frozen 500-resample within-group stratified bootstrap.
+- The two predeclared education selection-rate triggers received documented
+  human-review conditions. G3 is `closed_with_conditions`, not a fairness,
+  regulatory, production, or India-validity certification.
 - The local API is technical portfolio integration, not evidence of external
   governance approval. Phase 6+ registry, parity, monitoring, and rollback work has not started.

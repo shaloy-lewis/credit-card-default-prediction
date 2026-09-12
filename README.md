@@ -11,9 +11,9 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > then passed every frozen test gate, closing G2 without training or refitting.
 > Phase 4 release hardening has permanently retired that consumed evaluator and
 > requires exact serving-library compatibility before loading the model. The API
-> and Streamlit demo now serve that exact digest-verified winner. The Phase 5
-> governance implementation is being corrected after review; its superseded
-> aggregate evidence is temporarily withdrawn and G3 republication is pending.
+> and Streamlit demo now serve that exact digest-verified winner. Corrected
+> Phase 5 validation-only evidence has been independently verified and closes
+> G3 with documented conditions; it is not a fairness or production certification.
 
 ## Product intent
 
@@ -42,6 +42,9 @@ The approved scope and delivery evidence are documented in:
 - [Reviewed one-pass selection report](reports/modeling/selection_v1/selection-report.md)
 - [Reviewed one-time final-test report](reports/modeling/final_test_v1/final-test-report.md)
 - [Corrected Phase 5 governance protocol](docs/governance/phase5-protocol.md)
+- [Reviewed Phase 5 governance report](reports/governance/phase5_v1/governance-report.md)
+- [Phase 5 model card](reports/governance/phase5_v1/model-card.md)
+- [G3 review decision](reports/governance/phase5_v1/g3-review.md)
 
 ## Current capabilities
 
@@ -83,10 +86,10 @@ The approved scope and delivery evidence are documented in:
   bundle; intentionally absent modelling and data-validation extras are excluded.
 - A validation-only Phase 5 governance workflow with demographic
   exclusion/invariance checks, corrected subgroup uncertainty, native SHAP, and
-  protected report/runtime destinations. Corrected aggregate evidence is pending.
+  protected report/runtime destinations, backed by digest-protected aggregate evidence.
 
-Phase 5 evidence republication is pending. Registry, batch/API parity, monitoring,
-rollback, and incident exercises remain later roadmap work.
+G3 is `closed_with_conditions`. Registry, batch/API parity, monitoring, rollback,
+and incident exercises remain later roadmap work.
 
 ## Dataset and evidence limits
 
@@ -174,7 +177,11 @@ source is preserved as a non-importable text artifact under
 `docs/modeling/evidence/`. Historical baseline and candidate reports remain
 available, while their public fitting commands fail fast.
 
-### Build Phase 5 governance evidence
+### Verify Phase 5 governance evidence
+
+```bash
+uv run credit-risk governance verify
+```
 
 `governance build` is the controlled prediction-only reproduction interface. It
 scores the existing bundle once on validation, computes subgroup and native-SHAP
@@ -182,7 +189,9 @@ evidence, and refuses dirty worktrees, existing destinations, or paths outside
 the approved governance report/runtime subtrees. Phase 1 may parse the complete
 snapshot for integrity; test accounts are never selected, returned, scored,
 explained, or audited by subgroup. Row-level evidence remains ignored under
-`experiment/`. Corrected reviewed evidence is temporarily pending republication.
+`experiment/`. The corrected official build from commit `9b156c5` reproduced the
+reviewed validation metrics, generated non-degenerate Wilson prevalence intervals,
+and retained the two predeclared education-group review triggers.
 
 ### Check the retired compatibility artifacts
 
@@ -203,7 +212,7 @@ uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/mo
 uv run pytest -m "not training" --cov --cov-report=term-missing
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
-uv run pytest tests/unit/governance tests/unit/test_governance_cli.py tests/integration/test_phase5_protocol.py tests/integration/test_governance_explanation_smoke.py --cov=credit_risk.governance --cov-branch --cov-fail-under=90
+uv run pytest tests/unit/governance tests/unit/test_governance_cli.py tests/integration/test_phase5_protocol.py tests/integration/test_phase5_evidence.py tests/integration/test_governance_explanation_smoke.py --cov=credit_risk.governance --cov-branch --cov-fail-under=90
 ```
 
 ### Run the API

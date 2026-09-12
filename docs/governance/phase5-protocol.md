@@ -2,7 +2,7 @@
 
 **Protocol:** `phase5_v1`
 
-**Status:** corrective evidence republication pending
+**Status:** completed against the corrected contract; G3 closed with conditions
 
 **Model:** reviewed `selected_v1` CatBoost bundle
 **Training budget:** zero fits
@@ -58,16 +58,23 @@ education codes 1 and 3; the thresholds were not changed afterward.
 
 ## Governance outcome
 
-The expected G3 result is `closed_with_conditions`. The dispositions are to keep
+The reviewed G3 result is `closed_with_conditions`. The dispositions are to keep
 all demographics audit-only, restrict use to human-owned outreach prioritisation,
 prohibit adverse action and India/compliance claims, and require representative
 data plus monitoring before any real use. This outcome is not a fairness or
 production certification.
 
-## Remediation status
+## Reviewed corrected outcome
 
 The initial Phase 5 evidence was withdrawn after review identified an ambiguous
-test-access claim and degenerate prevalence intervals. The corrected workflow and
-contract are frozen before republication. G3 will return to
-`closed_with_conditions` only after a clean prediction-only build, independent
-verification, and digest review of the corrected aggregate evidence.
+test-access claim and degenerate prevalence intervals. It remains available only
+in Git history. The clean corrected build from implementation commit `9b156c5`
+reproduced validation AP `0.556510`, Brier score `0.133539`, and lift at 10%
+`3.210923`. Complete-file integrity and semantic tests protect all seven aggregate
+artifacts, and offline verification reproduced their manifest.
+
+Native SHAP passed with maximum raw additivity error below `3.6e-15` and maximum
+sigmoid/probability error below `1.2e-16`. The supported-group prevalence intervals
+are non-degenerate Wilson intervals. The predeclared selection-rate triggers fired
+for education code 1 (`0.696014`) and code 3 (`1.256410`); both require human
+review and neither automatically rejects the model.

@@ -79,20 +79,27 @@ ignored. Phase 4 release hardening additionally replaced the active evaluator
 with a no-option permanent tombstone while preserving its approved source
 byte-for-byte as a non-importable evidence artifact. Serving readiness now
 requires exact versions for the six runtime dependencies recorded in the bundle
-manifest. G2 remains closed and Phase 4 is complete; the corrected Phase 5
-protocol below is pending evidence republication and does not begin later lifecycle work.
+manifest. G2 remains closed and Phase 4 is complete. Corrected Phase 5 evidence
+is reviewed below without beginning later lifecycle work.
 
 ## Phase 5 governance protocol
 
 - [Frozen validation-only governance protocol](governance/phase5-protocol.md)
 - Machine-readable contract: `../configs/governance/phase5_v1.json`
+- [Reviewed governance report](../reports/governance/phase5_v1/governance-report.md)
+- [Validation subgroup report](../reports/governance/phase5_v1/fairness-report.md)
+- [Model card](../reports/governance/phase5_v1/model-card.md)
+- [Risk register](../reports/governance/phase5_v1/risk-register.md)
+- [G3 review decision](../reports/governance/phase5_v1/g3-review.md)
+- [G3 checklist](governance/g3-checklist.md)
+- [Model-governance status](governance/model-governance-status.md)
 
 The protocol uses the existing selected bundle for validation inference and
 native CatBoost explanations only. It permits complete-snapshot integrity
 verification but prohibits selecting, returning, scoring, explaining, or auditing
 test accounts. It also prohibits further fitting, replaces demographic ablation
 with exclusion/invariance evidence, and freezes subgroup review triggers before
-corrected official evidence is published.
-The superseded aggregate evidence was withdrawn after review identified ambiguous
-test-access wording and degenerate prevalence intervals. Corrected republication
-is pending; row-level runtime evidence remains ignored.
+corrected official evidence is published. The clean corrected build from commit
+`9b156c5` was verified against full-file digests, uses Wilson intervals for
+prevalence and stratified-percentile intervals for performance measures, and
+closes G3 as `closed_with_conditions`. Row-level runtime evidence remains ignored.
