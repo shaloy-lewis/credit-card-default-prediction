@@ -11,6 +11,7 @@ against model accuracy.
 - [Twelve-week delivery roadmap](roadmap.md)
 - [ADR 0001: batch-first scoring architecture](adr/0001-batch-first-scoring.md)
 - [ADR 0002: no-training governance review](adr/0002-no-training-governance-review.md)
+- [ADR 0003: Release A audit closure](adr/0003-release-a-audit-closure.md)
 - [Delivery progress and verification evidence](progress.md)
 
 The Phase 0 product brief and batch-first architecture decision were accepted on
@@ -106,3 +107,19 @@ closes G3 as `closed_with_conditions`. Row-level runtime evidence remains ignore
 The verifier requires an externally reviewed manifest digest. By default it also
 hashes the ignored prediction, SHAP, and bootstrap artifacts; an explicit
 aggregate-only mode supports clean checkouts without overstating its scope.
+
+## Release A audit dossier
+
+- Machine-readable contract: `../configs/releases/release_a_v1.json`
+- [Consolidated Release A report](../reports/releases/release_a_v1/release-a-report.md)
+- [Machine-readable Release A summary](../reports/releases/release_a_v1/summary.json)
+- [Externally authenticated evidence manifest](../reports/releases/release_a_v1/evidence-manifest.json)
+- [Published validation-only uncertainty](../reports/releases/release_a_v1/validation-uncertainty.json)
+
+The dossier was assembled from clean implementation commit `20186ad` without
+model loading, prediction, fitting, bootstrap generation, test-row selection,
+or final-test reevaluation. The uncertainty file is byte-identical to the
+reviewed 500-resample selection-runtime artifact. The external manifest digest
+is `7e65c7b854de15742f05c4b8c2de891f50512518f8eb2339241f87f98754edf7`.
+Release A is complete; robustness and population-shift stress evidence remains
+explicitly deferred to G4/Release B.

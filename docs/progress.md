@@ -303,3 +303,31 @@ deferred risks. It is not a substitute for commit history or CI results.
   regulatory, production, or India-validity certification.
 - The local API is technical portfolio integration, not evidence of external
   governance approval. Phase 6+ registry, parity, monitoring, and rollback work has not started.
+
+## Release A audit closure — complete
+
+**Completed:** 2026-09-12
+
+- ADR 0003 fixes the Release A boundary to the milestone's five existing
+  defensible-model criteria and assigns robustness/population-shift stress
+  evidence to G4/Release B without claiming it was already completed.
+- A frozen release contract binds the reviewed source manifest, split lock,
+  feature contract, baseline and selection evidence, selected bundle, final-test
+  authorization, approval, durable receipts, executed evaluator, and final evidence.
+- The clean build from implementation commit `20186ad` copied the reviewed
+  500-resample validation uncertainty byte-for-byte and assembled the dossier
+  without model loading, prediction, fitting, bootstrap generation, test-row
+  selection, or final-test reevaluation.
+- The dossier reports validation AP `0.556510` with 95% interval
+  `[0.525431, 0.587755]`, Brier `0.133539` with interval
+  `[0.128826, 0.137924]`, and lift at 10% `3.210923` with interval
+  `[3.027072, 3.375942]`.
+- It also binds ten reliability bins, validation and final-test capacities at
+  5%, 10%, and 20%, the four-fit/no-refit selection rule, and the one permanently
+  consumed final-test evaluation that closed G2.
+- Complete artifact digests are summary `a8cfdd1f...19acb`, report
+  `7d5873bf...73a86`, uncertainty `187004bd...0ffa2`, and manifest
+  `7e65c7b8...4edf7`. The last digest is the external verification trust anchor.
+- Release A is `complete`; G1 and G2 remain closed and G3 remains
+  `closed_with_conditions`. G4 stress, parity, registry, rollback, monitoring,
+  and runbook work remains open.

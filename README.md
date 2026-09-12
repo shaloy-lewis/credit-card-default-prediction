@@ -14,6 +14,9 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > and Streamlit demo now serve that exact digest-verified winner. Corrected
 > Phase 5 validation-only evidence has been independently verified and closes
 > G3 with documented conditions; it is not a fairness or production certification.
+> Release A is now complete and consolidated in one externally authenticated,
+> zero-computation evidence dossier. Robustness and population-shift stress
+> evidence is explicitly deferred to G4/Release B.
 
 ## Product intent
 
@@ -31,6 +34,7 @@ The approved scope and delivery evidence are documented in:
 - [Product and decision brief](docs/product-brief.md)
 - [Twelve-week roadmap](docs/roadmap.md)
 - [Batch-first architecture decision](docs/adr/0001-batch-first-scoring.md)
+- [Release A audit-closure decision](docs/adr/0003-release-a-audit-closure.md)
 - [Dataset card and evidence limits](docs/data/data-card.md)
 - [Feature availability and leakage review](docs/data/feature-availability.md)
 - [Data validation and quarantine policy](docs/data/validation-policy.md)
@@ -45,6 +49,8 @@ The approved scope and delivery evidence are documented in:
 - [Reviewed Phase 5 governance report](reports/governance/phase5_v1/governance-report.md)
 - [Phase 5 model card](reports/governance/phase5_v1/model-card.md)
 - [G3 review decision](reports/governance/phase5_v1/g3-review.md)
+- [Authenticated Release A dossier](reports/releases/release_a_v1/release-a-report.md)
+- [Release A evidence manifest](reports/releases/release_a_v1/evidence-manifest.json)
 
 ## Current capabilities
 
@@ -87,6 +93,9 @@ The approved scope and delivery evidence are documented in:
 - A validation-only Phase 5 governance workflow with demographic
   exclusion/invariance checks, corrected subgroup uncertainty, native SHAP, and
   protected report/runtime destinations, backed by digest-protected aggregate evidence.
+- An authenticated Release A dossier binding the complete data, baseline,
+  selection, bundle, authorization, receipt, and final-test chain. It publishes
+  the reviewed 500-resample validation uncertainty without recomputation.
 
 G3 is `closed_with_conditions`. Registry, batch/API parity, monitoring, rollback,
 and incident exercises remain later roadmap work.
@@ -201,6 +210,21 @@ normal verification also requires and hashes the three ignored runtime artifacts
 The explicit `--aggregate-only` mode is intended for a clean checkout where those
 row-level files are deliberately absent; it reports that narrower scope.
 
+### Verify the authenticated Release A dossier
+
+```bash
+uv run credit-risk release verify \
+  --expected-manifest-sha256 7e65c7b854de15742f05c4b8c2de891f50512518f8eb2339241f87f98754edf7
+```
+
+The [Release A report](reports/releases/release_a_v1/release-a-report.md)
+consolidates reproducible data, reviewed baselines, the fixed four-model
+selection, identity-calibration diagnostics, validation-only uncertainty,
+capacity evidence, and the permanently consumed final test. Verification works
+from a clean checkout: it authenticates the manifest against the external digest
+and then verifies the complete source and output allowlists. It neither loads a
+model nor accesses row-level prediction evidence.
+
 ### Check the retired compatibility artifacts
 
 ```bash
@@ -216,11 +240,12 @@ execute code, use this command only with trusted project artifacts.
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/cli.py api.py app.py
 uv run pytest -m "not training" --cov --cov-report=term-missing
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/governance tests/unit/test_governance_cli.py tests/integration/test_phase5_protocol.py tests/integration/test_phase5_evidence.py tests/integration/test_governance_explanation_smoke.py --cov=credit_risk.governance --cov-branch --cov-fail-under=90
+uv run pytest tests/unit/release tests/unit/test_release_cli.py tests/integration/test_release_a_protocol.py tests/integration/test_release_a_evidence.py --cov=credit_risk.release --cov-branch --cov-fail-under=90
 ```
 
 ### Run the API
@@ -276,6 +301,7 @@ released model contract.
 ├── configs/data/              # Source manifest, split policy, and reviewed lock
 ├── configs/modeling/          # Feature and scientific-baseline contracts
 ├── configs/governance/        # Frozen validation-only governance contract
+├── configs/releases/          # Frozen release-level audit contract
 ├── data/                      # Ignored reproducible raw/processed/split products
 ├── docs/                      # Product, roadmap, governance, and ADR evidence
 │   └── modeling/evidence/     # Non-importable archive of the consumed evaluator
@@ -283,6 +309,7 @@ released model contract.
 ├── models/selected_v1/        # Digest-protected released model bundle
 ├── reports/modeling/          # Reviewed aggregate experiment evidence
 ├── reports/governance/        # Reviewed aggregate governance evidence
+├── reports/releases/          # Authenticated release dossiers
 ├── src/credit_risk/           # Installable application package
 ├── tests/                     # Unit, integration, and compatibility tests
 ├── pyproject.toml             # Direct dependencies and tool configuration
@@ -296,8 +323,9 @@ from version control.
 
 ## Delivery milestones
 
-- **Release A — defensible model:** reproducible data, baselines, calibration,
-  uncertainty, and capacity-aware evaluation.
+- **Release A — defensible model (complete):** reproducible data, baselines,
+  identity calibration, validation-only uncertainty, capacity-aware evaluation,
+  and one authenticated evidence chain.
 - **Release B — governed ML product:** model/data cards, subgroup analysis,
   reason-code tests, registry promotion gates, and rollback.
 - **Release C — local platform:** batch/API parity, Docker Compose services,

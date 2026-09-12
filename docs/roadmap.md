@@ -39,11 +39,17 @@
 
 ### Release A: defensible model — end of Week 5
 
+**Status: complete.** The consolidated [Release A dossier](../reports/releases/release_a_v1/release-a-report.md)
+and externally authenticated evidence manifest bind the complete reviewed chain.
+
 - Reproducible data and split protocol.
 - Fixed four-model comparison and the exact serialized validation winner.
 - Identity-calibration diagnostics, prediction-only uncertainty, capacity metrics, and a documented selection rule.
 - One authorized prediction-only test evaluation with frozen gates, durable receipts, and no rerun path.
 - No unsupported temporal, causal, India-specific, or compliance claim.
+
+Uncertainty intervals are validation-only. Robustness and population-shift
+stress evidence is not part of this milestone and is deferred to G4/Release B.
 
 This release is the minimum scientifically credible senior-data-science story.
 
