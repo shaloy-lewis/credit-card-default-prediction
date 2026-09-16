@@ -13,6 +13,7 @@ against model accuracy.
 - [ADR 0002: no-training governance review](adr/0002-no-training-governance-review.md)
 - [ADR 0003: Release A audit closure](adr/0003-release-a-audit-closure.md)
 - [ADR 0004: versioned inference parity](adr/0004-versioned-inference-parity.md)
+- [ADR 0005: local MLflow registry release control](adr/0005-local-mlflow-registry-release-control.md)
 - [Delivery progress and verification evidence](progress.md)
 
 The Phase 0 product brief and batch-first architecture decision were accepted on
@@ -145,3 +146,13 @@ Its external manifest digest is
 `919087229d20fe83c1846da65d5901ea103ac3182c9c2975c3490424a49f4df8`.
 No model fitting, model change, sealed-test access, or row-level evidence
 publication occurred. G4 remains open for the remaining release-readiness work.
+
+## Phase 7 registry protocol
+
+- [Frozen registry and rollback protocol](registry/phase7-protocol.md)
+- Machine-readable contract: `../configs/registry/phase7_v1.json`
+
+Phase 7 is frozen before implementation. It uses a local MLflow SQLite registry
+to demonstrate manual candidate/champion promotion, immutable deployment
+revisions, and rollback around the unchanged reviewed model. The full MLflow,
+PostgreSQL, and MinIO platform remains deferred.
