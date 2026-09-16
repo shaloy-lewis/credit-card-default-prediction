@@ -118,11 +118,16 @@ def test_readiness_and_prediction_return_503_if_engine_state_is_lost(
 
         liveness = client.get("/ping")
         readiness = client.get("/ready")
-        prediction = client.post("/v1/predict", json=readme_prediction_payload)
+        prediction = client.post(
+            "/v1/predict",
+            json=readme_prediction_payload,
+            headers={"X-Request-ID": "unready-request"},
+        )
 
     assert liveness.status_code == 200
     assert readiness.status_code == 503
     assert prediction.status_code == 503
+    assert prediction.headers["X-Trace-ID"] == "unready-request"
 
 
 @pytest.mark.parametrize(
@@ -190,5 +195,6 @@ def test_v1_predict_hides_unexpected_inference_details(
         )
 
     assert response.status_code == 500
+    assert response.headers["X-Trace-ID"] == "failed-request"
     assert response.json() == {"detail": "Inference failed; trace_id=failed-request"}
     assert "sensitive internals" not in response.text

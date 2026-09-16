@@ -8,6 +8,10 @@ import urllib.request
 from collections.abc import Mapping
 from typing import Any
 
+from pydantic import ValidationError
+
+from credit_risk.inference.contracts import CreditRiskResponse
+
 
 class InferenceClientError(RuntimeError):
     """Raised when the versioned API cannot return a valid prediction."""
@@ -37,20 +41,13 @@ def predict_v1(
     except (OSError, urllib.error.HTTPError, urllib.error.URLError) as error:
         raise InferenceClientError(f"Versioned inference request failed: {error}") from error
     try:
-        result = json.loads(content)
+        json.loads(content)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise InferenceClientError("Versioned inference response was not valid JSON.") from error
-    required = {
-        "schema_version",
-        "trace_id",
-        "probability_of_default",
-        "risk_band",
-        "reasons",
-        "model_id",
-        "bundle_id",
-        "manifest_sha256",
-        "policy_id",
-    }
-    if not isinstance(result, dict) or set(result) != required:
-        raise InferenceClientError("Versioned inference response violated its field allowlist.")
-    return result
+    try:
+        result = CreditRiskResponse.model_validate_json(content)
+    except ValidationError as error:
+        raise InferenceClientError(
+            "Versioned inference response violated its strict response contract."
+        ) from error
+    return result.model_dump(mode="json")

@@ -62,7 +62,7 @@ approval or a fairness/compliance certification.
 
 **Status: in progress.** Phase 5 completed the model card, risk register,
 subgroup review, and explanation controls. Phase 6 completed versioned batch/API
-inference and parity from hardened implementation commit `0593237`. G4 remains open
+inference; corrected aggregate parity evidence is pending republish. G4 remains open
 until Week 8 adds registry promotion, scanning, and demonstrated rollback, and
 until later robustness/monitoring controls are delivered.
 

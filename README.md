@@ -57,8 +57,8 @@ The approved scope and delivery evidence are documented in:
 - [Release A evidence manifest](reports/releases/release_a_v1/evidence-manifest.json)
 - [Phase 6 inference contract](docs/inference/phase6-protocol.md)
 - [Phase 6 inference architecture](docs/inference/architecture.md)
-- [Reviewed Phase 6 parity report](reports/inference/phase6_v1/inference-parity-report.md)
-- [Phase 6 evidence manifest](reports/inference/phase6_v1/evidence-manifest.json)
+- Phase 6 aggregate evidence is temporarily withdrawn pending publication from
+  the corrected pre-push implementation.
 
 ## Current capabilities
 
@@ -108,9 +108,7 @@ The approved scope and delivery evidence are documented in:
   batch scorer and `POST /v1/predict`, with deterministic 10% ranking,
   partial-row rejection evidence, native-SHAP reason categories, trace IDs,
   safe JSON logs, and an API-only Streamlit client.
-- Authenticated Phase 6 evidence from hardened implementation commit `0593237`:
-  20 synthetic records achieved exact offline/batch probability parity,
-  API agreement within `5e-7`, exact band/reason parity, and no-rewrite reuse.
+- Corrected Phase 6 implementation awaiting a clean synthetic parity-evidence republish.
 
 G3 is `closed_with_conditions`. Phase 6 completes batch/API inference parity;
 G4 remains open for stress testing, registry, scanning, rollback, monitoring,
@@ -267,17 +265,10 @@ rerun reuses its files without rewriting them; a conflicting or corrupt run is
 never overwritten. Verification reconciles the strict manifest with both CSVs,
 including identity, ranking, selection, bands, traces, counts, rules, and lineage.
 
-Authenticate the committed aggregate parity evidence without runtime row data:
-
-```bash
-uv run credit-risk inference verify-evidence \
-  --expected-manifest-sha256 72840e67395cd32058552ec32b81f87e8908436a91585d209e75fe881925c44f
-```
-
-The [Phase 6 report](reports/inference/phase6_v1/inference-parity-report.md)
-binds the unchanged model/config digests and clean implementation lineage. It
-publishes no account IDs, feature values, probabilities, local paths, or
-wall-clock timestamps. Its native-SHAP categories are non-causal model
+The corrected Phase 6 implementation will republish authenticated aggregate
+parity evidence from a clean commit. The evidence will publish no account IDs,
+feature values, probabilities, local paths, or wall-clock timestamps. Its
+native-SHAP categories remain non-causal model
 attributions and are not adverse-action reasons.
 
 ### Check the retired compatibility artifacts

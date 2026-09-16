@@ -11,9 +11,13 @@ from typing import Annotated, Literal, cast
 
 import pandas as pd
 from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, Response
-from pydantic import BaseModel, ConfigDict
 
-from credit_risk.inference.contracts import ACCOUNT_ID_PATTERN, OperationalFeatures
+from credit_risk.inference.contracts import (
+    ACCOUNT_ID_PATTERN,
+    CreditRiskResponse,
+    OperationalFeatures,
+    ReasonResponse,
+)
 from credit_risk.inference.engine import InferenceEngine
 from credit_risk.inference.logging import emit_event
 from credit_risk.modeling.contracts import PREDICTOR_COLUMNS
@@ -48,28 +52,6 @@ class CreditRiskRequest(OperationalFeatures):
     """Canonical operational features available at the monthly scoring cutoff."""
 
 
-class ReasonResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    category: Literal["billing_balance", "credit_capacity", "payment_behaviour", "repayment_status"]
-    direction: Literal["risk_increasing", "risk_mitigating", "neutral"]
-    contribution_raw_log_odds: float
-
-
-class CreditRiskResponse(BaseModel):
-    model_config = ConfigDict(protected_namespaces=(), extra="forbid")
-
-    schema_version: Literal["1.0.0"]
-    trace_id: str
-    probability_of_default: float
-    risk_band: Literal["standard", "elevated", "high", "critical"]
-    reasons: tuple[ReasonResponse, ReasonResponse]
-    model_id: Literal["catboost_fixed"]
-    bundle_id: Literal["selected_v1"]
-    manifest_sha256: str
-    policy_id: Literal["outreach_top_10_v1"]
-
-
 @router.post("/v1/predict", response_model=CreditRiskResponse)
 def predict_default_v1(
     data: CreditRiskRequest,
@@ -80,9 +62,16 @@ def predict_default_v1(
         Header(alias="X-Request-ID", pattern=ACCOUNT_ID_PATTERN),
     ] = None,
 ) -> CreditRiskResponse:
-    engine = get_engine(request)
     trace_id = request_id or uuid.uuid4().hex
     response.headers["X-Trace-ID"] = trace_id
+    try:
+        engine = get_engine(request)
+    except HTTPException as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.detail,
+            headers={"X-Trace-ID": trace_id},
+        ) from None
     started = time.perf_counter()
     try:
         features = pd.DataFrame([data.model_dump()], columns=PREDICTOR_COLUMNS)
@@ -118,7 +107,9 @@ def predict_default_v1(
             duration_ms=round((time.perf_counter() - started) * 1000.0, 3),
         )
         raise HTTPException(
-            status_code=500, detail=f"Inference failed; trace_id={trace_id}"
+            status_code=500,
+            detail=f"Inference failed; trace_id={trace_id}",
+            headers={"X-Trace-ID": trace_id},
         ) from None
     emit_event(
         "api_prediction_completed",

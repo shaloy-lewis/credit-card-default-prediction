@@ -190,6 +190,24 @@ def run_batch(
 ) -> BatchRunResult:
     """Score one snapshot or verify and reuse an identical completed run."""
 
+    scoring_date = validate_batch_identity(
+        as_of_date=as_of_date,
+        snapshot_id=snapshot_id,
+        config=config,
+    )
+    return _run_validated_batch(
+        input_path=input_path,
+        scoring_date=scoring_date,
+        snapshot_id=snapshot_id,
+        output_root=output_root,
+        config=config,
+        engine=engine,
+    )
+
+
+def validate_batch_identity(*, as_of_date: str, snapshot_id: str, config: InferenceConfig) -> date:
+    """Validate path-forming batch identity before model or input access."""
+
     scoring_date = _parse_date(as_of_date)
     if (
         SAFE_ID_PATTERN.fullmatch(snapshot_id) is None
@@ -198,6 +216,18 @@ def run_batch(
         raise BatchInferenceError(
             "Snapshot ID must match the reviewed safe identifier pattern and cannot be '.' or '..'."
         )
+    return scoring_date
+
+
+def _run_validated_batch(
+    *,
+    input_path: str | Path,
+    scoring_date: date,
+    snapshot_id: str,
+    output_root: str | Path,
+    config: InferenceConfig,
+    engine: InferenceEngine,
+) -> BatchRunResult:
     source = Path(input_path)
     try:
         input_bytes = source.read_bytes()
@@ -591,7 +621,8 @@ def _validate_scores_output(
             config.explanation.reason_categories
         ):
             raise BatchInferenceError("Score reason categories violate the reviewed allowlist.")
-        for prefix in ("primary", "secondary"):
+        reason_pairs: list[tuple[str, float]] = []
+        for prefix, category in zip(("primary", "secondary"), categories, strict=True):
             contribution = _parse_output_float(
                 row[f"{prefix}_reason_contribution_raw_log_odds"],
                 f"{prefix} reason contribution",
@@ -605,6 +636,13 @@ def _validate_scores_output(
             )
             if row[f"{prefix}_reason_direction"] != expected_direction:
                 raise BatchInferenceError("Score reason direction differs from its contribution.")
+            reason_pairs.append((category, contribution))
+        expected_reason_order = sorted(
+            reason_pairs,
+            key=lambda item: (-abs(item[1]), item[0]),
+        )
+        if reason_pairs != expected_reason_order:
+            raise BatchInferenceError("Score reasons violate deterministic contribution ordering.")
         expected_trace = hashlib.sha256(f"{manifest.batch_id}|{account_id}".encode()).hexdigest()[
             :32
         ]

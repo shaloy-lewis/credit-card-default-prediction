@@ -31,7 +31,18 @@ def _payload() -> dict[str, object]:
         "trace_id": "trace-1",
         "probability_of_default": 0.2,
         "risk_band": "standard",
-        "reasons": [],
+        "reasons": [
+            {
+                "category": "repayment_status",
+                "direction": "risk_increasing",
+                "contribution_raw_log_odds": 0.4,
+            },
+            {
+                "category": "credit_capacity",
+                "direction": "risk_mitigating",
+                "contribution_raw_log_odds": -0.2,
+            },
+        ],
         "model_id": "catboost_fixed",
         "bundle_id": "selected_v1",
         "manifest_sha256": "a" * 64,
@@ -66,7 +77,7 @@ def test_client_calls_v1_with_optional_request_id(monkeypatch: pytest.MonkeyPatc
     ("content", "message"),
     (
         (b"not-json", "not valid JSON"),
-        (json.dumps({"unexpected": True}).encode(), "field allowlist"),
+        (json.dumps({"unexpected": True}).encode(), "strict response contract"),
     ),
 )
 def test_client_rejects_invalid_responses(
@@ -77,6 +88,34 @@ def test_client_rejects_invalid_responses(
     )
 
     with pytest.raises(client.InferenceClientError, match=message):
+        client.predict_v1({"credit_limit_ntd": 1})
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        lambda payload: payload.update(probability_of_default="0.2"),
+        lambda payload: payload.update(probability_of_default=1.1),
+        lambda payload: payload.update(risk_band="unknown"),
+        lambda payload: payload.update(reasons=[]),
+        lambda payload: payload["reasons"][0].update(contribution_raw_log_odds=float("nan")),
+        lambda payload: payload.update(manifest_sha256="not-a-digest"),
+        lambda payload: payload.update(trace_id="unsafe trace id"),
+    ),
+)
+def test_client_rejects_semantically_invalid_responses(
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: object,
+) -> None:
+    payload = _payload()
+    mutation(payload)  # type: ignore[operator]
+    monkeypatch.setattr(
+        client.urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: _Response(json.dumps(payload).encode()),
+    )
+
+    with pytest.raises(client.InferenceClientError, match="strict response contract"):
         client.predict_v1({"credit_limit_ntd": 1})
 
 

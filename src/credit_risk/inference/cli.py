@@ -7,7 +7,12 @@ from typing import Annotated
 
 import typer
 
-from credit_risk.inference.batch import BatchInferenceError, run_batch, verify_batch_run
+from credit_risk.inference.batch import (
+    BatchInferenceError,
+    run_batch,
+    validate_batch_identity,
+    verify_batch_run,
+)
 from credit_risk.inference.contracts import (
     DEFAULT_INFERENCE_CONFIG_PATH,
     InferenceContractError,
@@ -50,6 +55,11 @@ def batch_command(
 
     try:
         config = load_inference_config(config_path)
+        validate_batch_identity(
+            as_of_date=as_of_date,
+            snapshot_id=snapshot_id,
+            config=config,
+        )
         engine = InferenceEngine(bundle_root=bundle_root, config_path=config_path)
         result = run_batch(
             input_path=input_path,

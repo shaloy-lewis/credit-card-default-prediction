@@ -32,6 +32,16 @@ class _FrozenModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True, protected_namespaces=())
 
 
+class _StrictWireModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        allow_inf_nan=False,
+        protected_namespaces=(),
+    )
+
+
 class BundleContract(_FrozenModel):
     bundle_id: Literal["selected_v1"]
     model_id: Literal["catboost_fixed"]
@@ -198,6 +208,24 @@ class OperationalFeatures(BaseModel):
     payment_amount_ntd_lag_3: int = Field(ge=0)
     payment_amount_ntd_lag_4: int = Field(ge=0)
     payment_amount_ntd_lag_5: int = Field(ge=0)
+
+
+class ReasonResponse(_StrictWireModel):
+    category: Literal["billing_balance", "credit_capacity", "payment_behaviour", "repayment_status"]
+    direction: Literal["risk_increasing", "risk_mitigating", "neutral"]
+    contribution_raw_log_odds: float
+
+
+class CreditRiskResponse(_StrictWireModel):
+    schema_version: Literal["1.0.0"]
+    trace_id: str = Field(pattern=ACCOUNT_ID_PATTERN)
+    probability_of_default: float = Field(ge=0.0, le=1.0)
+    risk_band: Literal["standard", "elevated", "high", "critical"]
+    reasons: tuple[ReasonResponse, ReasonResponse]
+    model_id: Literal["catboost_fixed"]
+    bundle_id: Literal["selected_v1"]
+    manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    policy_id: Literal["outreach_top_10_v1"]
 
 
 def load_inference_config(path: str | Path = DEFAULT_INFERENCE_CONFIG_PATH) -> InferenceConfig:

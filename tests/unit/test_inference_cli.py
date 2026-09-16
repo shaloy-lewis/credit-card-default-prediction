@@ -18,6 +18,7 @@ def test_batch_cli_returns_partial_exit_and_forwards_options(
 ) -> None:
     captured: dict[str, object] = {}
     monkeypatch.setattr(cli, "load_inference_config", lambda _path: SimpleNamespace())
+    monkeypatch.setattr(cli, "validate_batch_identity", lambda **_kwargs: None)
     monkeypatch.setattr(cli, "InferenceEngine", lambda **_kwargs: SimpleNamespace())
 
     def fake_run(**kwargs: object) -> BatchRunResult:
@@ -56,6 +57,7 @@ def test_batch_cli_returns_actionable_failure_without_traceback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(cli, "load_inference_config", lambda _path: SimpleNamespace())
+    monkeypatch.setattr(cli, "validate_batch_identity", lambda **_kwargs: None)
     monkeypatch.setattr(cli, "InferenceEngine", lambda **_kwargs: SimpleNamespace())
     monkeypatch.setattr(
         cli,
@@ -78,6 +80,56 @@ def test_batch_cli_returns_actionable_failure_without_traceback(
     assert result.exit_code == 1
     assert "invalid snapshot" in result.output
     assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize(
+    ("as_of_date", "snapshot_id", "message"),
+    (
+        ("2026-09-30", ".", "cannot be '.' or '..'"),
+        ("2026-09-30", "..", "cannot be '.' or '..'"),
+        ("09/30/2026", "safe", "ISO date"),
+    ),
+)
+def test_batch_cli_rejects_invalid_identity_before_engine_or_workflow_access(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    as_of_date: str,
+    snapshot_id: str,
+    message: str,
+) -> None:
+    config = SimpleNamespace(batch=SimpleNamespace(reserved_snapshot_ids=(".", "..")))
+    monkeypatch.setattr(cli, "load_inference_config", lambda _path: config)
+    monkeypatch.setattr(
+        cli,
+        "InferenceEngine",
+        lambda **_kwargs: pytest.fail("engine must not be constructed during identity preflight"),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_batch",
+        lambda **_kwargs: pytest.fail("batch workflow must not run after failed preflight"),
+    )
+    output_root = tmp_path / "must-not-exist"
+
+    result = runner.invoke(
+        cli.inference_app,
+        [
+            "batch",
+            "--input",
+            str(tmp_path / "missing.csv"),
+            "--as-of-date",
+            as_of_date,
+            "--snapshot-id",
+            snapshot_id,
+            "--output-root",
+            str(output_root),
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert message in result.output
+    assert "Traceback" not in result.output
+    assert not output_root.exists()
 
 
 def test_verify_cli_reports_verified_manifest(monkeypatch: pytest.MonkeyPatch) -> None:

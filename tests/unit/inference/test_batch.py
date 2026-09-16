@@ -370,6 +370,47 @@ def test_verifier_rejects_semantically_changed_scores_even_with_updated_digest(
         verify_batch_run(result.run_root, config=config, expected_batch_id=result.batch_id)
 
 
+@pytest.mark.parametrize("equal_absolute_contributions", (False, True))
+def test_verifier_rejects_reordered_reasons_even_with_updated_digest(
+    tmp_path: Path,
+    config: InferenceConfig,
+    equal_absolute_contributions: bool,
+) -> None:
+    _, result = _completed_run(tmp_path, config)
+    scores_path = result.run_root / "scores.csv"
+    rows = list(csv.reader(scores_path.open(encoding="utf-8", newline="")))
+    header = rows[0]
+    row = rows[1]
+    primary = [
+        header.index("primary_reason_category"),
+        header.index("primary_reason_direction"),
+        header.index("primary_reason_contribution_raw_log_odds"),
+    ]
+    secondary = [
+        header.index("secondary_reason_category"),
+        header.index("secondary_reason_direction"),
+        header.index("secondary_reason_contribution_raw_log_odds"),
+    ]
+    if equal_absolute_contributions:
+        row[primary[0]], row[primary[1]], row[primary[2]] = (
+            "repayment_status",
+            "risk_increasing",
+            "1",
+        )
+        row[secondary[0]], row[secondary[1]], row[secondary[2]] = (
+            "billing_balance",
+            "risk_mitigating",
+            "-1",
+        )
+    else:
+        for primary_index, secondary_index in zip(primary, secondary, strict=True):
+            row[primary_index], row[secondary_index] = row[secondary_index], row[primary_index]
+    _write_rows_and_update_digest(result.run_root, "scores.csv", rows)
+
+    with pytest.raises(BatchInferenceError, match="contribution ordering"):
+        verify_batch_run(result.run_root, config=config, expected_batch_id=result.batch_id)
+
+
 @pytest.mark.parametrize(
     ("column", "changed_value", "message"),
     (
