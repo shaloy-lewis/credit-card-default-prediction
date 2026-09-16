@@ -1,0 +1,219 @@
+{
+  "schema_version": "1.0.0",
+  "protocol_id": "phase6_v1",
+  "status": "frozen_before_implementation",
+  "purpose": "idempotent_monthly_batch_and_versioned_api_parity",
+  "governance": {
+    "protocol_base_commit": "cf42c193e1f3befc749ab99ea0079625769836bc",
+    "official_evidence_requires_clean_commit": true,
+    "training": "prohibited",
+    "refitting": "prohibited",
+    "parameter_tuning": "prohibited",
+    "calibration_fitting": "prohibited",
+    "sealed_test_access": "prohibited"
+  },
+  "bundle": {
+    "bundle_id": "selected_v1",
+    "model_id": "catboost_fixed",
+    "manifest_path": "models/selected_v1/manifest.json",
+    "manifest_sha256": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+    "model_path": "models/selected_v1/model.cbm",
+    "model_sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c",
+    "calibration": "identity"
+  },
+  "input": {
+    "format": "utf8_csv",
+    "account_id_pattern": "^[A-Za-z0-9._-]{1,64}$",
+    "columns": [
+      "account_id",
+      "credit_limit_ntd",
+      "repayment_status_lag_0",
+      "repayment_status_lag_1",
+      "repayment_status_lag_2",
+      "repayment_status_lag_3",
+      "repayment_status_lag_4",
+      "repayment_status_lag_5",
+      "bill_amount_ntd_lag_0",
+      "bill_amount_ntd_lag_1",
+      "bill_amount_ntd_lag_2",
+      "bill_amount_ntd_lag_3",
+      "bill_amount_ntd_lag_4",
+      "bill_amount_ntd_lag_5",
+      "payment_amount_ntd_lag_0",
+      "payment_amount_ntd_lag_1",
+      "payment_amount_ntd_lag_2",
+      "payment_amount_ntd_lag_3",
+      "payment_amount_ntd_lag_4",
+      "payment_amount_ntd_lag_5"
+    ],
+    "duplicate_account_policy": "reject_every_occurrence",
+    "row_error_policy": "score_valid_rows",
+    "file_error_policy": "fail_without_scores"
+  },
+  "prediction": {
+    "feature_order": [
+      "credit_limit_ntd",
+      "repayment_status_lag_0",
+      "repayment_status_lag_1",
+      "repayment_status_lag_2",
+      "repayment_status_lag_3",
+      "repayment_status_lag_4",
+      "repayment_status_lag_5",
+      "bill_amount_ntd_lag_0",
+      "bill_amount_ntd_lag_1",
+      "bill_amount_ntd_lag_2",
+      "bill_amount_ntd_lag_3",
+      "bill_amount_ntd_lag_4",
+      "bill_amount_ntd_lag_5",
+      "payment_amount_ntd_lag_0",
+      "payment_amount_ntd_lag_1",
+      "payment_amount_ntd_lag_2",
+      "payment_amount_ntd_lag_3",
+      "payment_amount_ntd_lag_4",
+      "payment_amount_ntd_lag_5"
+    ],
+    "risk_band_thresholds": {
+      "q80": 0.30646906317855604,
+      "q90": 0.5858430725164706,
+      "q95": 0.7134217413864691
+    },
+    "probability_output": "float64_full_precision",
+    "api_probability_decimals": 6,
+    "api_batch_absolute_tolerance": 5e-7
+  },
+  "explanation": {
+    "method": "catboost_native_shap_values",
+    "space": "raw_log_odds",
+    "shap_output_columns": 20,
+    "additivity_absolute_tolerance": 1e-10,
+    "probability_absolute_tolerance": 1e-10,
+    "top_reason_count": 2,
+    "ordering": "absolute_contribution_descending_then_category_name",
+    "direction_labels": {
+      "negative": "risk_mitigating",
+      "positive": "risk_increasing"
+    },
+    "language_policy": "model_attribution_not_causal_or_adverse_action_reason",
+    "reason_categories": {
+      "billing_balance": [
+        "bill_amount_ntd_lag_0",
+        "bill_amount_ntd_lag_1",
+        "bill_amount_ntd_lag_2",
+        "bill_amount_ntd_lag_3",
+        "bill_amount_ntd_lag_4",
+        "bill_amount_ntd_lag_5"
+      ],
+      "credit_capacity": [
+        "credit_limit_ntd"
+      ],
+      "payment_behaviour": [
+        "payment_amount_ntd_lag_0",
+        "payment_amount_ntd_lag_1",
+        "payment_amount_ntd_lag_2",
+        "payment_amount_ntd_lag_3",
+        "payment_amount_ntd_lag_4",
+        "payment_amount_ntd_lag_5"
+      ],
+      "repayment_status": [
+        "repayment_status_lag_0",
+        "repayment_status_lag_1",
+        "repayment_status_lag_2",
+        "repayment_status_lag_3",
+        "repayment_status_lag_4",
+        "repayment_status_lag_5"
+      ]
+    }
+  },
+  "policy": {
+    "policy_id": "outreach_top_10_v1",
+    "review_capacity_fraction": 0.1,
+    "review_capacity_rounding": "floor",
+    "ranking": "probability_descending_then_account_id_ascending",
+    "risk_band_independent_of_capacity": true,
+    "decision_owner": "human_outreach_operations"
+  },
+  "batch": {
+    "idempotency_key_fields": [
+      "input_sha256",
+      "as_of_date",
+      "snapshot_id",
+      "config_sha256",
+      "manifest_sha256",
+      "model_sha256"
+    ],
+    "snapshot_id_pattern": "^[A-Za-z0-9._-]{1,64}$",
+    "output_layout": "output_root/as_of_date/snapshot_id",
+    "identical_rerun": "verify_and_reuse_without_rewrite",
+    "changed_or_corrupt_existing_run": "fail_without_overwrite",
+    "statuses": [
+      "completed",
+      "completed_with_rejections",
+      "failed"
+    ],
+    "exit_codes": {
+      "completed": 0,
+      "completed_with_rejections": 3,
+      "failed": 1
+    },
+    "outputs": [
+      "scores.csv",
+      "rejections.csv",
+      "manifest.json"
+    ]
+  },
+  "api": {
+    "prediction_path": "/v1/predict",
+    "removed_prediction_path": "/predict",
+    "liveness_path": "/ping",
+    "readiness_path": "/ready",
+    "request_id_header": "X-Request-ID",
+    "trace_id_header": "X-Trace-ID",
+    "request_id_pattern": "^[A-Za-z0-9._-]{1,64}$",
+    "queue_decision_in_single_record_response": false
+  },
+  "logging": {
+    "format": "json_stdout",
+    "allowlisted_fields": [
+      "event",
+      "route",
+      "operation",
+      "status",
+      "trace_id",
+      "batch_id",
+      "model_id",
+      "bundle_id",
+      "policy_id",
+      "row_count",
+      "rejection_count",
+      "duration_ms"
+    ],
+    "prohibited_fields": [
+      "features",
+      "account_id",
+      "probability",
+      "shap_contributions",
+      "target",
+      "demographics",
+      "local_path"
+    ]
+  },
+  "dependencies": {
+    "catboost": "1.2.5",
+    "joblib": "1.5.3",
+    "numpy": "1.26.4",
+    "pandas": "2.2.2",
+    "pydantic": "2.7.4",
+    "scikit-learn": "1.4.2"
+  },
+  "prohibitions": [
+    "model_fitting",
+    "parameter_tuning",
+    "calibration_fitting",
+    "bootstrap_generation",
+    "final_test_loading",
+    "sealed_test_scoring",
+    "adverse_action",
+    "causal_explanation_claim",
+    "fairness_or_compliance_claim"
+  ]
+}
