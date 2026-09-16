@@ -348,19 +348,21 @@ deferred risks. It is not a substitute for commit history or CI results.
   parity, risk bands, and deterministic reason ordering for both batch and API.
 - Monthly batch inference supports deterministic ranking, exact floor-based
   capacity, safe partial-row rejection evidence, atomic publication, conflict
-  refusal, and verified identical-run reuse without rewriting files.
+  refusal, and verified identical-run reuse without rewriting files. Pre-push
+  review hardened wrong-width row handling, reserved snapshot paths, strict
+  manifest parsing, complete CSV reconciliation, and output allowlisting.
 - Streamlit is an API client and no longer loads the selected bundle. Structured
   JSON logs expose allowlisted operational metadata without features, account
   IDs, probabilities, contributions, demographics, targets, local paths, or
   client-visible exception details.
 - The official clean prediction-only evidence build from implementation commit
-  `7cb8f05` used 20 synthetic records. Offline and batch probabilities matched
+  `0593237` used 20 synthetic records. Offline and batch probabilities matched
   exactly; the maximum API rounding difference was
   `4.2811987377433525e-07`, below `5e-7`; risk bands and both reason categories
   and directions matched exactly; two rows were selected under the 10% policy.
-- Published digests are summary `2fe101d3...16ef9`, report
+- Published digests are summary `7665b787...99929`, report
   `6132a645...9ee50`, and external manifest trust anchor
-  `d870d04c...c6819`. Row-level batch files and logs remain ignored.
+  `72840e67...25c44f`. Row-level batch files and logs remain ignored.
 - No model fitting, tuning, calibration fitting, model/policy change, final-test
   loading, or sealed-test scoring occurred. G4 remains open for robustness
   stress testing, registry promotion, scanning, rollback, monitoring, and runbooks.

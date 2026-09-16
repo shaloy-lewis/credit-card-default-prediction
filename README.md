@@ -108,7 +108,7 @@ The approved scope and delivery evidence are documented in:
   batch scorer and `POST /v1/predict`, with deterministic 10% ranking,
   partial-row rejection evidence, native-SHAP reason categories, trace IDs,
   safe JSON logs, and an API-only Streamlit client.
-- Authenticated Phase 6 evidence from clean implementation commit `7cb8f05`:
+- Authenticated Phase 6 evidence from hardened implementation commit `0593237`:
   20 synthetic records achieved exact offline/batch probability parity,
   API agreement within `5e-7`, exact band/reason parity, and no-rewrite reuse.
 
@@ -258,17 +258,20 @@ uv run credit-risk inference verify \
 The CSV contract is `account_id` followed by the 19 ordered operational fields.
 Valid rows are scored even when other rows fail. A clean batch exits `0`; a
 published partial batch exits `3`; a file-level or all-invalid failure exits `1`.
-Every duplicate account ID occurrence is rejected. Valid rows are ranked by
+Wrong-width rows receive `invalid_column_count`; `.` and `..` are prohibited as
+snapshot path components. Every duplicate account ID occurrence is rejected.
+Valid rows are ranked by
 full-precision probability descending and account ID ascending, and exactly
 `floor(valid_rows × 0.10)` are selected for human review. An identical verified
 rerun reuses its files without rewriting them; a conflicting or corrupt run is
-never overwritten.
+never overwritten. Verification reconciles the strict manifest with both CSVs,
+including identity, ranking, selection, bands, traces, counts, rules, and lineage.
 
 Authenticate the committed aggregate parity evidence without runtime row data:
 
 ```bash
 uv run credit-risk inference verify-evidence \
-  --expected-manifest-sha256 d870d04ce247458ed559dc80b7493c42d8e51ffa2feef7fa4883f44f291c6819
+  --expected-manifest-sha256 72840e67395cd32058552ec32b81f87e8908436a91585d209e75fe881925c44f
 ```
 
 The [Phase 6 report](reports/inference/phase6_v1/inference-parity-report.md)

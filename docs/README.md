@@ -138,10 +138,10 @@ Phase 6 uses the unchanged `selected_v1` bundle through one shared vectorised
 engine. It adds strict partial-row batch handling, deterministic 10% ranking,
 atomic idempotent publication, native-SHAP reason categories, safe JSON logs,
 and a breaking `/v1/predict` contract. The Streamlit demonstration is now an API
-client. The clean official evidence run from implementation commit `7cb8f05`
+client. The clean official evidence run from hardened implementation commit `0593237`
 proved exact offline/batch probabilities, API agreement within `5e-7`, exact
 band/reason parity, and verified no-rewrite reuse on 20 synthetic rows. Its
 external manifest digest is
-`d870d04ce247458ed559dc80b7493c42d8e51ffa2feef7fa4883f44f291c6819`.
+`72840e67395cd32058552ec32b81f87e8908436a91585d209e75fe881925c44f`.
 No model fitting, model change, sealed-test access, or row-level evidence
 publication occurred. G4 remains open for the remaining release-readiness work.
