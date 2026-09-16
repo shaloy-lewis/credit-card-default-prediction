@@ -355,8 +355,16 @@ deferred risks. It is not a substitute for commit history or CI results.
   JSON logs expose allowlisted operational metadata without features, account
   IDs, probabilities, contributions, demographics, targets, local paths, or
   client-visible exception details.
-- The superseded aggregate evidence was withdrawn during the final pre-push
-  remediation. A new clean 20-row prediction-only evidence build is pending.
+- Final pre-push review added failure trace headers, pre-model snapshot preflight,
+  deterministic reason-order verification, and strict API-client response validation.
+- The official clean prediction-only evidence build from corrected implementation
+  commit `f6b37af` used 20 synthetic records. Offline and batch probabilities matched
+  exactly; the maximum API rounding difference was
+  `4.2811987377433525e-07`, below `5e-7`; risk bands and both reason categories
+  and directions matched exactly; two rows were selected under the 10% policy.
+- Published digests are summary `3f5e9744...f6afa`, report
+  `6132a645...9ee50`, and external manifest trust anchor
+  `91908722...f4df8`. Row-level batch files and logs remain ignored.
 - No model fitting, tuning, calibration fitting, model/policy change, final-test
   loading, or sealed-test scoring occurred. G4 remains open for robustness
   stress testing, registry promotion, scanning, rollback, monitoring, and runbooks.

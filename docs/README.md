@@ -130,13 +130,18 @@ explicitly deferred to G4/Release B.
 - [Frozen inference protocol](inference/phase6-protocol.md)
 - [Inference architecture](inference/architecture.md)
 - Machine-readable contract: `../configs/inference/phase6_v1.json`
-- Corrected aggregate parity evidence is pending publication from a clean
-  implementation commit.
+- [Reviewed parity report](../reports/inference/phase6_v1/inference-parity-report.md)
+- [Machine-readable parity summary](../reports/inference/phase6_v1/summary.json)
+- [Externally authenticated evidence manifest](../reports/inference/phase6_v1/evidence-manifest.json)
 
 Phase 6 uses the unchanged `selected_v1` bundle through one shared vectorised
 engine. It adds strict partial-row batch handling, deterministic 10% ranking,
 atomic idempotent publication, native-SHAP reason categories, safe JSON logs,
 and a breaking `/v1/predict` contract. The Streamlit demonstration is now an API
-client. A clean prediction-only evidence run will be republished after the
-pre-push review corrections. No model fitting, model change, or sealed-test
-access is permitted. G4 remains open for the remaining release-readiness work.
+client. The clean official evidence run from corrected implementation commit
+`f6b37af` proved exact offline/batch probabilities, API agreement within `5e-7`,
+exact band/reason parity, and verified no-rewrite reuse on 20 synthetic rows.
+Its external manifest digest is
+`919087229d20fe83c1846da65d5901ea103ac3182c9c2975c3490424a49f4df8`.
+No model fitting, model change, sealed-test access, or row-level evidence
+publication occurred. G4 remains open for the remaining release-readiness work.
