@@ -7,6 +7,11 @@
 **Model:** unchanged reviewed `selected_v1` CatBoost bundle
 **Training budget:** zero fits
 
+The contract was amended during pre-push review, before release, to reserve the
+path components `.` and `..`, treat wrong-width records as row rejections, and
+require complete semantic verification of batch outputs. The amendment changes
+no model, policy, threshold, or performance result.
+
 ## Interfaces
 
 The primary interface is an idempotent monthly CSV scorer. Input contains one
@@ -14,6 +19,8 @@ opaque `account_id` followed by exactly the 19 operational model features.
 Demographics, target, unknown columns, non-finite values, and invalid operational
 codes are rejected. Valid rows are still scored when other rows fail; partial
 completion returns exit code 3 and requires operational review.
+Missing or extra fields produce the stable row rule `invalid_column_count`.
+Snapshot IDs retain the opaque identifier syntax but cannot be `.` or `..`.
 
 The secondary interface is `POST /v1/predict`. The former `/predict` route is
 removed. `/ping` and `/ready` retain their current liveness and selected-bundle
@@ -38,6 +45,12 @@ model bundle. Identical completed runs are verified and reused byte-for-byte.
 Conflicting or corrupt existing destinations fail without overwrite. Runtime
 logs use an explicit metadata allowlist and exclude features, account IDs,
 probabilities, explanations, demographics, targets, and local paths.
+
+Verification validates the strict manifest, recomputes its batch identity,
+checks the exact output allowlist, authenticates both CSV digests, and reconciles
+row counts, ranking, capacity selection, risk bands, traces, rejection rules,
+model lineage, and completion status. It is an integrity and consistency check,
+not a signature against an attacker able to replace every external reference.
 
 No Phase 6 path may train, refit, tune, calibrate, generate bootstrap evidence,
 load the final-test workflow, or score the sealed test partition.

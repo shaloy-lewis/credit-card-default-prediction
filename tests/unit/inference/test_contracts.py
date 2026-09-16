@@ -64,6 +64,7 @@ def test_operational_features_are_strict() -> None:
         ("category_partition", "partition the operational features"),
         ("capacity", "fixed at 10 percent"),
         ("exit_codes", "exit codes differ"),
+        ("reserved_snapshot_ids", "reserved snapshot IDs differ"),
         ("prohibitions", "prohibitions are incomplete"),
     ),
 )
@@ -87,6 +88,8 @@ def test_semantic_contract_rejects_policy_drift(case: str, message: str) -> None
         payload["policy"]["review_capacity_fraction"] = 0.2
     elif case == "exit_codes":
         payload["batch"]["exit_codes"]["completed_with_rejections"] = 0
+    elif case == "reserved_snapshot_ids":
+        payload["batch"]["reserved_snapshot_ids"] = ["."]
     else:
         payload["prohibitions"].remove("sealed_test_scoring")
 

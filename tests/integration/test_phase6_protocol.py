@@ -12,7 +12,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPOSITORY_ROOT / "configs" / "inference" / "phase6_v1.json"
 
 # Change only after a new inference protocol and explicit review.
-EXPECTED_CONFIG_SHA256 = "12fd8a8d0afc3e6394b03801da8991942b986f6a6e3676cb908b233919133ce9"
+EXPECTED_CONFIG_SHA256 = "84227bb48c7ba812bdf2a2752ed151ede2ce5daa398911af9311491a852500a8"
 
 
 def test_phase6_protocol_is_complete_and_prediction_only() -> None:
@@ -43,6 +43,10 @@ def test_phase6_protocol_is_complete_and_prediction_only() -> None:
         "completed_with_rejections": 3,
         "failed": 1,
     }
+    assert config["batch"]["reserved_snapshot_ids"] == [".", ".."]
+    assert config["governance"]["pre_push_review_amendment"] == (
+        "batch_integrity_and_path_safety_only_no_model_or_policy_change"
+    )
     assert config["api"]["prediction_path"] == "/v1/predict"
     assert config["api"]["removed_prediction_path"] == "/predict"
     assert config["explanation"]["top_reason_count"] == 2

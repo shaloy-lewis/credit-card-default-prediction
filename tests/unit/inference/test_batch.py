@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
+import json
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +20,7 @@ from credit_risk.inference.batch import (
 from credit_risk.inference.contracts import InferenceConfig, load_inference_config
 from credit_risk.inference.engine import InferenceResult, ReasonAttribution
 from credit_risk.modeling.contracts import PREDICTOR_COLUMNS
+from credit_risk.modeling.risk_policy import risk_band
 
 
 class _Engine:
@@ -31,10 +34,8 @@ class _Engine:
             )
             for _ in range(rows)
         )
-        bands = tuple(
-            "standard" if probability < 0.3 else "elevated" if probability < 0.6 else "high"
-            for probability in probabilities
-        )
+        thresholds = load_inference_config().prediction.risk_band_thresholds
+        bands = tuple(risk_band(float(probability), thresholds) for probability in probabilities)
         return InferenceResult(
             probabilities=probabilities,
             risk_bands=bands,  # type: ignore[arg-type]
@@ -94,10 +95,38 @@ def test_parse_rejects_duplicate_and_invalid_rows(config: InferenceConfig) -> No
     assert parsed.rejections[2].account_id == ""
 
 
+def test_parse_rejects_wrong_width_rows_without_blocking_valid_rows(
+    config: InferenceConfig,
+) -> None:
+    parsed = parse_batch_csv(
+        _csv(
+            config,
+            [
+                _values("valid"),
+                _values("missing")[:-1],
+                [*_values("extra"), "unexpected"],
+                [],
+                _values("unsafe id")[:-1],
+            ],
+        ),
+        config,
+    )
+
+    assert parsed.input_rows == 5
+    assert parsed.account_ids == ("valid",)
+    assert [(item.account_id, item.rule_ids) for item in parsed.rejections] == [
+        ("missing", ("invalid_column_count",)),
+        ("extra", ("invalid_column_count",)),
+        ("", ("invalid_account_id", "invalid_column_count")),
+        ("", ("invalid_account_id", "invalid_column_count")),
+    ]
+
+
 @pytest.mark.parametrize(
     ("content", "message"),
     (
         (b"", "empty"),
+        (_csv(load_inference_config(), []), "no account rows"),
         (b"wrong,header\n1,2\n", "headers"),
         (b"\xff", "UTF-8"),
         (b'account_id,"unterminated\n', "malformed CSV"),
@@ -240,6 +269,17 @@ def test_batch_rejects_unsafe_identifiers_dates_and_missing_files(
     }
     with pytest.raises(BatchInferenceError, match="Snapshot ID"):
         run_batch(as_of_date="2026-09-30", snapshot_id="unsafe id", **common)  # type: ignore[arg-type]
+    for reserved in (".", ".."):
+        with pytest.raises(BatchInferenceError, match="Snapshot ID"):
+            run_batch(
+                input_path=tmp_path / "missing.csv",
+                as_of_date="2026-09-30",
+                snapshot_id=reserved,
+                output_root=tmp_path / "must-not-exist",
+                config=config,
+                engine=_Engine(),  # type: ignore[arg-type]
+            )
+    assert not (tmp_path / "must-not-exist").exists()
     with pytest.raises(BatchInferenceError, match="ISO date"):
         run_batch(as_of_date="09/30/2026", snapshot_id="safe", **common)  # type: ignore[arg-type]
     with pytest.raises(BatchInferenceError, match="Unable to read"):
@@ -251,3 +291,199 @@ def test_batch_rejects_unsafe_identifiers_dates_and_missing_files(
             config=config,
             engine=_Engine(),  # type: ignore[arg-type]
         )
+
+
+def _completed_run(tmp_path: Path, config: InferenceConfig):  # type: ignore[no-untyped-def]
+    source = tmp_path / "input.csv"
+    source.write_bytes(_csv(config, [_values(f"acct-{index:02d}") for index in range(20)]))
+    return source, run_batch(
+        input_path=source,
+        as_of_date="2026-09-30",
+        snapshot_id="reviewed",
+        output_root=tmp_path / "output",
+        config=config,
+        engine=_Engine(),  # type: ignore[arg-type]
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        lambda value: value.update(schema_version="2.0.0"),
+        lambda value: value.update(protocol_id="tampered"),
+        lambda value: value.update(status="failed"),
+        lambda value: value.update(as_of_date="2026-9-30"),
+        lambda value: value.update(snapshot_id=".."),
+        lambda value: value.update(config_sha256="0" * 64),
+        lambda value: value["model"].update(model_id="different"),
+        lambda value: value["policy"].update(selected_rows=999),
+        lambda value: value["counts"]["risk_bands"].update(standard=999),
+        lambda value: value["counts"]["risk_bands"].pop("standard"),
+        lambda value: value.update(input_sha256="0" * 64),
+        lambda value: value["privacy"].update(row_level_values_in_manifest=True),
+        lambda value: value["explanation"].update(maximum_additivity_error=1.0),
+        lambda value: value["outputs"].update(unapproved="0" * 64),
+    ),
+)
+def test_verifier_rejects_manifest_semantic_tampering(
+    tmp_path: Path,
+    config: InferenceConfig,
+    mutation: object,
+) -> None:
+    source, result = _completed_run(tmp_path, config)
+    manifest_path = result.run_root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    mutation(manifest)  # type: ignore[operator]
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True) + "\n", encoding="utf-8")
+
+    with pytest.raises(BatchInferenceError):
+        verify_batch_run(result.run_root, config=config, expected_batch_id=result.batch_id)
+    with pytest.raises(BatchInferenceError):
+        run_batch(
+            input_path=source,
+            as_of_date="2026-09-30",
+            snapshot_id="reviewed",
+            output_root=tmp_path / "output",
+            config=config,
+            engine=_Engine(),  # type: ignore[arg-type]
+        )
+
+
+def test_verifier_rejects_semantically_changed_scores_even_with_updated_digest(
+    tmp_path: Path, config: InferenceConfig
+) -> None:
+    _, result = _completed_run(tmp_path, config)
+    scores_path = result.run_root / "scores.csv"
+    rows = list(csv.reader(scores_path.open(encoding="utf-8", newline="")))
+    rows[3][1] = "true"
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerows(rows)
+    changed = stream.getvalue().encode()
+    scores_path.write_bytes(changed)
+    manifest_path = result.run_root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["outputs"]["scores.csv"] = hashlib.sha256(changed).hexdigest()
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True) + "\n", encoding="utf-8")
+
+    with pytest.raises(BatchInferenceError, match="selection flags"):
+        verify_batch_run(result.run_root, config=config, expected_batch_id=result.batch_id)
+
+
+@pytest.mark.parametrize(
+    ("column", "changed_value", "message"),
+    (
+        ("portfolio_rank", "99", "ranks"),
+        ("selected_for_review", "yes", "canonical booleans"),
+        ("probability_of_default", "nan", "valid range"),
+        ("risk_band", "standard", "risk band"),
+        ("primary_reason_category", "unknown", "reason categories"),
+        ("trace_id", "0" * 32, "trace ID"),
+        ("primary_reason_direction", "neutral", "reason direction"),
+        ("model_id", "different", "lineage"),
+    ),
+)
+def test_verifier_rejects_changed_score_semantics_with_updated_digest(
+    tmp_path: Path,
+    config: InferenceConfig,
+    column: str,
+    changed_value: str,
+    message: str,
+) -> None:
+    _, result = _completed_run(tmp_path, config)
+    scores_path = result.run_root / "scores.csv"
+    rows = list(csv.reader(scores_path.open(encoding="utf-8", newline="")))
+    rows[1][rows[0].index(column)] = changed_value
+    _write_rows_and_update_digest(result.run_root, "scores.csv", rows)
+
+    with pytest.raises(BatchInferenceError, match=message):
+        verify_batch_run(result.run_root, config=config, expected_batch_id=result.batch_id)
+
+
+def test_verifier_rejects_changed_rejection_semantics_with_updated_digest(
+    tmp_path: Path, config: InferenceConfig
+) -> None:
+    source = tmp_path / "partial.csv"
+    source.write_bytes(_csv(config, [_values("valid"), _values("invalid", credit_limit="0")]))
+    result = run_batch(
+        input_path=source,
+        as_of_date="2026-09-30",
+        snapshot_id="partial",
+        output_root=tmp_path / "output",
+        config=config,
+        engine=_Engine(),  # type: ignore[arg-type]
+    )
+    rejection_path = result.run_root / "rejections.csv"
+    rows = list(csv.reader(rejection_path.open(encoding="utf-8", newline="")))
+    rows[1][2] = "unknown_rule"
+    _write_rows_and_update_digest(result.run_root, "rejections.csv", rows)
+
+    with pytest.raises(BatchInferenceError, match="rule IDs"):
+        verify_batch_run(result.run_root, config=config, expected_batch_id=result.batch_id)
+
+    rows[1][1] = "unsafe id"
+    rows[1][2] = "invalid_credit_limit_ntd"
+    _write_rows_and_update_digest(result.run_root, "rejections.csv", rows)
+    with pytest.raises(BatchInferenceError, match="unsafe account ID"):
+        verify_batch_run(result.run_root, config=config, expected_batch_id=result.batch_id)
+
+
+def test_verifier_rejects_malformed_output_with_updated_digest(
+    tmp_path: Path, config: InferenceConfig
+) -> None:
+    _, result = _completed_run(tmp_path, config)
+    _write_rows_and_update_digest(result.run_root, "scores.csv", [["wrong", "header"]])
+
+    with pytest.raises(BatchInferenceError, match="headers"):
+        verify_batch_run(result.run_root, config=config, expected_batch_id=result.batch_id)
+
+
+def test_verifier_rejects_extra_directories_and_wrong_file_types(
+    tmp_path: Path, config: InferenceConfig
+) -> None:
+    _, result = _completed_run(tmp_path, config)
+    extra = result.run_root / "unapproved"
+    extra.mkdir()
+    with pytest.raises(BatchInferenceError, match="allowlist"):
+        verify_batch_run(result.run_root, config=config)
+    extra.rmdir()
+
+    scores = result.run_root / "scores.csv"
+    scores.unlink()
+    scores.mkdir()
+    with pytest.raises(BatchInferenceError, match="allowlist"):
+        verify_batch_run(result.run_root, config=config)
+
+
+def test_verifier_rejects_missing_run_root(tmp_path: Path, config: InferenceConfig) -> None:
+    with pytest.raises(BatchInferenceError, match="does not exist"):
+        verify_batch_run(tmp_path / "missing", config=config)
+
+
+def test_verifier_rejects_symlinked_approved_output(
+    tmp_path: Path, config: InferenceConfig
+) -> None:
+    _, result = _completed_run(tmp_path, config)
+    scores = result.run_root / "scores.csv"
+    target = tmp_path / "scores-target.csv"
+    target.write_bytes(scores.read_bytes())
+    scores.unlink()
+    try:
+        scores.symlink_to(target)
+    except OSError:
+        pytest.skip("Creating symlinks is not permitted in this Windows environment.")
+
+    with pytest.raises(BatchInferenceError, match="allowlist"):
+        verify_batch_run(result.run_root, config=config)
+
+
+def _write_rows_and_update_digest(run_root: Path, filename: str, rows: list[list[str]]) -> None:
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerows(rows)
+    changed = stream.getvalue().encode()
+    (run_root / filename).write_bytes(changed)
+    manifest_path = run_root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["outputs"][filename] = hashlib.sha256(changed).hexdigest()
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True) + "\n", encoding="utf-8")

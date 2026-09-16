@@ -29,14 +29,19 @@ The batch command requires `account_id` plus the exact operational columns. It
 rejects demographics, target, extra fields, invalid identifiers, nulls,
 non-finite or fractional values, invalid repayment codes, nonpositive limits,
 and negative payments. All occurrences of a duplicate account ID are rejected.
-Valid rows can still complete when other rows are rejected.
+Valid rows can still complete when other rows are rejected, including records
+with missing or extra fields. Snapshot identifiers cannot use the filesystem
+dot-segments `.` or `..`.
 
 Ranking is deterministic: probability descending, then account ID ascending.
 The human-review queue contains `floor(valid_rows × 0.10)` rows and is separate
 from the validation-frozen risk bands. A batch identity binds the input bytes,
 scoring date, snapshot ID, Phase 6 configuration, bundle manifest, and model.
 Publication is atomic. An identical verified identity reuses its files without
-rewriting; changed or corrupt evidence fails closed.
+rewriting; changed or corrupt evidence fails closed. Verification parses the
+strict manifest and both CSV outputs, recomputes identity, and reconciles ranks,
+selection, bands, traces, counts, rejection rules, status, and lineage. Extra
+files, directories, symlinks, and wrong file types invalidate the run.
 
 ## Online boundary
 

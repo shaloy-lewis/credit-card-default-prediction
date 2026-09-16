@@ -11,8 +11,9 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from credit_risk.modeling.contracts import PREDICTOR_COLUMNS
 
 DEFAULT_INFERENCE_CONFIG_PATH = Path("configs/inference/phase6_v1.json")
-PHASE6_CONFIG_SHA256 = "12fd8a8d0afc3e6394b03801da8991942b986f6a6e3676cb908b233919133ce9"
+PHASE6_CONFIG_SHA256 = "84227bb48c7ba812bdf2a2752ed151ede2ce5daa398911af9311491a852500a8"
 ACCOUNT_ID_PATTERN = r"^[A-Za-z0-9._-]{1,64}$"
+RESERVED_SNAPSHOT_IDS = (".", "..")
 REQUIRED_SERVING_DEPENDENCIES = (
     "catboost",
     "joblib",
@@ -83,6 +84,7 @@ class PolicyContract(_FrozenModel):
 class BatchContract(_FrozenModel):
     idempotency_key_fields: tuple[str, ...]
     snapshot_id_pattern: str = Field(pattern=r"^\^\[A-Za-z0-9\.\_\-\]\{1,64\}\$$")
+    reserved_snapshot_ids: tuple[str, ...]
     output_layout: Literal["output_root/as_of_date/snapshot_id"]
     identical_rerun: Literal["verify_and_reuse_without_rewrite"]
     changed_or_corrupt_existing_run: Literal["fail_without_overwrite"]
@@ -157,6 +159,8 @@ class InferenceConfig(_FrozenModel):
             "failed": 1,
         }:
             raise ValueError("batch exit codes differ from the reviewed contract")
+        if self.batch.reserved_snapshot_ids != RESERVED_SNAPSHOT_IDS:
+            raise ValueError("reserved snapshot IDs differ from the reviewed path-safety contract")
         required = {
             "model_fitting",
             "parameter_tuning",

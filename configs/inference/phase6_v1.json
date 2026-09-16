@@ -10,7 +10,8 @@
     "refitting": "prohibited",
     "parameter_tuning": "prohibited",
     "calibration_fitting": "prohibited",
-    "sealed_test_access": "prohibited"
+    "sealed_test_access": "prohibited",
+    "pre_push_review_amendment": "batch_integrity_and_path_safety_only_no_model_or_policy_change"
   },
   "bundle": {
     "bundle_id": "selected_v1",
@@ -142,6 +143,10 @@
       "model_sha256"
     ],
     "snapshot_id_pattern": "^[A-Za-z0-9._-]{1,64}$",
+    "reserved_snapshot_ids": [
+      ".",
+      ".."
+    ],
     "output_layout": "output_root/as_of_date/snapshot_id",
     "identical_rerun": "verify_and_reuse_without_rewrite",
     "changed_or_corrupt_existing_run": "fail_without_overwrite",
