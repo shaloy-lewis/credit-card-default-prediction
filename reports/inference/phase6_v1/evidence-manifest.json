@@ -1,0 +1,46 @@
+{
+  "allowlisted_outputs": [
+    "evidence-manifest.json",
+    "inference-parity-report.md",
+    "summary.json"
+  ],
+  "artifacts": {
+    "inference-parity-report.md": {
+      "row_level_data": false,
+      "sha256": "6132a645385aec8377b94c308c69c693ff3e86cc1e4218948744d7fcf8b9ee50"
+    },
+    "summary.json": {
+      "row_level_data": false,
+      "sha256": "2fe101d3e99335e4ecd35c59f81dd4e5672bc4df248a17056c76cd5e72216ef9"
+    }
+  },
+  "boundaries_verified": {
+    "local_paths_published": false,
+    "model_fitting_performed": false,
+    "row_level_output_published": false,
+    "test_partition_loaded": false,
+    "wall_clock_timestamps_published": false
+  },
+  "evidence_id": "phase6_v1",
+  "implementation_git_commit": "7cb8f058de25f07252459dce6849a02dabc7ee55",
+  "runtime_artifacts": {
+    "batch_manifest_sha256": "3cb6074fe6594dd73c3c750ba6ca30f3882f3a7301579c95469ed1b18c309725",
+    "published": false
+  },
+  "schema_version": "1.0.0",
+  "source_artifacts": {
+    "bundle_manifest": {
+      "sha256": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88"
+    },
+    "inference_config": {
+      "sha256": "12fd8a8d0afc3e6394b03801da8991942b986f6a6e3676cb908b233919133ce9"
+    },
+    "selected_model": {
+      "sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
+    },
+    "synthetic_fixture": {
+      "row_level_data": true,
+      "sha256": "326d2fad6845f5ecf026b14a23bb8c5798d2ace7a776ccfd0f7bd5b5926bfd4a"
+    }
+  }
+}

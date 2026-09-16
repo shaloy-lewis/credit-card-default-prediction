@@ -12,6 +12,7 @@ against model accuracy.
 - [ADR 0001: batch-first scoring architecture](adr/0001-batch-first-scoring.md)
 - [ADR 0002: no-training governance review](adr/0002-no-training-governance-review.md)
 - [ADR 0003: Release A audit closure](adr/0003-release-a-audit-closure.md)
+- [ADR 0004: versioned inference parity](adr/0004-versioned-inference-parity.md)
 - [Delivery progress and verification evidence](progress.md)
 
 The Phase 0 product brief and batch-first architecture decision were accepted on
@@ -123,3 +124,24 @@ reviewed 500-resample selection-runtime artifact. The external manifest digest
 is `7e65c7b854de15742f05c4b8c2de891f50512518f8eb2339241f87f98754edf7`.
 Release A is complete; robustness and population-shift stress evidence remains
 explicitly deferred to G4/Release B.
+
+## Phase 6 inference parity
+
+- [Frozen inference protocol](inference/phase6-protocol.md)
+- [Inference architecture](inference/architecture.md)
+- Machine-readable contract: `../configs/inference/phase6_v1.json`
+- [Reviewed parity report](../reports/inference/phase6_v1/inference-parity-report.md)
+- [Machine-readable parity summary](../reports/inference/phase6_v1/summary.json)
+- [Externally authenticated evidence manifest](../reports/inference/phase6_v1/evidence-manifest.json)
+
+Phase 6 uses the unchanged `selected_v1` bundle through one shared vectorised
+engine. It adds strict partial-row batch handling, deterministic 10% ranking,
+atomic idempotent publication, native-SHAP reason categories, safe JSON logs,
+and a breaking `/v1/predict` contract. The Streamlit demonstration is now an API
+client. The clean official evidence run from implementation commit `7cb8f05`
+proved exact offline/batch probabilities, API agreement within `5e-7`, exact
+band/reason parity, and verified no-rewrite reuse on 20 synthetic rows. Its
+external manifest digest is
+`d870d04ce247458ed559dc80b7493c42d8e51ffa2feef7fa4883f44f291c6819`.
+No model fitting, model change, sealed-test access, or row-level evidence
+publication occurred. G4 remains open for the remaining release-readiness work.

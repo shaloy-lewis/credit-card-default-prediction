@@ -97,6 +97,7 @@ jobs:
           uv run pytest tests/unit/inference tests/unit/test_inference_cli.py
           tests/integration/test_api_health.py
           tests/integration/test_phase6_protocol.py
+          tests/integration/test_phase6_evidence.py
           tests/integration/test_inference_parity.py -m "not training"
           --cov=credit_risk.inference --cov-branch --cov-report=term-missing
           --cov-fail-under=90

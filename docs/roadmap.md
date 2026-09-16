@@ -28,7 +28,7 @@
 | 4: Historical candidate evidence | 10 h | Reviewed CatBoost search and ablations retained as immutable evidence; no routine rerun | Search outcome remains auditable but is superseded as the executable release workflow | Transparent protocol evolution |
 | 5: Four-fit governed selection | 10 h | One fixed fit each for logistic, histogram boosting, random forest, and CatBoost; validation selection; identity calibration; bundle; separately authorized one-time test | Exactly four fits, no tuning/CV/refit; one prediction-only test pass; checksum-protected winner and evidence | Efficient model governance and controlled release |
 | 6: Governance and explanation | 10 h | Correct SHAP feature mapping; additivity tests; reason categories; demographic exclusion/invariance review; validation-only subgroup report; model card; risk register | Corrected evidence is digest-protected; two predeclared education triggers have documented conditions; G3 is closed with conditions | Responsible AI and model-risk ownership |
-| 7: Batch and API inference | 10 h | Versioned model bundle; idempotent monthly scorer; `/v1` API; validated contracts; model/trace metadata; structured safe logs | Offline, batch, and API probabilities and policies agree within tolerance | Production inference and parity |
+| 7: Batch and API inference — complete | 10 h | Versioned model bundle; idempotent monthly scorer; `/v1` API; validated contracts; model/trace metadata; structured safe logs | Authenticated synthetic evidence proves exact offline/batch parity, API tolerance, exact policy/reason parity, and no-rewrite reuse | Production inference and parity |
 | 8: Registry, CI, and rollback | 10 h | MLflow registry; candidate/champion workflow; promotion checklist; unit/integration/contract/model tests; GitHub Actions; image scan | A model can be registered, promoted, deployed locally, and rolled back without replacing files by hand | Controlled software and model delivery |
 | 9: Local MLOps platform | 10 h | Docker Compose stack for API, UI, MLflow, PostgreSQL, and MinIO; persistent volumes; health checks; one-command startup | A fresh machine can start the stack and reproduce the demo using documented commands | Platform architecture without paid infrastructure |
 | 10: Monitoring and incidents | 10 h | Batch manifest; data and prediction drift report; delayed-label evaluation design; service metrics; runbooks; schema and drift incident drills | Injected failures are detected and lead to an actionable investigation or rollback path | Operability and failure management |
@@ -59,6 +59,12 @@ and prevalence uncertainty. Local serving is not presented as external productio
 approval or a fairness/compliance certification.
 
 ### Release B: governed ML product — end of Week 8
+
+**Status: in progress.** Phase 5 completed the model card, risk register,
+subgroup review, and explanation controls. Phase 6 completed versioned batch/API
+inference and parity from clean implementation commit `7cb8f05`. G4 remains open
+until Week 8 adds registry promotion, scanning, and demonstrated rollback, and
+until later robustness/monitoring controls are delivered.
 
 - Model and data cards, risk register, subgroup evaluation, and explanation tests.
 - Versioned batch/API inference with parity.
@@ -164,5 +170,6 @@ At each weekly checkpoint:
 4. Run the relevant tests and capture reproducible outputs.
 5. Update the decision log and portfolio narrative before expanding scope.
 
-The next implementation slice after Phase 0 approval is Week 1's engineering
-foundation. It will not change the statistical model.
+The next implementation slice is Week 8 registry, controlled promotion,
+scanning, and rollback. It will reuse the unchanged reviewed bundle and will not
+repeat model selection, training, calibration, or sealed-test evaluation.

@@ -16,7 +16,11 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > G3 with documented conditions; it is not a fairness or production certification.
 > Release A is now complete and consolidated in one externally authenticated,
 > zero-computation evidence dossier. Robustness and population-shift stress
-> evidence is explicitly deferred to G4/Release B.
+> evidence is explicitly deferred to G4/Release B. Phase 6 now adds a shared
+> prediction-only engine, idempotent monthly batch scoring, the breaking
+> `/v1/predict` API, reviewed SHAP reason categories, safe traceable logging,
+> and authenticated offline/batch/API parity evidence. G4 remains open for
+> stress testing, registry promotion, scanning, rollback, monitoring, and runbooks.
 
 ## Product intent
 
@@ -51,6 +55,10 @@ The approved scope and delivery evidence are documented in:
 - [G3 review decision](reports/governance/phase5_v1/g3-review.md)
 - [Authenticated Release A dossier](reports/releases/release_a_v1/release-a-report.md)
 - [Release A evidence manifest](reports/releases/release_a_v1/evidence-manifest.json)
+- [Phase 6 inference contract](docs/inference/phase6-protocol.md)
+- [Phase 6 inference architecture](docs/inference/architecture.md)
+- [Reviewed Phase 6 parity report](reports/inference/phase6_v1/inference-parity-report.md)
+- [Phase 6 evidence manifest](reports/inference/phase6_v1/evidence-manifest.json)
 
 ## Current capabilities
 
@@ -96,9 +104,17 @@ The approved scope and delivery evidence are documented in:
 - An authenticated Release A dossier binding the complete data, baseline,
   selection, bundle, authorization, receipt, and final-test chain. It publishes
   the reviewed 500-resample validation uncertainty without recomputation.
+- One dependency-validated inference engine shared by an idempotent monthly
+  batch scorer and `POST /v1/predict`, with deterministic 10% ranking,
+  partial-row rejection evidence, native-SHAP reason categories, trace IDs,
+  safe JSON logs, and an API-only Streamlit client.
+- Authenticated Phase 6 evidence from clean implementation commit `7cb8f05`:
+  20 synthetic records achieved exact offline/batch probability parity,
+  API agreement within `5e-7`, exact band/reason parity, and no-rewrite reuse.
 
-G3 is `closed_with_conditions`. Registry, batch/API parity, monitoring, rollback,
-and incident exercises remain later roadmap work.
+G3 is `closed_with_conditions`. Phase 6 completes batch/API inference parity;
+G4 remains open for stress testing, registry, scanning, rollback, monitoring,
+runbooks, and incident exercises.
 
 ## Dataset and evidence limits
 
@@ -225,6 +241,42 @@ from a clean checkout: it authenticates the manifest against the external digest
 and then verifies the complete source and output allowlists. It neither loads a
 model nor accesses row-level prediction evidence.
 
+### Run and verify Phase 6 inference
+
+Score a strict operational snapshot with the unchanged `selected_v1` bundle:
+
+```bash
+uv run credit-risk inference batch \
+  --input tests/fixtures/inference_batch_v1.csv \
+  --as-of-date 2026-09-30 \
+  --snapshot-id monthly-demo
+
+uv run credit-risk inference verify \
+  --run-root experiment/inference/batches/2026-09-30/monthly-demo
+```
+
+The CSV contract is `account_id` followed by the 19 ordered operational fields.
+Valid rows are scored even when other rows fail. A clean batch exits `0`; a
+published partial batch exits `3`; a file-level or all-invalid failure exits `1`.
+Every duplicate account ID occurrence is rejected. Valid rows are ranked by
+full-precision probability descending and account ID ascending, and exactly
+`floor(valid_rows × 0.10)` are selected for human review. An identical verified
+rerun reuses its files without rewriting them; a conflicting or corrupt run is
+never overwritten.
+
+Authenticate the committed aggregate parity evidence without runtime row data:
+
+```bash
+uv run credit-risk inference verify-evidence \
+  --expected-manifest-sha256 d870d04ce247458ed559dc80b7493c42d8e51ffa2feef7fa4883f44f291c6819
+```
+
+The [Phase 6 report](reports/inference/phase6_v1/inference-parity-report.md)
+binds the unchanged model/config digests and clean implementation lineage. It
+publishes no account IDs, feature values, probabilities, local paths, or
+wall-clock timestamps. Its native-SHAP categories are non-causal model
+attributions and are not adverse-action reasons.
+
 ### Check the retired compatibility artifacts
 
 ```bash
@@ -240,12 +292,13 @@ execute code, use this command only with trusted project artifacts.
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/cli.py api.py app.py
 uv run pytest -m "not training" --cov --cov-report=term-missing
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/governance tests/unit/test_governance_cli.py tests/integration/test_phase5_protocol.py tests/integration/test_phase5_evidence.py tests/integration/test_governance_explanation_smoke.py --cov=credit_risk.governance --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/release tests/unit/test_release_cli.py tests/integration/test_release_a_protocol.py tests/integration/test_release_a_evidence.py --cov=credit_risk.release --cov-branch --cov-fail-under=90
+uv run pytest tests/unit/inference tests/unit/test_inference_cli.py tests/integration/test_api_health.py tests/integration/test_phase6_protocol.py tests/integration/test_phase6_evidence.py tests/integration/test_inference_parity.py --cov=credit_risk.inference --cov-branch --cov-fail-under=90
 ```
 
 ### Run the API
@@ -280,11 +333,14 @@ data, reports, training dependencies, and experiment state are excluded.
 
 ## Governed prediction request
 
-`POST /predict` accepts exactly the 19 operational features in the selected-model
+`POST /v1/predict` accepts exactly the 19 operational features in the selected-model
 contract: credit limit plus six months each of repayment status, signed bill
 amount, and non-negative payment amount. Demographics, account ID, target, nulls,
-non-finite values, and unknown fields are rejected. The response returns the
-default probability, validation-frozen risk band, model ID, and bundle ID.
+non-finite values, and unknown fields are rejected. `POST /predict` is removed
+and returns `404`. The v1 response returns a trace ID, six-decimal default
+probability, validation-frozen risk band, two reviewed reason-category objects,
+and model, bundle, manifest, and policy identifiers. Queue rank and selection
+status remain batch-only because they require portfolio context.
 
 The synthetic request in `tests/fixtures/prediction_request.json` returns
 probability `0.190382` and risk band `standard`. Tests freeze this non-holdout
@@ -301,6 +357,7 @@ released model contract.
 ├── configs/data/              # Source manifest, split policy, and reviewed lock
 ├── configs/modeling/          # Feature and scientific-baseline contracts
 ├── configs/governance/        # Frozen validation-only governance contract
+├── configs/inference/         # Frozen batch/API parity contract
 ├── configs/releases/          # Frozen release-level audit contract
 ├── data/                      # Ignored reproducible raw/processed/split products
 ├── docs/                      # Product, roadmap, governance, and ADR evidence
@@ -309,6 +366,7 @@ released model contract.
 ├── models/selected_v1/        # Digest-protected released model bundle
 ├── reports/modeling/          # Reviewed aggregate experiment evidence
 ├── reports/governance/        # Reviewed aggregate governance evidence
+├── reports/inference/         # Authenticated aggregate inference evidence
 ├── reports/releases/          # Authenticated release dossiers
 ├── src/credit_risk/           # Installable application package
 ├── tests/                     # Unit, integration, and compatibility tests
@@ -326,10 +384,11 @@ from version control.
 - **Release A — defensible model (complete):** reproducible data, baselines,
   identity calibration, validation-only uncertainty, capacity-aware evaluation,
   and one authenticated evidence chain.
-- **Release B — governed ML product:** model/data cards, subgroup analysis,
-  reason-code tests, registry promotion gates, and rollback.
-- **Release C — local platform:** batch/API parity, Docker Compose services,
-  monitoring, incident drills, and recorded portfolio demo.
+- **Release B — governed ML product (in progress):** model/data cards, subgroup
+  analysis, reason-category tests, and batch/API parity are complete; registry
+  promotion gates, scanning, and rollback remain.
+- **Release C — local platform:** Docker Compose services, monitoring, incident
+  drills, and recorded portfolio demo.
 
 See the [roadmap](docs/roadmap.md) for weekly acceptance gates and the honest
 mapping from the local implementation to Azure Databricks production concepts.

@@ -1,8 +1,10 @@
 # Phase 6 inference protocol
 
-**Protocol:** `phase6_v1`  
-**Status:** frozen before implementation  
-**Model:** unchanged reviewed `selected_v1` CatBoost bundle  
+**Protocol:** `phase6_v1`
+
+**Status:** frozen before implementation
+
+**Model:** unchanged reviewed `selected_v1` CatBoost bundle
 **Training budget:** zero fits
 
 ## Interfaces

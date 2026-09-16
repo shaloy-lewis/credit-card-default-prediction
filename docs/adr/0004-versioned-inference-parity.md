@@ -1,7 +1,8 @@
 # ADR 0004: Use one governed engine for batch and versioned API inference
 
-**Status:** Accepted  
-**Date:** 2026-09-16  
+**Status:** Accepted
+
+**Date:** 2026-09-16
 **Decision owner:** Project owner
 
 ## Context
