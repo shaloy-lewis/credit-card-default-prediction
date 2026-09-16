@@ -302,7 +302,8 @@ deferred risks. It is not a substitute for commit history or CI results.
   human-review conditions. G3 is `closed_with_conditions`, not a fairness,
   regulatory, production, or India-validity certification.
 - The local API is technical portfolio integration, not evidence of external
-  governance approval. Phase 6+ registry, parity, monitoring, and rollback work has not started.
+  governance approval. Phase 6 later completed inference parity; registry,
+  monitoring, and rollback remain subsequent work.
 
 ## Release A audit closure — complete
 
@@ -329,5 +330,41 @@ deferred risks. It is not a substitute for commit history or CI results.
   `7d5873bf...73a86`, uncertainty `187004bd...0ffa2`, and manifest
   `7e65c7b8...4edf7`. The last digest is the external verification trust anchor.
 - Release A is `complete`; G1 and G2 remain closed and G3 remains
-  `closed_with_conditions`. G4 stress, parity, registry, rollback, monitoring,
-  and runbook work remains open.
+  `closed_with_conditions`. Phase 6 later completed parity, while G4 stress,
+  registry, rollback, monitoring, and runbook work remains open.
+
+## Phase 6 idempotent batch and versioned API parity — complete
+
+**Completed:** 2026-09-16
+
+- ADR 0004 and the digest-protected `phase6_v1` configuration froze the
+  unchanged `selected_v1` bundle, ordered 19-feature contract, risk thresholds,
+  four explanation categories, 10% capacity policy, idempotency keys, v1 API,
+  and safe-log allowlist before implementation.
+- Package version `0.2.0` marks the breaking replacement of `POST /predict`
+  with `POST /v1/predict`; liveness and readiness contracts remain stable.
+- One vectorised inference engine performs digest/dependency validation,
+  prediction, native-SHAP category aggregation, additivity checks, sigmoid
+  parity, risk bands, and deterministic reason ordering for both batch and API.
+- Monthly batch inference supports deterministic ranking, exact floor-based
+  capacity, safe partial-row rejection evidence, atomic publication, conflict
+  refusal, and verified identical-run reuse without rewriting files. Pre-push
+  review hardened wrong-width row handling, reserved snapshot paths, strict
+  manifest parsing, complete CSV reconciliation, and output allowlisting.
+- Streamlit is an API client and no longer loads the selected bundle. Structured
+  JSON logs expose allowlisted operational metadata without features, account
+  IDs, probabilities, contributions, demographics, targets, local paths, or
+  client-visible exception details.
+- Final pre-push review added failure trace headers, pre-model snapshot preflight,
+  deterministic reason-order verification, and strict API-client response validation.
+- The official clean prediction-only evidence build from corrected implementation
+  commit `f6b37af` used 20 synthetic records. Offline and batch probabilities matched
+  exactly; the maximum API rounding difference was
+  `4.2811987377433525e-07`, below `5e-7`; risk bands and both reason categories
+  and directions matched exactly; two rows were selected under the 10% policy.
+- Published digests are summary `3f5e9744...f6afa`, report
+  `6132a645...9ee50`, and external manifest trust anchor
+  `91908722...f4df8`. Row-level batch files and logs remain ignored.
+- No model fitting, tuning, calibration fitting, model/policy change, final-test
+  loading, or sealed-test scoring occurred. G4 remains open for robustness
+  stress testing, registry promotion, scanning, rollback, monitoring, and runbooks.

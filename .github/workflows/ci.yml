@@ -41,7 +41,7 @@ jobs:
         run: uv run ruff check api.py app.py src/credit_risk tests
 
       - name: Type-check maintained boundaries
-        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/cli.py api.py app.py
+        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
         run: uv run pytest -m "not training" --cov --cov-report=term-missing
@@ -92,6 +92,16 @@ jobs:
           --cov=credit_risk.release --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
+      - name: Enforce Phase 6 inference branch coverage
+        run: >-
+          uv run pytest tests/unit/inference tests/unit/test_inference_cli.py
+          tests/integration/test_api_health.py
+          tests/integration/test_phase6_protocol.py
+          tests/integration/test_phase6_evidence.py
+          tests/integration/test_inference_parity.py -m "not training"
+          --cov=credit_risk.inference --cov-branch --cov-report=term-missing
+          --cov-fail-under=90
+
   container:
     name: Build API container
     runs-on: ubuntu-latest
@@ -135,7 +145,7 @@ jobs:
         shell: bash
         run: |
           test "$(docker exec credit-risk-api-ci whoami)" = "app"
-          test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.1.0"
+          test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.2.0"
           docker exec credit-risk-api-ci python -c "import credit_risk.data"
           docker exec credit-risk-api-ci python -c "import credit_risk.modeling"
           docker exec credit-risk-api-ci python -c "import importlib.util; assert importlib.util.find_spec('pandera') is None"
@@ -193,9 +203,22 @@ jobs:
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert all(not Path('/app', name).exists() for name in ('data', 'experiment', 'mlruns'))"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert not Path('/app/artifacts').exists()"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/models/selected_v1').iterdir()) == ['manifest.json', 'model.cbm']"
+          docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.as_posix() for path in Path('/app/configs').rglob('*') if path.is_file()) == ['/app/configs/inference/phase6_v1.json']"
+          docker cp tests/fixtures/inference_batch_v1.csv credit-risk-api-ci:/tmp/inference_batch_v1.csv
+          docker exec credit-risk-api-ci credit-risk inference batch --input /tmp/inference_batch_v1.csv --as-of-date 2026-09-30 --snapshot-id container-clean --output-root /tmp/inference-output
+          docker exec credit-risk-api-ci credit-risk inference verify --run-root /tmp/inference-output/2026-09-30/container-clean
+          sed 's/acct-020,25000/acct-020,0/' tests/fixtures/inference_batch_v1.csv > /tmp/inference_batch_partial_v1.csv
+          docker cp /tmp/inference_batch_partial_v1.csv credit-risk-api-ci:/tmp/inference_batch_partial_v1.csv
+          set +e
+          partial_output="$(docker exec credit-risk-api-ci credit-risk inference batch --input /tmp/inference_batch_partial_v1.csv --as-of-date 2026-09-30 --snapshot-id container-partial --output-root /tmp/inference-output 2>&1)"
+          partial_status=$?
+          set -e
+          test "$partial_status" -eq 3
+          grep --fixed-strings "completed_with_rejections" <<<"$partial_output"
           curl --fail --silent http://127.0.0.1:8080/ping | python -c "import json, sys; assert json.load(sys.stdin) == {'message': 'Health check successful!'}"
           curl --fail --silent http://127.0.0.1:8080/ready | python -c "import json, sys; assert json.load(sys.stdin) == {'status': 'ready'}"
-          curl --fail --silent --request POST --header 'Content-Type: application/json' --data @tests/fixtures/prediction_request.json http://127.0.0.1:8080/predict | python -c "import json, sys; response = json.load(sys.stdin); assert abs(response['probability_of_default'] - 0.190382) <= 1e-6; assert response['risk_band'] == 'standard'; assert response['model_id'] == 'catboost_fixed'; assert response['bundle_id'] == 'selected_v1'"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST --header 'Content-Type: application/json' --data @tests/fixtures/prediction_request.json http://127.0.0.1:8080/predict)" = "404"
+          curl --fail --silent --request POST --header 'Content-Type: application/json' --header 'X-Request-ID: ci-prediction' --data @tests/fixtures/prediction_request.json http://127.0.0.1:8080/v1/predict | python -c "import json, sys; response = json.load(sys.stdin); assert response['schema_version'] == '1.0.0'; assert response['trace_id'] == 'ci-prediction'; assert abs(response['probability_of_default'] - 0.190382) <= 1e-6; assert response['risk_band'] == 'standard'; assert len(response['reasons']) == 2; assert response['model_id'] == 'catboost_fixed'; assert response['bundle_id'] == 'selected_v1'; assert response['policy_id'] == 'outreach_top_10_v1'"
 
       - name: Remove test container
         if: always()
