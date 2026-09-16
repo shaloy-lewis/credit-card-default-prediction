@@ -168,3 +168,4 @@ cython_debug/
 /experiment/
 /mlruns/
 *.csv
+!tests/fixtures/inference_batch_v1.csv

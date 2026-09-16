@@ -1,12 +1,9 @@
+import os
 from typing import cast
 
-import pandas as pd
 import streamlit as st
 
-from credit_risk.modeling.contracts import PREDICTOR_COLUMNS
-from credit_risk.serving import SelectedPredictPipeline
-
-predict_pipeline = SelectedPredictPipeline()
+from credit_risk.inference.client import InferenceClientError, predict_v1
 
 st.title("Credit Risk Early-Warning Demo")
 
@@ -70,9 +67,19 @@ else:
         )
 
     if st.button("Predict"):
-        features = pd.DataFrame([values], columns=PREDICTOR_COLUMNS)
-        probability, band = predict_pipeline.predict(features)
-        st.subheader("Prediction result")
-        st.metric("Probability of default", f"{probability:.4f}")
-        st.write(f"Risk band: **{band}**")
-        st.caption("The band is a ranking aid, not an automated credit decision.")
+        try:
+            result = predict_v1(
+                values,
+                base_url=os.environ.get("CREDIT_RISK_API_URL", "http://127.0.0.1:8080"),
+            )
+        except InferenceClientError as error:
+            st.error(str(error))
+        else:
+            st.subheader("Prediction result")
+            st.metric("Probability of default", f"{result['probability_of_default']:.4f}")
+            st.write(f"Risk band: **{result['risk_band']}**")
+            for reason in result["reasons"]:
+                st.write(
+                    f"{reason['category']}: {reason['direction']} (non-causal model attribution)"
+                )
+            st.caption("The band and reasons are ranking aids, not automated credit decisions.")

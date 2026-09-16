@@ -1,4 +1,4 @@
-"""API lifecycle, selected-bundle readiness, and inference contract tests."""
+"""API lifecycle, selected-bundle readiness, and versioned inference tests."""
 
 import json
 import shutil
@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 import credit_risk.modeling.selected_bundle as selected_bundle
 from api import create_app
+from credit_risk.inference.engine import InferenceError
 from credit_risk.modeling.selected_bundle import SelectedBundleError
 
 pytestmark = pytest.mark.integration
@@ -25,23 +26,54 @@ def test_liveness_and_readiness_endpoints() -> None:
     assert readiness.json() == {"status": "ready"}
 
 
-def test_predict_endpoint_uses_reviewed_selected_bundle(
+def test_v1_predict_uses_reviewed_selected_bundle(
+    readme_prediction_payload: dict[str, int | float | str],
+) -> None:
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/predict",
+            json=readme_prediction_payload,
+            headers={"X-Request-ID": "integration-request"},
+        )
+
+    assert response.status_code == 200
+    assert response.headers["X-Trace-ID"] == "integration-request"
+    payload = response.json()
+    assert payload == {
+        "schema_version": "1.0.0",
+        "trace_id": "integration-request",
+        "probability_of_default": pytest.approx(0.190382, abs=1e-6),
+        "risk_band": "standard",
+        "reasons": [
+            {
+                "category": "repayment_status",
+                "direction": "risk_increasing",
+                "contribution_raw_log_odds": pytest.approx(0.476471, abs=1e-6),
+            },
+            {
+                "category": "credit_capacity",
+                "direction": "risk_mitigating",
+                "contribution_raw_log_odds": pytest.approx(-0.318983, abs=1e-6),
+            },
+        ],
+        "model_id": "catboost_fixed",
+        "bundle_id": "selected_v1",
+        "manifest_sha256": ("df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88"),
+        "policy_id": "outreach_top_10_v1",
+    }
+
+
+def test_unversioned_predict_is_removed(
     readme_prediction_payload: dict[str, int | float | str],
 ) -> None:
     with TestClient(create_app()) as client:
         response = client.post("/predict", json=readme_prediction_payload)
 
-    assert response.status_code == 200
-    assert response.json() == {
-        "probability_of_default": pytest.approx(0.190382, abs=1e-6),
-        "risk_band": "standard",
-        "model_id": "catboost_fixed",
-        "bundle_id": "selected_v1",
-    }
+    assert response.status_code == 404
 
 
-def test_invalid_selected_bundle_fails_application_startup(tmp_path) -> None:
-    with pytest.raises(SelectedBundleError):
+def test_invalid_selected_bundle_fails_application_startup(tmp_path: Path) -> None:
+    with pytest.raises(InferenceError):
         with TestClient(create_app(tmp_path)):
             pass
 
@@ -56,7 +88,7 @@ def test_semantically_valid_manifest_edit_fails_application_startup(tmp_path: Pa
         encoding="utf-8",
     )
 
-    with pytest.raises(SelectedBundleError, match="manifest digest mismatch"):
+    with pytest.raises(InferenceError, match="digest mismatch"):
         with TestClient(create_app(tmp_path)):
             pass
 
@@ -78,15 +110,15 @@ def test_dependency_version_mismatch_fails_application_startup(
             pass
 
 
-def test_readiness_and_prediction_return_503_if_pipeline_state_is_lost(
+def test_readiness_and_prediction_return_503_if_engine_state_is_lost(
     readme_prediction_payload: dict[str, int | float | str],
 ) -> None:
     with TestClient(create_app()) as client:
-        client.app.state.pipeline = None
+        client.app.state.engine = None
 
         liveness = client.get("/ping")
         readiness = client.get("/ready")
-        prediction = client.post("/predict", json=readme_prediction_payload)
+        prediction = client.post("/v1/predict", json=readme_prediction_payload)
 
     assert liveness.status_code == 200
     assert readiness.status_code == 503
@@ -105,34 +137,58 @@ def test_readiness_and_prediction_return_503_if_pipeline_state_is_lost(
         ("bill_amount_ntd_lag_3", None),
     ),
 )
-def test_predict_rejects_invalid_operational_values(
+def test_v1_predict_rejects_invalid_operational_values(
     readme_prediction_payload: dict[str, int | float | str],
     field: str,
     value: int | float | str | None,
 ) -> None:
     payload = {**readme_prediction_payload, field: value}
     with TestClient(create_app()) as client:
-        response = client.post("/predict", json=payload)
+        response = client.post("/v1/predict", json=payload)
 
     assert response.status_code == 422
 
 
-def test_predict_rejects_missing_operational_field(
+def test_v1_predict_rejects_missing_demographic_and_unknown_fields(
     readme_prediction_payload: dict[str, int | float | str],
 ) -> None:
-    payload = dict(readme_prediction_payload)
-    del payload["bill_amount_ntd_lag_0"]
+    missing = dict(readme_prediction_payload)
+    del missing["bill_amount_ntd_lag_0"]
+    demographic = {**readme_prediction_payload, "age_years": 29, "sex_code": 2}
     with TestClient(create_app()) as client:
-        response = client.post("/predict", json=payload)
+        assert client.post("/v1/predict", json=missing).status_code == 422
+        assert client.post("/v1/predict", json=demographic).status_code == 422
 
-    assert response.status_code == 422
 
-
-def test_predict_rejects_demographics_and_unknown_fields(
+def test_v1_predict_rejects_unsafe_request_id(
     readme_prediction_payload: dict[str, int | float | str],
 ) -> None:
-    payload = {**readme_prediction_payload, "age_years": 29, "sex_code": 2}
     with TestClient(create_app()) as client:
-        response = client.post("/predict", json=payload)
+        response = client.post(
+            "/v1/predict",
+            json=readme_prediction_payload,
+            headers={"X-Request-ID": "unsafe request id"},
+        )
 
     assert response.status_code == 422
+
+
+def test_v1_predict_hides_unexpected_inference_details(
+    readme_prediction_payload: dict[str, int | float | str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with TestClient(create_app()) as client:
+        monkeypatch.setattr(
+            client.app.state.engine,
+            "score",
+            lambda _features: (_ for _ in ()).throw(RuntimeError("sensitive internals")),
+        )
+        response = client.post(
+            "/v1/predict",
+            json=readme_prediction_payload,
+            headers={"X-Request-ID": "failed-request"},
+        )
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Inference failed; trace_id=failed-request"}
+    assert "sensitive internals" not in response.text
