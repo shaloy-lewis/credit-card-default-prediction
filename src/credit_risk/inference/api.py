@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 import uuid
 from collections.abc import AsyncIterator
@@ -21,6 +22,7 @@ from credit_risk.inference.contracts import (
 from credit_risk.inference.engine import InferenceEngine
 from credit_risk.inference.logging import emit_event
 from credit_risk.modeling.contracts import PREDICTOR_COLUMNS
+from credit_risk.registry.deployment import resolve_active_bundle
 
 router = APIRouter()
 
@@ -131,15 +133,16 @@ AnyReasonDirection = Literal["risk_increasing", "risk_mitigating", "neutral"]
 
 
 def create_app(
-    bundle_root: str | Path = Path("models/selected_v1"),
+    bundle_root: str | Path | None = None,
     config_path: str | Path = Path("configs/inference/phase6_v1.json"),
 ) -> FastAPI:
     """Create an API that fails startup when the reviewed release is invalid."""
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        selected_bundle = _resolve_startup_bundle(bundle_root)
         application.state.engine = InferenceEngine(
-            bundle_root=bundle_root,
+            bundle_root=selected_bundle,
             config_path=config_path,
         )
         try:
@@ -158,6 +161,17 @@ def create_app(
     )
     application.include_router(router)
     return application
+
+
+def _resolve_startup_bundle(explicit_bundle_root: str | Path | None) -> Path:
+    """Apply explicit, governed-deployment, then committed-bundle precedence."""
+
+    if explicit_bundle_root is not None:
+        return Path(explicit_bundle_root)
+    deployment_root = os.environ.get("CREDIT_RISK_DEPLOYMENT_ROOT")
+    if deployment_root:
+        return resolve_active_bundle(deployment_root)
+    return Path("models/selected_v1")
 
 
 app = create_app()

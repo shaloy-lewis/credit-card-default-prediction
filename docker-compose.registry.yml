@@ -1,0 +1,6 @@
+services:
+  api:
+    environment:
+      CREDIT_RISK_DEPLOYMENT_ROOT: /app/deployment
+    volumes:
+      - ./experiment/deployments/phase7_v1:/app/deployment:ro

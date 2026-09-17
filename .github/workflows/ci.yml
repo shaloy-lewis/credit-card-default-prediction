@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
@@ -41,7 +41,7 @@ jobs:
         run: uv run ruff check api.py app.py src/credit_risk tests
 
       - name: Type-check maintained boundaries
-        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/cli.py api.py app.py
+        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
         run: uv run pytest -m "not training" --cov --cov-report=term-missing
@@ -102,21 +102,54 @@ jobs:
           --cov=credit_risk.inference --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
+      - name: Enforce Phase 7 registry branch coverage
+        run: >-
+          uv run pytest tests/unit/registry tests/unit/test_registry_cli.py
+          tests/integration/test_phase7_protocol.py
+          tests/integration/test_registry_workflow.py -m "not training"
+          --cov=credit_risk.registry --cov-branch --cov-report=term-missing
+          --cov-fail-under=90
+
   container:
-    name: Build API container
+    name: Build, test, and scan API container
     runs-on: ubuntu-latest
     needs: quality
     timeout-minutes: 20
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Plant excluded model sentinel
         run: echo "must not ship" > models/selected_v1/unapproved.bin
 
       - name: Build container
         run: docker build --tag credit-risk-api:ci .
+
+      - name: Block fixable high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: credit-risk-api:ci
+          format: table
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Generate CycloneDX software bill of materials
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: credit-risk-api:ci
+          format: cyclonedx
+          output: credit-risk-api.cdx.json
+          scanners: vuln
+
+      - name: Upload software bill of materials
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: credit-risk-api-sbom
+          path: credit-risk-api.cdx.json
+          if-no-files-found: error
 
       - name: Start container
         run: >-
@@ -145,7 +178,7 @@ jobs:
         shell: bash
         run: |
           test "$(docker exec credit-risk-api-ci whoami)" = "app"
-          test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.2.0"
+          test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.3.0"
           docker exec credit-risk-api-ci python -c "import credit_risk.data"
           docker exec credit-risk-api-ci python -c "import credit_risk.modeling"
           docker exec credit-risk-api-ci python -c "import importlib.util; assert importlib.util.find_spec('pandera') is None"
