@@ -11,6 +11,7 @@ from credit_risk.data.cli import data_app
 from credit_risk.governance.cli import governance_app
 from credit_risk.inference.cli import inference_app
 from credit_risk.modeling.cli import model_app
+from credit_risk.registry.cli import registry_app
 from credit_risk.release.cli import release_app
 
 app = typer.Typer(
@@ -23,6 +24,7 @@ app.add_typer(model_app)
 app.add_typer(governance_app)
 app.add_typer(release_app)
 app.add_typer(inference_app)
+app.add_typer(registry_app)
 
 
 @app.command()

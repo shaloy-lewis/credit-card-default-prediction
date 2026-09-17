@@ -19,8 +19,11 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > evidence is explicitly deferred to G4/Release B. Phase 6 now adds a shared
 > prediction-only engine, idempotent monthly batch scoring, the breaking
 > `/v1/predict` API, reviewed SHAP reason categories, safe traceable logging,
-> and authenticated offline/batch/API parity evidence. G4 remains open for
-> stress testing, registry promotion, scanning, rollback, monitoring, and runbooks.
+> and authenticated offline/batch/API parity evidence. Phase 7 adds a governed
+> local MLflow registry, digest-authenticated manual promotion, immutable
+> deployments, blocking container scanning, SBOM generation, authenticated
+> two-revision smoke parity, and demonstrated rollback. G4 remains open for
+> stress testing, monitoring, and incident controls.
 
 ## Product intent
 
@@ -39,6 +42,7 @@ The approved scope and delivery evidence are documented in:
 - [Twelve-week roadmap](docs/roadmap.md)
 - [Batch-first architecture decision](docs/adr/0001-batch-first-scoring.md)
 - [Release A audit-closure decision](docs/adr/0003-release-a-audit-closure.md)
+- [Local registry and release-control decision](docs/adr/0005-local-mlflow-registry-release-control.md)
 - [Dataset card and evidence limits](docs/data/data-card.md)
 - [Feature availability and leakage review](docs/data/feature-availability.md)
 - [Data validation and quarantine policy](docs/data/validation-policy.md)
@@ -59,6 +63,10 @@ The approved scope and delivery evidence are documented in:
 - [Phase 6 inference architecture](docs/inference/architecture.md)
 - [Reviewed Phase 6 parity report](reports/inference/phase6_v1/inference-parity-report.md)
 - [Phase 6 evidence manifest](reports/inference/phase6_v1/evidence-manifest.json)
+- [Phase 7 registry protocol](docs/registry/phase7-protocol.md)
+- [Phase 7 registry architecture](docs/registry/architecture.md)
+- [Reviewed Phase 7 release-control report](reports/registry/phase7_v1/registry-release-report.md)
+- [Phase 7 evidence manifest](reports/registry/phase7_v1/evidence-manifest.json)
 
 ## Current capabilities
 
@@ -111,10 +119,16 @@ The approved scope and delivery evidence are documented in:
 - Authenticated Phase 6 evidence from corrected implementation commit `f6b37af`:
   20 synthetic records achieved exact offline/batch probability parity,
   API agreement within `5e-7`, exact band/reason parity, and no-rewrite reuse.
+- A local MLflow 3.15 registry with SQLite metadata and content-addressed model
+  artifacts, digest-authenticated promotion/rollback approvals, compensated
+  alias transitions, immutable deployment revisions, and an atomic active pointer.
+- Blocking fixable HIGH/CRITICAL Trivy scanning, a CycloneDX SBOM, and
+  authenticated Phase 7 evidence proving identical synthetic outputs across both
+  release revisions plus a successful restoration of revision 1.
 
-G3 is `closed_with_conditions`. Phase 6 completes batch/API inference parity;
-G4 remains open for stress testing, registry, scanning, rollback, monitoring,
-runbooks, and incident exercises.
+G3 is `closed_with_conditions`. Phase 7 completes the registry, scanning, and
+rollback slice; G4 remains open for robustness stress tests, monitoring, and
+incident exercises.
 
 ## Dataset and evidence limits
 
@@ -280,6 +294,29 @@ lineage. It publishes no account IDs, feature values, probabilities, local
 paths, or wall-clock timestamps. Its native-SHAP categories are non-causal model
 attributions and are not adverse-action reasons.
 
+### Verify the Phase 7 release-control evidence
+
+```bash
+uv run credit-risk registry verify-evidence \
+  --expected-manifest-sha256 ce36f33da60fe6470d28a76b8053d102e74731115d069c4d476d0c2abbc47da9
+```
+
+The [Phase 7 report](reports/registry/phase7_v1/registry-release-report.md)
+authenticates two transparent release revisions of the same reviewed bundle.
+The drill registered both revisions, promoted revision 2, activated it through
+an immutable deployment plus atomic pointer, and then restored revision 1 using
+the approved rollback path. The evidence publisher independently loaded both
+revisions and obtained the same full-precision output digest, probability
+`0.190382`, risk band, and reason attributions from the pinned synthetic fixture.
+This is deployment-control evidence, not a comparison of different models.
+
+Runtime SQLite, MLflow, deployment, and receipt state remains ignored. The API
+image contains no MLflow dependency. Its CI job pins build inputs, blocks
+fixable HIGH/CRITICAL findings without an in-repository waiver, uploads a
+CycloneDX SBOM, and exercises the deployment-pointer contract. PostgreSQL,
+MinIO, persistent registry services, robustness stress tests, monitoring, and
+incident drills remain later work.
+
 ### Check the retired compatibility artifacts
 
 ```bash
@@ -295,13 +332,14 @@ execute code, use this command only with trusted project artifacts.
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/cli.py api.py app.py
 uv run pytest -m "not training" --cov --cov-report=term-missing
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/governance tests/unit/test_governance_cli.py tests/integration/test_phase5_protocol.py tests/integration/test_phase5_evidence.py tests/integration/test_governance_explanation_smoke.py --cov=credit_risk.governance --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/release tests/unit/test_release_cli.py tests/integration/test_release_a_protocol.py tests/integration/test_release_a_evidence.py --cov=credit_risk.release --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/inference tests/unit/test_inference_cli.py tests/integration/test_api_health.py tests/integration/test_phase6_protocol.py tests/integration/test_phase6_evidence.py tests/integration/test_inference_parity.py --cov=credit_risk.inference --cov-branch --cov-fail-under=90
+uv run pytest tests/unit/registry tests/unit/test_registry_cli.py tests/integration/test_phase7_protocol.py tests/integration/test_registry_workflow.py tests/integration/test_phase7_evidence.py --cov=credit_risk.registry --cov-branch --cov-fail-under=90
 ```
 
 ### Run the API
@@ -334,6 +372,14 @@ The API is exposed at `http://localhost:8080`. The runtime image contains only
 `models/selected_v1/manifest.json` and `model.cbm`; legacy artifacts, generated
 data, reports, training dependencies, and experiment state are excluded.
 
+To run the API against a previously materialised Phase 7 deployment pointer,
+use the registry override; the deployment directory is mounted read-only and
+the image still has no MLflow dependency:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.registry.yml up --build
+```
+
 ## Governed prediction request
 
 `POST /v1/predict` accepts exactly the 19 operational features in the selected-model
@@ -361,6 +407,7 @@ released model contract.
 ├── configs/modeling/          # Feature and scientific-baseline contracts
 ├── configs/governance/        # Frozen validation-only governance contract
 ├── configs/inference/         # Frozen batch/API parity contract
+├── configs/registry/          # Frozen registry contract and reviewed approvals
 ├── configs/releases/          # Frozen release-level audit contract
 ├── data/                      # Ignored reproducible raw/processed/split products
 ├── docs/                      # Product, roadmap, governance, and ADR evidence
@@ -370,13 +417,15 @@ released model contract.
 ├── reports/modeling/          # Reviewed aggregate experiment evidence
 ├── reports/governance/        # Reviewed aggregate governance evidence
 ├── reports/inference/         # Authenticated aggregate inference evidence
+├── reports/registry/          # Authenticated aggregate release-control evidence
 ├── reports/releases/          # Authenticated release dossiers
 ├── src/credit_risk/           # Installable application package
 ├── tests/                     # Unit, integration, and compatibility tests
 ├── pyproject.toml             # Direct dependencies and tool configuration
 ├── uv.lock                    # Exact cross-platform dependency resolution
 ├── Dockerfile
-└── docker-compose.yml
+├── docker-compose.yml
+└── docker-compose.registry.yml
 ```
 
 Generated data, logs, environments, caches, and experiment outputs are excluded
@@ -388,8 +437,9 @@ from version control.
   identity calibration, validation-only uncertainty, capacity-aware evaluation,
   and one authenticated evidence chain.
 - **Release B — governed ML product (in progress):** model/data cards, subgroup
-  analysis, reason-category tests, and batch/API parity are complete; registry
-  promotion gates, scanning, and rollback remain.
+  analysis, reason-category tests, batch/API parity, registry promotion gates,
+  scanning, and rollback are complete; robustness, monitoring, and incident
+  controls remain before G4 can close.
 - **Release C — local platform:** Docker Compose services, monitoring, incident
   drills, and recorded portfolio demo.
 

@@ -1,5 +1,4 @@
 import os
-from typing import cast
 
 import streamlit as st
 
@@ -35,14 +34,11 @@ else:
     for lag in range(6):
         columns = st.columns(3)
         values[f"repayment_status_lag_{lag}"] = int(
-            cast(
-                int,
-                columns[0].selectbox(
-                    f"Repayment status lag {lag}",
-                    options=list(range(-2, 10)),
-                    index=2,
-                    key=f"status_{lag}",
-                ),
+            columns[0].selectbox(
+                f"Repayment status lag {lag}",
+                options=list(range(-2, 10)),
+                index=2,
+                key=f"status_{lag}",
             )
         )
         values[f"bill_amount_ntd_lag_{lag}"] = int(

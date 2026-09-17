@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "protocol_id": "phase7_v1",
+  "decision_id": "phase7_rollback_approval",
+  "action": "rollback",
+  "decision": "approved",
+  "scope": "local_portfolio_demo",
+  "approved_by_role": "project_owner",
+  "implementation_git_commit": "cb63b396695dbaa997515e36a6e3f8c895476e67",
+  "config_sha256": "83a29f8e927e91336bfc39779f27c5bb27de91194b5e1b8889acfd95dafe925b",
+  "registered_model_name": "credit-risk-default",
+  "source_revision": "phase7_rev_002",
+  "target_revision": "phase7_rev_001",
+  "checks": [
+    {
+      "name": "Lint, type-check, and test",
+      "conclusion": "success"
+    },
+    {
+      "name": "Build, test, and scan API container",
+      "conclusion": "success"
+    }
+  ],
+  "model_bytes_unchanged": true,
+  "no_training_or_test_access": true,
+  "limitations_acknowledged": true
+}

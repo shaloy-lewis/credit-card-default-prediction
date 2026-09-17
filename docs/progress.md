@@ -330,8 +330,8 @@ deferred risks. It is not a substitute for commit history or CI results.
   `7d5873bf...73a86`, uncertainty `187004bd...0ffa2`, and manifest
   `7e65c7b8...4edf7`. The last digest is the external verification trust anchor.
 - Release A is `complete`; G1 and G2 remain closed and G3 remains
-  `closed_with_conditions`. Phase 6 later completed parity, while G4 stress,
-  registry, rollback, monitoring, and runbook work remains open.
+  `closed_with_conditions`. Phase 6 later completed parity and Phase 7 completed
+  the registry/rollback slice, while G4 stress, monitoring, and incident work remains open.
 
 ## Phase 6 idempotent batch and versioned API parity — complete
 
@@ -366,5 +366,39 @@ deferred risks. It is not a substitute for commit history or CI results.
   `6132a645...9ee50`, and external manifest trust anchor
   `91908722...f4df8`. Row-level batch files and logs remain ignored.
 - No model fitting, tuning, calibration fitting, model/policy change, final-test
-  loading, or sealed-test scoring occurred. G4 remains open for robustness
-  stress testing, registry promotion, scanning, rollback, monitoring, and runbooks.
+  loading, or sealed-test scoring occurred. Phase 7 later completed registry,
+  scanning, and rollback; G4 remains open for robustness, monitoring, and incidents.
+
+## Phase 7 governed registry, deployment, and rollback — complete
+
+**Completed:** 2026-09-17
+
+- ADR 0005 and digest-protected `phase7_v1` froze the local SQLite registry,
+  content-addressed artifacts, manual approvals, alias transitions, deployment
+  layout, scan policy, and no-training/no-test boundaries before implementation.
+- Pre-publication review identified that artifact identity and alias receipts did
+  not explicitly capture the planned deployment smoke parity. The amended clean
+  implementation `cb63b39` pins the existing synthetic fixture and requires both
+  immutable revisions to produce the same full-precision output digest.
+- Package version `0.3.0` marks the release-control layer. The API runtime remains
+  independent of MLflow and its `/ping`, `/ready`, and `/v1/predict` contracts are unchanged.
+- Two MLflow versions transparently represent deployment revisions of identical
+  `selected_v1` bytes. Registration, promotion, deployment, and rollback validate
+  full state, use a single-writer lock, publish deterministic receipts, and
+  compensate prior aliases and pointers when a transition fails.
+- The official drill promoted `phase7_rev_002`, restored `phase7_rev_001` through
+  the approved rollback, and independently loaded both bundles. Each returned
+  probability `0.190382`, risk band `standard`, and the same prediction-and-reason digest.
+- GitHub Actions passed quality and container jobs for the implementation and
+  approval commits. The container job pins build inputs, blocks fixable
+  HIGH/CRITICAL Trivy findings without a repository waiver, and uploads a CycloneDX SBOM.
+- Published digests are summary `f88324b6...1865`, report `d918d773...bb26`,
+  promotion checklist `8af86710...e407`, rollback runbook `37ae777c...0f2c`,
+  and external evidence-manifest trust anchor `ce36f33d...7da9`.
+- The drill performed zero fits, did not change model bytes, did not access the
+  sealed test, and published no runtime paths, timestamps, row-level data, or
+  MLflow state. It is release-control evidence, not a model-quality comparison
+  or external production-readiness claim.
+- Phase 7's registry/rollback slice is complete. G4 and Release B remain open for
+  robustness/population-shift stress tests, monitoring, and incident controls;
+  PostgreSQL, MinIO, and persistent platform services remain Phase 8 work.

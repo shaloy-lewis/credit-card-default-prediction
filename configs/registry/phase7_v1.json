@@ -1,0 +1,143 @@
+{
+  "schema_version": "1.0.0",
+  "protocol_id": "phase7_v1",
+  "status": "frozen_before_implementation",
+  "purpose": "governed_local_registry_promotion_deployment_and_rollback",
+  "governance": {
+    "protocol_base_commit": "df34919bde54e92db4f13fc8ac3b405255030e23",
+    "official_evidence_requires_clean_commit": true,
+    "manual_promotion_only": true,
+    "training": "prohibited",
+    "refitting": "prohibited",
+    "parameter_tuning": "prohibited",
+    "calibration_fitting": "prohibited",
+    "sealed_test_access": "prohibited"
+  },
+  "source_evidence": {
+    "release_a_manifest": {
+      "path": "reports/releases/release_a_v1/evidence-manifest.json",
+      "sha256": "7e65c7b854de15742f05c4b8c2de891f50512518f8eb2339241f87f98754edf7"
+    },
+    "phase5_manifest": {
+      "path": "reports/governance/phase5_v1/evidence-manifest.json",
+      "sha256": "6df8745f6deefcd138d7d1c821e6ad38ca7762aa7581fa0fae28042cf7f2b853"
+    },
+    "phase6_config": {
+      "path": "configs/inference/phase6_v1.json",
+      "sha256": "84227bb48c7ba812bdf2a2752ed151ede2ce5daa398911af9311491a852500a8"
+    },
+    "phase6_manifest": {
+      "path": "reports/inference/phase6_v1/evidence-manifest.json",
+      "sha256": "919087229d20fe83c1846da65d5901ea103ac3182c9c2975c3490424a49f4df8"
+    }
+  },
+  "bundle": {
+    "bundle_id": "selected_v1",
+    "model_id": "catboost_fixed",
+    "manifest_path": "models/selected_v1/manifest.json",
+    "manifest_sha256": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+    "model_path": "models/selected_v1/model.cbm",
+    "model_sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c",
+    "revisions_share_model_bytes": true
+  },
+  "registry": {
+    "backend": "sqlite",
+    "artifact_store": "content_addressed_filesystem",
+    "mlflow_version": "3.15.0",
+    "registered_model_name": "credit-risk-default",
+    "aliases": {
+      "candidate": "candidate",
+      "champion": "champion",
+      "rollback": "rollback"
+    },
+    "revisions": [
+      {
+        "release_revision": "phase7_rev_001",
+        "initial_alias": "champion"
+      },
+      {
+        "release_revision": "phase7_rev_002",
+        "initial_alias": "candidate"
+      }
+    ],
+    "promotion_transition": "candidate_to_champion_previous_champion_to_rollback",
+    "rollback_transition": "rollback_to_champion_displaced_champion_to_rollback",
+    "single_writer": true,
+    "automatic_promotion": false
+  },
+  "approvals": {
+    "digest_authentication_required": true,
+    "scope": "local_portfolio_demo",
+    "approver_role": "project_owner",
+    "required_checks": [
+      "Lint, type-check, and test",
+      "Build, test, and scan API container"
+    ],
+    "required_conclusion": "success",
+    "force_or_bypass": false
+  },
+  "deployment": {
+    "environment_variable": "CREDIT_RISK_DEPLOYMENT_ROOT",
+    "layout": "deployment_root/releases/release_revision/bundle_and_active_json",
+    "activation": "atomic_pointer",
+    "api_restart_required": true,
+    "runtime_mlflow_dependency": false,
+    "allowed_root": "experiment/deployments/phase7_v1"
+  },
+  "smoke_test": {
+    "fixture_path": "tests/fixtures/prediction_request.json",
+    "fixture_sha256": "2da5a264485d4b3c9c3334ef74471dde7fb86a24c9e9d8b68aa311fc79aef3db",
+    "expected_probability_six_decimals": 0.190382,
+    "probability_absolute_tolerance": 0.000001,
+    "expected_risk_band": "standard",
+    "revisions": [
+      "phase7_rev_001",
+      "phase7_rev_002"
+    ],
+    "prediction_only": true,
+    "sealed_test_fixture": false
+  },
+  "paths": {
+    "registry_root": "experiment/registry/phase7_v1",
+    "deployment_root": "experiment/deployments/phase7_v1",
+    "evidence_root": "reports/registry/phase7_v1",
+    "repository_relative_only": true,
+    "reject_symlinks": true,
+    "reject_overlaps": true
+  },
+  "image_scan": {
+    "scanner": "trivy",
+    "severity": [
+      "HIGH",
+      "CRITICAL"
+    ],
+    "ignore_unfixed": true,
+    "exit_code_on_finding": 1,
+    "waiver_supported": false,
+    "sbom_format": "cyclonedx"
+  },
+  "evidence": {
+    "published_files": [
+      "summary.json",
+      "registry-release-report.md",
+      "promotion-checklist.md",
+      "rollback-runbook.md",
+      "evidence-manifest.json"
+    ],
+    "timestamps": "prohibited",
+    "local_paths": "prohibited",
+    "row_level_data": "prohibited"
+  },
+  "prohibitions": [
+    "model_fitting",
+    "parameter_tuning",
+    "calibration_fitting",
+    "bootstrap_generation",
+    "final_test_loading",
+    "sealed_test_scoring",
+    "automatic_promotion",
+    "arbitrary_model_registration",
+    "scan_waiver",
+    "production_readiness_claim"
+  ]
+}

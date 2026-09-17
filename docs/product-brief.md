@@ -202,6 +202,12 @@ appropriate quasi-experiment. The portfolio deliverable will therefore specify:
    passed once; the final test is permanently consumed.
 5. The local service-level objectives after an initial benchmark.
 
+Phase 7 completes the registry, manual promotion, immutable deployment,
+fixable-HIGH/CRITICAL container scan, SBOM, rollback evidence, and rollback
+runbook portions of G4 using unchanged model bytes. Robustness/population-shift
+stress evidence, monitoring, incident exercises, and service-level objectives
+remain open; therefore G4 and Release B are not yet closed.
+
 The corrected Phase 5 aggregate evidence closes G3 with conditions. The education
 review triggers, representative-data requirement, and monitoring requirement must
 be resolved before claims about a real operating policy or production use.
