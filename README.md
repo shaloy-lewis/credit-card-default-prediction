@@ -295,7 +295,7 @@ execute code, use this command only with trusted project artifacts.
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/cli.py api.py app.py
 uv run pytest -m "not training" --cov --cov-report=term-missing
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90

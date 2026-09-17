@@ -35,6 +35,10 @@ def test_registry_config_is_complete_and_digest_protected() -> None:
     assert config.image_scan.severity == ("HIGH", "CRITICAL")
     assert config.image_scan.ignore_unfixed is True
     assert config.image_scan.waiver_supported is False
+    assert config.smoke_test.expected_probability_six_decimals == 0.190382
+    assert config.smoke_test.revisions == ("phase7_rev_001", "phase7_rev_002")
+    assert config.smoke_test.prediction_only is True
+    assert config.smoke_test.sealed_test_fixture is False
     assert {
         "model_fitting",
         "final_test_loading",
@@ -101,6 +105,9 @@ def test_contract_validator_boundaries_and_missing_files(tmp_path: Path) -> None
         ("registry", "revisions", list(reversed(payload["registry"]["revisions"]))),
         ("approvals", "required_checks", list(reversed(payload["approvals"]["required_checks"]))),
         ("evidence", "published_files", ["summary.json"]),
+        ("smoke_test", "expected_probability_six_decimals", 0.2),
+        ("smoke_test", "probability_absolute_tolerance", 0.01),
+        ("smoke_test", "revisions", list(reversed(payload["smoke_test"]["revisions"]))),
         ("source_evidence", None, {}),
         ("prohibitions", None, ["model_fitting"]),
     )

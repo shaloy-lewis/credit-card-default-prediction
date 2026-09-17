@@ -12,7 +12,7 @@ DEFAULT_REGISTRY_CONFIG_PATH = Path("configs/registry/phase7_v1.json")
 DEFAULT_REGISTRY_ROOT = Path("experiment/registry/phase7_v1")
 DEFAULT_DEPLOYMENT_ROOT = Path("experiment/deployments/phase7_v1")
 DEFAULT_EVIDENCE_ROOT = Path("reports/registry/phase7_v1")
-EXPECTED_CONFIG_SHA256 = "db4faee898c4bfdc4a7f825975c862e8257329be6db00ceacc7baa280b8a7f27"
+EXPECTED_CONFIG_SHA256 = "83a29f8e927e91336bfc39779f27c5bb27de91194b5e1b8889acfd95dafe925b"
 EXPECTED_BUNDLE_MANIFEST_SHA256 = "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88"
 EXPECTED_MODEL_SHA256 = "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
 PUBLISHED_FILES = (
@@ -124,6 +124,27 @@ class DeploymentContract(_FrozenModel):
     allowed_root: Literal["experiment/deployments/phase7_v1"]
 
 
+class SmokeTestContract(_FrozenModel):
+    fixture_path: Literal["tests/fixtures/prediction_request.json"]
+    fixture_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expected_probability_six_decimals: float
+    probability_absolute_tolerance: float
+    expected_risk_band: Literal["standard"]
+    revisions: tuple[Literal["phase7_rev_001"], Literal["phase7_rev_002"]]
+    prediction_only: Literal[True]
+    sealed_test_fixture: Literal[False]
+
+    @model_validator(mode="after")
+    def exact_smoke_contract(self) -> SmokeTestContract:
+        if self.expected_probability_six_decimals != 0.190382:
+            raise ValueError("registry smoke probability differs from the reviewed fixture")
+        if self.probability_absolute_tolerance != 1e-6:
+            raise ValueError("registry smoke tolerance differs from the reviewed contract")
+        if self.revisions != RELEASE_REVISIONS:
+            raise ValueError("registry smoke revisions differ from the release drill")
+        return self
+
+
 class PathContract(_FrozenModel):
     registry_root: Literal["experiment/registry/phase7_v1"]
     deployment_root: Literal["experiment/deployments/phase7_v1"]
@@ -166,6 +187,7 @@ class RegistryConfig(_FrozenModel):
     registry: RegistryBackendContract
     approvals: ApprovalPolicy
     deployment: DeploymentContract
+    smoke_test: SmokeTestContract
     paths: PathContract
     image_scan: ImageScanContract
     evidence: EvidenceContract

@@ -22,6 +22,7 @@ def _copy_repository_contract(tmp_path: Path) -> Path:
         "reports/governance/phase5_v1/evidence-manifest.json",
         "configs/inference/phase6_v1.json",
         "reports/inference/phase6_v1/evidence-manifest.json",
+        "tests/fixtures/prediction_request.json",
     ):
         source = REPOSITORY_ROOT / relative
         destination = tmp_path / relative

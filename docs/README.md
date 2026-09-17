@@ -150,9 +150,10 @@ publication occurred. G4 remains open for the remaining release-readiness work.
 ## Phase 7 registry protocol
 
 - [Frozen registry and rollback protocol](registry/phase7-protocol.md)
+- [Registry and deployment architecture](registry/architecture.md)
 - Machine-readable contract: `../configs/registry/phase7_v1.json`
 
-Phase 7 is frozen before implementation. It uses a local MLflow SQLite registry
-to demonstrate manual candidate/champion promotion, immutable deployment
-revisions, and rollback around the unchanged reviewed model. The full MLflow,
-PostgreSQL, and MinIO platform remains deferred.
+Phase 7 implementation now requires the authenticated evidence publisher to run
+the committed synthetic fixture against both immutable revisions and record
+exact prediction parity. Refreshed approvals and the official drill remain
+pending. PostgreSQL, MinIO, and a persistent registry service remain deferred.

@@ -84,6 +84,19 @@
     "runtime_mlflow_dependency": false,
     "allowed_root": "experiment/deployments/phase7_v1"
   },
+  "smoke_test": {
+    "fixture_path": "tests/fixtures/prediction_request.json",
+    "fixture_sha256": "2da5a264485d4b3c9c3334ef74471dde7fb86a24c9e9d8b68aa311fc79aef3db",
+    "expected_probability_six_decimals": 0.190382,
+    "probability_absolute_tolerance": 0.000001,
+    "expected_risk_band": "standard",
+    "revisions": [
+      "phase7_rev_001",
+      "phase7_rev_002"
+    ],
+    "prediction_only": true,
+    "sealed_test_fixture": false
+  },
   "paths": {
     "registry_root": "experiment/registry/phase7_v1",
     "deployment_root": "experiment/deployments/phase7_v1",

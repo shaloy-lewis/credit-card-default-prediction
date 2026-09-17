@@ -43,3 +43,19 @@ SQLite files, MLflow artifact paths, deployment files, timestamps, account
 identifiers, predictions, and local paths remain uncommitted. The published
 report must state that identical model bytes were used in both revisions and
 that the exercise is not a model-quality comparison.
+
+## Pre-evidence smoke-parity amendment
+
+Before official evidence publication, review found that exact artifact identity
+and alias receipts did not alone record the planned deployment smoke parity.
+The digest-protected contract now pins the existing non-holdout synthetic fixture,
+expected six-decimal probability `0.190382`, standard risk band, both revisions,
+and a `1e-6` public-probability tolerance. Evidence publication must load each
+immutable release independently, perform prediction and native-SHAP checks, and
+require an identical full-precision output digest. This adds no model, policy,
+training, calibration, or sealed-test computation.
+
+The earlier runtime drill is superseded and will not be published. Refreshed
+approvals must bind the amended clean implementation before the official drill.
+See the [registry architecture](architecture.md) for the control-plane/runtime
+boundary.

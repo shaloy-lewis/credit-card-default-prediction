@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from credit_risk.registry import workflow
@@ -213,6 +215,170 @@ def test_helper_failure_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(workflow.os, "replace", lambda *_args: (_ for _ in ()).throw(OSError("x")))
     with pytest.raises(workflow.RegistryWorkflowError, match="atomically"):
         workflow._write_atomic(target, b"value")
+
+
+def test_deployment_smoke_parity_is_prediction_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = load_registry_config(REPOSITORY_ROOT / DEFAULT_REGISTRY_CONFIG_PATH)
+
+    class FakeEngine:
+        def __init__(self, bundle_root: Path) -> None:
+            self.revision = bundle_root.parents[0].name
+
+        def score(self, frame):
+            assert tuple(frame.columns) == workflow.PREDICTOR_COLUMNS
+            reason = SimpleNamespace(
+                category="repayment_status",
+                direction="risk_increasing",
+                contribution_raw_log_odds=0.25,
+            )
+            return SimpleNamespace(
+                probabilities=np.asarray([0.1903818]),
+                risk_bands=("standard",),
+                reasons=((reason, reason),),
+            )
+
+    monkeypatch.setattr(workflow, "InferenceEngine", FakeEngine)
+    result = workflow._verify_deployment_smoke_parity(
+        config, REPOSITORY_ROOT, tmp_path / "deployments"
+    )
+    assert result["outputs_identical"] is True
+    assert result["prediction_only"] is True
+    assert result["sealed_test_fixture"] is False
+    assert [item["release_revision"] for item in result["revisions"]] == list(
+        config.smoke_test.revisions
+    )
+
+
+def test_deployment_smoke_parity_rejects_fixture_or_output_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = load_registry_config(REPOSITORY_ROOT / DEFAULT_REGISTRY_CONFIG_PATH)
+    original_hash = workflow._sha256_file
+    fixture = (REPOSITORY_ROOT / config.smoke_test.fixture_path).resolve()
+    monkeypatch.setattr(
+        workflow,
+        "_sha256_file",
+        lambda path: "0" * 64 if Path(path).resolve() == fixture else original_hash(path),
+    )
+    with pytest.raises(workflow.RegistryWorkflowError, match="fixture digest"):
+        workflow._verify_deployment_smoke_parity(config, REPOSITORY_ROOT, tmp_path / "deployments")
+
+    monkeypatch.setattr(workflow, "_sha256_file", original_hash)
+
+    class DifferentOutputs:
+        def __init__(self, bundle_root: Path) -> None:
+            self.revision = bundle_root.parents[0].name
+
+        def score(self, _frame):
+            probability = 0.1903818 if self.revision.endswith("001") else 0.1903822
+            reason = SimpleNamespace(
+                category="repayment_status",
+                direction="risk_increasing",
+                contribution_raw_log_odds=probability,
+            )
+            return SimpleNamespace(
+                probabilities=np.asarray([probability]),
+                risk_bands=("standard",),
+                reasons=((reason, reason),),
+            )
+
+    monkeypatch.setattr(workflow, "InferenceEngine", DifferentOutputs)
+    with pytest.raises(workflow.RegistryWorkflowError, match="failed synthetic smoke parity"):
+        workflow._verify_deployment_smoke_parity(config, REPOSITORY_ROOT, tmp_path / "deployments")
+
+
+def test_deployment_smoke_parity_rejects_invalid_fixture_and_prediction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = load_registry_config(REPOSITORY_ROOT / DEFAULT_REGISTRY_CONFIG_PATH)
+    operational_features = workflow.OperationalFeatures
+    monkeypatch.setattr(
+        workflow,
+        "OperationalFeatures",
+        SimpleNamespace(
+            model_validate_json=lambda _value: (_ for _ in ()).throw(ValueError("invalid"))
+        ),
+    )
+    with pytest.raises(workflow.RegistryWorkflowError, match="fixture is invalid"):
+        workflow._verify_deployment_smoke_parity(config, REPOSITORY_ROOT, tmp_path / "deployments")
+    monkeypatch.setattr(workflow, "OperationalFeatures", operational_features)
+
+    class FailingEngine:
+        def __init__(self, bundle_root: Path) -> None:
+            self.bundle_root = bundle_root
+
+        def score(self, _frame):
+            raise RuntimeError("failed")
+
+    monkeypatch.setattr(workflow, "InferenceEngine", FailingEngine)
+    with pytest.raises(workflow.RegistryWorkflowError, match="prediction failed"):
+        workflow._verify_deployment_smoke_parity(config, REPOSITORY_ROOT, tmp_path / "deployments")
+
+    class ChangedOutputEngine(FailingEngine):
+        def score(self, _frame):
+            reason = SimpleNamespace(
+                category="repayment_status",
+                direction="risk_increasing",
+                contribution_raw_log_odds=0.25,
+            )
+            return SimpleNamespace(
+                probabilities=np.asarray([0.5]),
+                risk_bands=("high",),
+                reasons=((reason, reason),),
+            )
+
+    monkeypatch.setattr(workflow, "InferenceEngine", ChangedOutputEngine)
+    with pytest.raises(workflow.RegistryWorkflowError, match="differs from"):
+        workflow._verify_deployment_smoke_parity(config, REPOSITORY_ROOT, tmp_path / "deployments")
+
+
+def test_published_smoke_parity_requires_exact_semantics() -> None:
+    config = load_registry_config(REPOSITORY_ROOT / DEFAULT_REGISTRY_CONFIG_PATH)
+    digest = "a" * 64
+    payload = {
+        "fixture_sha256": config.smoke_test.fixture_sha256,
+        "synthetic": True,
+        "prediction_only": True,
+        "sealed_test_fixture": False,
+        "expected_probability_six_decimals": 0.190382,
+        "outputs_identical": True,
+        "revisions": [
+            {
+                "release_revision": revision,
+                "probability_six_decimals": 0.190382,
+                "risk_band": "standard",
+                "output_sha256": digest,
+            }
+            for revision in config.smoke_test.revisions
+        ],
+    }
+    workflow._validate_published_smoke_parity(config, payload)
+
+    changed = deepcopy(payload)
+    changed["revisions"][1]["output_sha256"] = "b" * 64
+    with pytest.raises(workflow.RegistryWorkflowError, match="not identical"):
+        workflow._validate_published_smoke_parity(config, changed)
+
+    changed = {**payload, "unexpected": True}
+    with pytest.raises(workflow.RegistryWorkflowError, match="incomplete"):
+        workflow._validate_published_smoke_parity(config, changed)
+
+    changed = deepcopy(payload)
+    changed["synthetic"] = False
+    with pytest.raises(workflow.RegistryWorkflowError, match="parity is invalid"):
+        workflow._validate_published_smoke_parity(config, changed)
+
+    changed = deepcopy(payload)
+    changed["revisions"][0]["risk_band"] = "high"
+    with pytest.raises(workflow.RegistryWorkflowError, match="revision is invalid"):
+        workflow._validate_published_smoke_parity(config, changed)
+
+    changed = deepcopy(payload)
+    changed["revisions"][0]["output_sha256"] = "invalid"
+    with pytest.raises(workflow.RegistryWorkflowError, match="digest is invalid"):
+        workflow._validate_published_smoke_parity(config, changed)
 
 
 def test_transition_compensation_attempts_every_restore_step(tmp_path: Path) -> None:

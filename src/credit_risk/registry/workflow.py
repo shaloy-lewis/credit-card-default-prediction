@@ -16,8 +16,12 @@ from types import ModuleType
 from typing import Any, Literal, cast
 from uuid import uuid4
 
+import pandas as pd
 from pydantic import ValidationError
 
+from credit_risk.inference.contracts import OperationalFeatures
+from credit_risk.inference.engine import InferenceEngine
+from credit_risk.modeling.contracts import PREDICTOR_COLUMNS
 from credit_risk.modeling.selected_bundle import BundleManifest
 from credit_risk.registry.contracts import (
     DEFAULT_DEPLOYMENT_ROOT,
@@ -517,6 +521,7 @@ def publish_registry_evidence(
         "promotion": _read_receipt(registry / "events" / PROMOTION_RECEIPT),
         "rollback": _read_receipt(registry / "events" / ROLLBACK_RECEIPT),
     }
+    smoke_parity = _verify_deployment_smoke_parity(config, repository, deployment)
     implementation_commit = str(receipts["promotion"]["implementation_git_commit"])
     summary = {
         "schema_version": "1.0.0",
@@ -561,6 +566,7 @@ def publish_registry_evidence(
             "passed": True,
             "waiver_used": False,
         },
+        "smoke_parity": smoke_parity,
         "boundaries": {
             "fit_count": 0,
             "model_changed": False,
@@ -593,6 +599,7 @@ def publish_registry_evidence(
         "source_artifacts": {
             "bundle_manifest": {"sha256": config.bundle.manifest_sha256},
             "selected_model": {"sha256": config.bundle.model_sha256},
+            "synthetic_smoke_fixture": {"sha256": config.smoke_test.fixture_sha256},
             **{
                 role: {"sha256": reference.sha256}
                 for role, reference in sorted(config.source_evidence.items())
@@ -660,11 +667,30 @@ def verify_registry_evidence(
         ) != _sha256_file(evidence / name):
             raise RegistryWorkflowError(f"Phase 7 evidence digest mismatch for {name}.")
     _validate_config_sources(repository, config)
+    fixture = _safe_path(
+        repository,
+        config.smoke_test.fixture_path,
+        "tests/fixtures",
+        "registry smoke fixture",
+        must_exist=True,
+    )
+    source_artifacts = manifest.get("source_artifacts", {})
+    if (
+        not fixture.is_file()
+        or _sha256_file(fixture) != config.smoke_test.fixture_sha256
+        or source_artifacts.get("synthetic_smoke_fixture", {}).get("sha256")
+        != config.smoke_test.fixture_sha256
+    ):
+        raise RegistryWorkflowError("Registry smoke fixture evidence is invalid.")
     summary = _read_receipt(evidence / "summary.json")
+    _validate_published_smoke_parity(config, summary.get("smoke_parity"))
     if (
         summary.get("status") != "registry_release_control_complete"
         or summary.get("model_bytes_unchanged_between_revisions") is not True
         or summary.get("final_state", {}).get("active_revision") != RELEASE_REVISIONS[0]
+        or summary.get("smoke_parity", {}).get("outputs_identical") is not True
+        or summary.get("smoke_parity", {}).get("expected_probability_six_decimals")
+        != config.smoke_test.expected_probability_six_decimals
         or summary.get("boundaries", {}).get("fit_count") != 0
         or summary.get("boundaries", {}).get("sealed_test_accessed") is not False
         or summary.get("claims", {}).get("g4_closed") is not False
@@ -676,6 +702,142 @@ def verify_registry_evidence(
         evidence_manifest_sha256=observed_manifest,
         status=str(summary["status"]),
     )
+
+
+def _validate_published_smoke_parity(config: RegistryConfig, value: Any) -> None:
+    expected_keys = {
+        "fixture_sha256",
+        "synthetic",
+        "prediction_only",
+        "sealed_test_fixture",
+        "expected_probability_six_decimals",
+        "outputs_identical",
+        "revisions",
+    }
+    if not isinstance(value, dict) or set(value) != expected_keys:
+        raise RegistryWorkflowError("Published registry smoke parity is incomplete.")
+    revisions = value.get("revisions")
+    expected_revision_keys = {
+        "release_revision",
+        "probability_six_decimals",
+        "risk_band",
+        "output_sha256",
+    }
+    if (
+        value.get("fixture_sha256") != config.smoke_test.fixture_sha256
+        or value.get("synthetic") is not True
+        or value.get("prediction_only") is not True
+        or value.get("sealed_test_fixture") is not False
+        or value.get("expected_probability_six_decimals")
+        != config.smoke_test.expected_probability_six_decimals
+        or value.get("outputs_identical") is not True
+        or not isinstance(revisions, list)
+        or len(revisions) != len(RELEASE_REVISIONS)
+    ):
+        raise RegistryWorkflowError("Published registry smoke parity is invalid.")
+    output_digests: list[str] = []
+    for expected_revision, observed in zip(RELEASE_REVISIONS, revisions, strict=True):
+        if (
+            not isinstance(observed, dict)
+            or set(observed) != expected_revision_keys
+            or observed.get("release_revision") != expected_revision
+            or observed.get("probability_six_decimals")
+            != config.smoke_test.expected_probability_six_decimals
+            or observed.get("risk_band") != config.smoke_test.expected_risk_band
+        ):
+            raise RegistryWorkflowError("Published registry smoke revision is invalid.")
+        output_digest = observed.get("output_sha256")
+        if (
+            not isinstance(output_digest, str)
+            or len(output_digest) != 64
+            or any(character not in "0123456789abcdef" for character in output_digest)
+        ):
+            raise RegistryWorkflowError("Published registry smoke digest is invalid.")
+        output_digests.append(output_digest)
+    if len(set(output_digests)) != 1:
+        raise RegistryWorkflowError("Published registry smoke outputs are not identical.")
+
+
+def _verify_deployment_smoke_parity(
+    config: RegistryConfig,
+    repository: Path,
+    deployment_root: Path,
+) -> dict[str, Any]:
+    """Score one reviewed synthetic row through both immutable release revisions."""
+
+    fixture = _safe_path(
+        repository,
+        config.smoke_test.fixture_path,
+        "tests/fixtures",
+        "registry smoke fixture",
+        must_exist=True,
+    )
+    if not fixture.is_file() or _sha256_file(fixture) != config.smoke_test.fixture_sha256:
+        raise RegistryWorkflowError("Registry smoke fixture digest mismatch.")
+    try:
+        features = OperationalFeatures.model_validate_json(fixture.read_bytes())
+    except (OSError, ValidationError, ValueError) as error:
+        raise RegistryWorkflowError(f"Registry smoke fixture is invalid: {error}") from error
+
+    frame = pd.DataFrame(
+        [[getattr(features, name) for name in PREDICTOR_COLUMNS]],
+        columns=PREDICTOR_COLUMNS,
+        index=pd.Index(["synthetic-smoke"], name="trace_id"),
+    )
+    revision_outputs: list[dict[str, Any]] = []
+    output_digests: list[str] = []
+    for revision in config.smoke_test.revisions:
+        bundle = deployment_root / "releases" / revision / "bundle"
+        try:
+            result = InferenceEngine(bundle_root=bundle).score(frame)
+        except Exception as error:
+            raise RegistryWorkflowError(
+                f"Registry smoke prediction failed for {revision}: {error}"
+            ) from error
+        probability = float(result.probabilities[0])
+        probability_six_decimals = round(probability, 6)
+        risk_band = str(result.risk_bands[0])
+        if (
+            abs(probability_six_decimals - config.smoke_test.expected_probability_six_decimals)
+            > config.smoke_test.probability_absolute_tolerance
+            or risk_band != config.smoke_test.expected_risk_band
+        ):
+            raise RegistryWorkflowError(
+                f"Registry smoke output differs from the reviewed contract for {revision}."
+            )
+        output = {
+            "probability": probability,
+            "risk_band": risk_band,
+            "reasons": [
+                {
+                    "category": reason.category,
+                    "direction": reason.direction,
+                    "contribution_raw_log_odds": reason.contribution_raw_log_odds,
+                }
+                for reason in result.reasons[0]
+            ],
+        }
+        output_digest = _sha256_bytes(_json_bytes(output))
+        output_digests.append(output_digest)
+        revision_outputs.append(
+            {
+                "release_revision": revision,
+                "probability_six_decimals": probability_six_decimals,
+                "risk_band": risk_band,
+                "output_sha256": output_digest,
+            }
+        )
+    if len(set(output_digests)) != 1:
+        raise RegistryWorkflowError("Registry release revisions failed synthetic smoke parity.")
+    return {
+        "fixture_sha256": config.smoke_test.fixture_sha256,
+        "synthetic": True,
+        "prediction_only": True,
+        "sealed_test_fixture": False,
+        "expected_probability_six_decimals": (config.smoke_test.expected_probability_six_decimals),
+        "outputs_identical": True,
+        "revisions": revision_outputs,
+    }
 
 
 def _load_context(config_path: str | Path) -> tuple[RegistryConfig, Path, Path]:
@@ -1192,6 +1354,9 @@ model bytes; this is a release-control exercise, not a model comparison.
 - Atomic active-deployment pointer with no hand replacement of model files.
 - CI quality, container contract, fixable HIGH/CRITICAL vulnerability gate,
   and CycloneDX SBOM generation.
+- Prediction-only smoke parity across both revisions using the reviewed synthetic
+  fixture: probability `{summary["smoke_parity"]["expected_probability_six_decimals"]:.6f}`
+  with identical risk band, reasons, and full-precision output digest.
 - Zero fitting and no sealed-test access.
 
 ## Remaining boundary
