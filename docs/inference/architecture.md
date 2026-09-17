@@ -79,5 +79,6 @@ deterministic capacity selection, trace propagation, endpoint retirement, and
 no-rewrite rerun behavior. Row-level outputs remain ignored.
 
 No Phase 6 path fits, tunes, calibrates, loads the sealed test partition, or
-changes the model or policy. G4 remains open for robustness stress tests,
-registry promotion, image scanning, rollback, monitoring, and runbooks.
+changes the model or policy. Phase 7 subsequently completed local registry
+promotion, image scanning, and rollback; G4 remains open for robustness stress
+tests, monitoring, and incident controls.

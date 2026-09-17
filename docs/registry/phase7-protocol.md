@@ -55,7 +55,26 @@ immutable release independently, perform prediction and native-SHAP checks, and
 require an identical full-precision output digest. This adds no model, policy,
 training, calibration, or sealed-test computation.
 
-The earlier runtime drill is superseded and will not be published. Refreshed
-approvals must bind the amended clean implementation before the official drill.
+The earlier runtime drill was superseded and is not published. Refreshed
+approvals bind amended clean implementation commit `cb63b39`.
+
+## Reviewed outcome
+
+The official drill registered both reviewed revisions, promoted and deployed
+`phase7_rev_002`, and then restored `phase7_rev_001` through the approved
+rollback workflow. The final aliases are `champion=1` and `rollback=2`; both
+versions retain model digest `844ec1c3...4d88c` and bundle-manifest digest
+`df5ce6ce...7cd88`.
+
+The amended publisher independently loaded both immutable bundles. Their
+full-precision prediction-and-explanation digest matched exactly, and both
+returned probability `0.190382` and risk band `standard` for the pinned
+synthetic fixture. The committed evidence is externally authenticated by
+manifest SHA-256 `ce36f33da60fe6470d28a76b8053d102e74731115d069c4d476d0c2abbc47da9`.
+
+The container quality gate passed its blocking fixable HIGH/CRITICAL scan and
+produced a CycloneDX SBOM. No waiver, model fitting, model change, sealed-test
+access, row-level publication, or runtime MLflow dependency was introduced.
 See the [registry architecture](architecture.md) for the control-plane/runtime
-boundary.
+boundary. G4 and Release B remain open for robustness testing, monitoring, and
+incident controls.

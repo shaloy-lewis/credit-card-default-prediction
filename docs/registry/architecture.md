@@ -59,10 +59,11 @@ schemas are unchanged.
 
 GitHub Actions pins third-party actions and the Python base image. The container
 job runs runtime contract tests, blocks fixable HIGH or CRITICAL Trivy findings
-without a repository waiver, and uploads a CycloneDX SBOM. The governed evidence
-publisher records successful registration, promotion, deployment, synthetic
-smoke parity, and rollback without publishing runtime paths, timestamps, account
-identifiers, or row-level predictions.
+without a repository waiver, and uploads a CycloneDX SBOM. The authenticated
+[release-control report](../../reports/registry/phase7_v1/registry-release-report.md)
+records successful registration, promotion, deployment, synthetic smoke parity,
+and rollback without publishing runtime paths, timestamps, account identifiers,
+or row-level predictions.
 
 This architecture demonstrates local release mechanics. It does not establish
 external production operation, compare model quality, close G4, or replace the

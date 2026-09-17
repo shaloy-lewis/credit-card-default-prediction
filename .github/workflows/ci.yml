@@ -106,7 +106,8 @@ jobs:
         run: >-
           uv run pytest tests/unit/registry tests/unit/test_registry_cli.py
           tests/integration/test_phase7_protocol.py
-          tests/integration/test_registry_workflow.py -m "not training"
+          tests/integration/test_registry_workflow.py
+          tests/integration/test_phase7_evidence.py -m "not training"
           --cov=credit_risk.registry --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 

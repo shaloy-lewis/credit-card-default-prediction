@@ -152,8 +152,15 @@ publication occurred. G4 remains open for the remaining release-readiness work.
 - [Frozen registry and rollback protocol](registry/phase7-protocol.md)
 - [Registry and deployment architecture](registry/architecture.md)
 - Machine-readable contract: `../configs/registry/phase7_v1.json`
+- [Reviewed registry release report](../reports/registry/phase7_v1/registry-release-report.md)
+- [Promotion checklist](../reports/registry/phase7_v1/promotion-checklist.md)
+- [Rollback runbook](../reports/registry/phase7_v1/rollback-runbook.md)
+- [Externally authenticated evidence manifest](../reports/registry/phase7_v1/evidence-manifest.json)
 
-Phase 7 implementation now requires the authenticated evidence publisher to run
-the committed synthetic fixture against both immutable revisions and record
-exact prediction parity. Refreshed approvals and the official drill remain
-pending. PostgreSQL, MinIO, and a persistent registry service remain deferred.
+Phase 7 is complete for its bounded release-control slice. A local MLflow SQLite
+registry demonstrated manual candidate/champion promotion, immutable deployment
+revisions, an atomic active pointer, exact synthetic smoke parity, and approved
+rollback around the unchanged reviewed model. GitHub Actions blocks fixable
+HIGH/CRITICAL image findings and publishes a CycloneDX SBOM. The evidence trust
+anchor is `ce36f33d...7da9`. PostgreSQL, MinIO, a persistent registry service,
+robustness testing, monitoring, and incident controls remain deferred.
