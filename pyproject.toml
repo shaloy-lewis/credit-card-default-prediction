@@ -13,19 +13,21 @@ authors = [{ name = "Shaloy Lewis" }]
 dependencies = [
     "catboost==1.2.5",
     "click==8.1.7",
-    "fastapi==0.111.0",
+    "fastapi==0.135.1",
     "joblib==1.5.3",
     "numpy==1.26.4",
     "pandas==2.2.2",
+    "pillow==12.3.0",
     "pydantic==2.7.4",
     "scikit-learn==1.4.2",
+    "starlette==1.6.0",
     "typer==0.12.3",
     "uvicorn[standard]==0.30.1",
 ]
 
 [project.optional-dependencies]
 data = ["pandera[pandas]==0.32.1"]
-demo = ["streamlit==1.35.0"]
+demo = ["streamlit==1.64.0"]
 modeling = ["mlflow==3.15.0"]
 
 [project.scripts]
