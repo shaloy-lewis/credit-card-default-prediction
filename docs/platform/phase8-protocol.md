@@ -52,8 +52,9 @@ fitting or sealed-test access. CI repeats those runtime checks, scans the new
 MLflow and UI images, and publishes their SBOMs.
 
 The blocking image scan discovered fixable vulnerabilities after the frozen
-base-image digest was published. The platform image therefore installs Debian's
-fixed `libpcre2-8-0` package `10.42-1+deb12u1`, and the locked platform extra
+base-image digest was published. The MLflow and Streamlit runtime images
+therefore install Debian's fixed `libpcre2-8-0` package
+`10.42-1+deb12u1`, and the locked platform extra
 requires GitPython `3.1.59` and cryptography `50.0.0`. These are security-only
 updates: the base-image digest, platform contract, model, registry, and serving
 policy remain unchanged, and the scan threshold is not relaxed.

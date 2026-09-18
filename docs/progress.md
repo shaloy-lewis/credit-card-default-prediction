@@ -435,6 +435,9 @@ deferred risks. It is not a substitute for commit history or CI results.
   made explicit environment mappings authoritative, rejected symlinks across
   the complete deployment path (including cleanup), and moved the percent-encoded
   PostgreSQL URI from process arguments into the MLflow process environment.
+- Remote blocking scans found the same fixable Debian PCRE2 findings in both
+  platform runtime images. The MLflow and Streamlit images now install the exact
+  fixed Debian package while retaining the pinned base image and scan policy.
 - After inspecting their Compose labels, the three disposable rehearsal volumes
   were irreversibly removed and recreated under the corrected contract. The
   rebuilt state reproduced two versions, `champion=1`, `rollback=2`, exact object

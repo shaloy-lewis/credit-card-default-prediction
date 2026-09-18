@@ -38,6 +38,7 @@ def test_phase8_contract_and_compose_preserve_security_boundaries() -> None:
 
 def test_platform_images_and_environment_do_not_leak_runtime_state() -> None:
     dockerfile = (REPOSITORY_ROOT / "Dockerfile.platform").read_text(encoding="utf-8")
+    ui_dockerfile = (REPOSITORY_ROOT / "Dockerfile.demo").read_text(encoding="utf-8")
     api_dockerfile = (REPOSITORY_ROOT / "Dockerfile").read_text(encoding="utf-8")
     example = (REPOSITORY_ROOT / ".env.example").read_text(encoding="utf-8")
     ignore = (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8")
@@ -46,6 +47,7 @@ def test_platform_images_and_environment_do_not_leak_runtime_state() -> None:
 
     assert "--extra platform" in dockerfile
     assert "libpcre2-8-0=10.42-1+deb12u1" in dockerfile
+    assert "libpcre2-8-0=10.42-1+deb12u1" in ui_dockerfile
     assert "USER app" in dockerfile
     assert "--extra platform" not in api_dockerfile
     assert "mlflow" not in api_dockerfile.lower()
