@@ -31,12 +31,19 @@ demo = ["streamlit==1.64.0"]
 modeling = ["mlflow==3.15.0"]
 platform = [
     "boto3==1.43.96",
+    "cryptography==50.0.0",
+    "gitpython==3.1.59",
     "mlflow==3.15.0",
     "psycopg2-binary==2.9.13",
 ]
 
 [project.scripts]
 credit-risk = "credit_risk.cli:app"
+
+[tool.uv]
+# MLflow 3.15.0 capped cryptography below 50. Upstream later relaxed only this
+# metadata bound; retain the frozen MLflow runtime while installing the fix.
+override-dependencies = ["cryptography==50.0.0"]
 
 [dependency-groups]
 dev = [

@@ -444,6 +444,10 @@ deferred risks. It is not a substitute for commit history or CI results.
   stack, verifies the persistent state, checks prediction parity, blocks fixable
   HIGH/CRITICAL findings for the new platform/UI images, and publishes their
   CycloneDX SBOMs.
+- The first remote platform scan correctly blocked three fixable PCRE2 findings
+  plus fixed-version GitPython and cryptography findings. The remediation retains
+  the frozen base digest and blocking policy while installing Debian's fixed
+  PCRE2 package and locking the two Python packages at their published fixes.
 - This is prerequisite and runtime verification, not the reviewed official Phase
   8 evidence package. No model fitting, refitting, tuning, final-test access, or
   sealed-test scoring occurred. Phase 8 remains in progress until aggregate

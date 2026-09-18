@@ -51,6 +51,16 @@ idempotency, restart persistence, API/UI health, exact object identity, and zero
 fitting or sealed-test access. CI repeats those runtime checks, scans the new
 MLflow and UI images, and publishes their SBOMs.
 
+The blocking image scan discovered fixable vulnerabilities after the frozen
+base-image digest was published. The platform image therefore installs Debian's
+fixed `libpcre2-8-0` package `10.42-1+deb12u1`, and the locked platform extra
+requires GitPython `3.1.59` and cryptography `50.0.0`. These are security-only
+updates: the base-image digest, platform contract, model, registry, and serving
+policy remain unchanged, and the scan threshold is not relaxed.
+MLflow's upstream fix changed only its cryptography upper-bound metadata; the
+lock applies that same compatibility relaxation while retaining frozen MLflow
+`3.15.0` and verifies the complete platform behavior in tests and containers.
+
 The deployment named volume is created root-owned by Docker. A read-only-root
 one-shot bootstrap container therefore runs as UID 0 solely to initialise that
 single writable volume. The long-running MLflow, API, and UI processes run as

@@ -42,8 +42,10 @@ def test_platform_images_and_environment_do_not_leak_runtime_state() -> None:
     example = (REPOSITORY_ROOT / ".env.example").read_text(encoding="utf-8")
     ignore = (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8")
     docker_ignore = (REPOSITORY_ROOT / ".dockerignore").read_text(encoding="utf-8")
+    lockfile = (REPOSITORY_ROOT / "uv.lock").read_text(encoding="utf-8")
 
     assert "--extra platform" in dockerfile
+    assert "libpcre2-8-0=10.42-1+deb12u1" in dockerfile
     assert "USER app" in dockerfile
     assert "--extra platform" not in api_dockerfile
     assert "mlflow" not in api_dockerfile.lower()
@@ -51,6 +53,8 @@ def test_platform_images_and_environment_do_not_leak_runtime_state() -> None:
     assert ".env" in docker_ignore.splitlines()
     assert "change-me" in example
     assert "MLFLOW_ARTIFACT_BUCKET=credit-risk-mlflow" in example
+    assert 'name = "cryptography"\nversion = "50.0.0"' in lockfile
+    assert 'name = "gitpython"\nversion = "3.1.59"' in lockfile
 
 
 def test_phase7_and_selected_bundle_sources_remain_byte_identical() -> None:
