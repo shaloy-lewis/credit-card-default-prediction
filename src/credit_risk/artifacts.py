@@ -11,6 +11,13 @@ from typing import Any
 
 import numpy as np
 
+from credit_risk.artifact_distribution.contracts import (
+    DEFAULT_LEGACY_MANIFEST,
+    ArtifactContractError,
+    LegacyManifest,
+    load_legacy_manifest,
+    sha256_file,
+)
 from credit_risk.utils.constants import OUTLIER_COLUMNS
 
 MODEL_FILENAME = "model.pkl"
@@ -37,7 +44,11 @@ class ArtifactBundle:
     transformed_feature_names: tuple[str, ...]
 
 
-def load_artifact_bundle(artifact_dir: str | Path) -> ArtifactBundle:
+def load_artifact_bundle(
+    artifact_dir: str | Path,
+    *,
+    manifest_path: str | Path = DEFAULT_LEGACY_MANIFEST,
+) -> ArtifactBundle:
     """Load and validate trusted, local inference artifacts from ``artifact_dir``.
 
     Pickle can execute arbitrary code while loading. Callers must only pass an
@@ -45,13 +56,32 @@ def load_artifact_bundle(artifact_dir: str | Path) -> ArtifactBundle:
     """
 
     directory = Path(artifact_dir)
+    try:
+        manifest = load_legacy_manifest(manifest_path)
+    except ArtifactContractError as exc:
+        raise ArtifactValidationError(f"Legacy artifact trust manifest is invalid: {exc}") from exc
     paths = {filename: directory / filename for filename in REQUIRED_ARTIFACT_FILENAMES}
-    missing = [filename for filename, path in paths.items() if not path.is_file()]
+    missing = [
+        filename for filename, path in paths.items() if not path.is_file() or path.is_symlink()
+    ]
     if missing:
         missing_list = ", ".join(missing)
         raise ArtifactValidationError(
             f"Artifact directory '{directory}' is missing required file(s): {missing_list}."
         )
+    try:
+        observed = {entry.name for entry in directory.iterdir()}
+    except OSError as exc:
+        raise ArtifactValidationError(
+            f"Could not inspect artifact directory '{directory}': {exc}"
+        ) from exc
+    if observed != set(REQUIRED_ARTIFACT_FILENAMES):
+        raise ArtifactValidationError(
+            "Legacy artifact directory violates its exact file allowlist: "
+            f"expected={sorted(REQUIRED_ARTIFACT_FILENAMES)}, observed={sorted(observed)}."
+        )
+
+    _validate_reviewed_bytes(paths, manifest)
 
     model = _load_trusted_pickle(paths[MODEL_FILENAME], "model")
     preprocessor = _load_trusted_pickle(paths[PREPROCESSOR_FILENAME], "preprocessor")
@@ -64,6 +94,27 @@ def load_artifact_bundle(artifact_dir: str | Path) -> ArtifactBundle:
         outlier_threshold=thresholds,
         transformed_feature_names=transformed_feature_names,
     )
+
+
+def _validate_reviewed_bytes(paths: Mapping[str, Path], manifest: LegacyManifest) -> None:
+    """Authenticate every legacy file before any pickle can execute."""
+
+    for filename in REQUIRED_ARTIFACT_FILENAMES:
+        path = paths[filename]
+        contract = manifest.files[filename]
+        try:
+            observed_size = path.stat().st_size
+            observed_sha256 = sha256_file(path)
+        except (OSError, ArtifactContractError) as exc:
+            raise ArtifactValidationError(
+                f"Could not authenticate legacy artifact '{path}': {exc}"
+            ) from exc
+        if observed_size != contract.size_bytes or observed_sha256 != contract.sha256:
+            raise ArtifactValidationError(
+                f"Legacy artifact '{path}' failed its trusted size/SHA-256 contract. "
+                "Do not deserialize it; run 'credit-risk artifacts pull --group legacy' "
+                "to retrieve reviewed bytes."
+            )
 
 
 def _load_trusted_pickle(path: Path, artifact_name: str) -> Any:

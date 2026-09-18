@@ -6,6 +6,7 @@ import pandas as pd
 # import shap
 from catboost import Pool
 
+from credit_risk.artifact_distribution.contracts import DEFAULT_LEGACY_MANIFEST
 from credit_risk.artifacts import load_artifact_bundle
 from credit_risk.exception.exception import customexception
 from credit_risk.logger.logging import logging
@@ -13,14 +14,21 @@ from credit_risk.utils.constants import OUTLIER_COLUMNS
 
 
 class PredictPipeline:
-    def __init__(self, artifact_dir: str | Path = "artifacts"):
+    def __init__(
+        self,
+        artifact_dir: str | Path = "artifacts",
+        legacy_manifest_path: str | Path = DEFAULT_LEGACY_MANIFEST,
+    ):
         logging.info("Initializing the prediction pipeline")
         self.artifact_dir = Path(artifact_dir)
         self.preprocessor_path = str(self.artifact_dir / "preprocessor.pkl")
         self.model_path = str(self.artifact_dir / "model.pkl")
         self.outlier_threshold_path = str(self.artifact_dir / "outlier_threshold.json")
 
-        bundle = load_artifact_bundle(self.artifact_dir)
+        bundle = load_artifact_bundle(
+            self.artifact_dir,
+            manifest_path=legacy_manifest_path,
+        )
         self.preprocessor = bundle.preprocessor
         self.model = bundle.model
         self.outlier_threshold = bundle.outlier_threshold
