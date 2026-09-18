@@ -41,7 +41,7 @@ jobs:
         run: uv run ruff check api.py app.py src/credit_risk tests
 
       - name: Type-check maintained boundaries
-        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/cli.py api.py app.py
+        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
         run: uv run pytest -m "not training" --cov --cov-report=term-missing
@@ -109,6 +109,13 @@ jobs:
           tests/integration/test_registry_workflow.py
           tests/integration/test_phase7_evidence.py -m "not training"
           --cov=credit_risk.registry --cov-branch --cov-report=term-missing
+          --cov-fail-under=90
+
+      - name: Enforce Phase 8 platform branch coverage
+        run: >-
+          uv run pytest tests/unit/platform tests/unit/test_platform_cli.py
+          tests/integration/test_phase8_protocol.py -m "not training"
+          --cov=credit_risk.platform --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
   container:
@@ -179,7 +186,7 @@ jobs:
         shell: bash
         run: |
           test "$(docker exec credit-risk-api-ci whoami)" = "app"
-          test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.3.0"
+          test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.4.0"
           docker exec credit-risk-api-ci python -c "import credit_risk.data"
           docker exec credit-risk-api-ci python -c "import credit_risk.modeling"
           docker exec credit-risk-api-ci python -c "import importlib.util; assert importlib.util.find_spec('pandera') is None"
@@ -234,6 +241,13 @@ jobs:
           test "$governance_status" -eq 1
           grep --fixed-strings "install the project with the 'data' extra" <<<"$governance_output"
           ! grep --fixed-strings "Traceback" <<<"$governance_output"
+          set +e
+          platform_output="$(docker exec credit-risk-api-ci credit-risk platform verify 2>&1)"
+          platform_status=$?
+          set -e
+          test "$platform_status" -eq 1
+          grep --fixed-strings "Invalid Phase 8 platform configuration" <<<"$platform_output"
+          ! grep --fixed-strings "Traceback" <<<"$platform_output"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert all(not Path('/app', name).exists() for name in ('data', 'experiment', 'mlruns'))"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert not Path('/app/artifacts').exists()"
           docker exec credit-risk-api-ci python -c "from pathlib import Path; assert sorted(path.name for path in Path('/app/models/selected_v1').iterdir()) == ['manifest.json', 'model.cbm']"
@@ -257,3 +271,109 @@ jobs:
       - name: Remove test container
         if: always()
         run: docker rm --force credit-risk-api-ci || true
+
+  platform:
+    name: Build, persist, verify, and scan local platform
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Validate Compose contract
+        run: docker compose --env-file .env.example -f docker-compose.platform.yml config --quiet
+
+      - name: Build platform images
+        run: docker compose --env-file .env.example -f docker-compose.platform.yml build
+
+      - name: Verify platform image contracts
+        shell: bash
+        run: |
+          test "$(docker run --rm --entrypoint whoami credit-risk-mlflow:phase8)" = "app"
+          test "$(docker run --rm --entrypoint whoami credit-risk-ui:phase8)" = "app"
+          test "$(docker run --rm --entrypoint credit-risk credit-risk-mlflow:phase8 version)" = "0.4.0"
+          docker run --rm --entrypoint python credit-risk-mlflow:phase8 -c "from pathlib import Path; assert not Path('/app/.env').exists(); assert not Path('/app/data').exists(); assert not Path('/app/experiment').exists()"
+          docker run --rm --entrypoint python credit-risk-ui:phase8 -c "from pathlib import Path; assert not Path('/app/.env').exists(); assert not Path('/app/models').exists(); assert not Path('/app/data').exists(); assert not Path('/app/experiment').exists()"
+
+      - name: Start persistent local platform
+        run: >-
+          docker compose --env-file .env.example -f docker-compose.platform.yml
+          up --detach --wait --wait-timeout 240
+
+      - name: Verify registry, artifacts, deployment, and inference
+        shell: bash
+        run: |
+          docker compose --env-file .env.example -f docker-compose.platform.yml run --rm --no-deps bootstrap credit-risk platform bootstrap --deployment-root /deployment
+          docker compose --env-file .env.example -f docker-compose.platform.yml run --rm --no-deps bootstrap credit-risk platform verify --deployment-root /deployment
+          curl --fail --silent http://127.0.0.1:5000/health
+          curl --fail --silent http://127.0.0.1:8080/ping | python -c "import json, sys; assert json.load(sys.stdin) == {'message': 'Health check successful!'}"
+          curl --fail --silent http://127.0.0.1:8080/ready | python -c "import json, sys; assert json.load(sys.stdin) == {'status': 'ready'}"
+          curl --fail --silent --request POST --header 'Content-Type: application/json' --data @tests/fixtures/prediction_request.json http://127.0.0.1:8080/v1/predict | python -c "import json, sys; response = json.load(sys.stdin); assert abs(response['probability_of_default'] - 0.190382) <= 1e-6; assert response['model_id'] == 'catboost_fixed'; assert response['bundle_id'] == 'selected_v1'"
+
+      - name: Prove persisted state survives restart
+        shell: bash
+        run: |
+          docker compose --env-file .env.example -f docker-compose.platform.yml restart postgres minio mlflow api ui
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:5000/health >/dev/null && curl --fail --silent http://127.0.0.1:8080/ready >/dev/null && curl --fail --silent http://127.0.0.1:8501/_stcore/health >/dev/null; then
+              break
+            fi
+            if [[ "$attempt" == "60" ]]; then
+              docker compose --env-file .env.example -f docker-compose.platform.yml ps --all
+              docker compose --env-file .env.example -f docker-compose.platform.yml logs
+              exit 1
+            fi
+            sleep 2
+          done
+          docker compose --env-file .env.example -f docker-compose.platform.yml run --rm --no-deps bootstrap credit-risk platform verify --deployment-root /deployment
+
+      - name: Scan MLflow platform image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: credit-risk-mlflow:phase8
+          format: table
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Scan Streamlit UI image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: credit-risk-ui:phase8
+          format: table
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Generate MLflow platform software bill of materials
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: credit-risk-mlflow:phase8
+          format: cyclonedx
+          output: credit-risk-mlflow.cdx.json
+          scanners: vuln
+
+      - name: Generate Streamlit UI software bill of materials
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: credit-risk-ui:phase8
+          format: cyclonedx
+          output: credit-risk-ui.cdx.json
+          scanners: vuln
+
+      - name: Upload platform software bills of materials
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: credit-risk-platform-sboms
+          path: |
+            credit-risk-mlflow.cdx.json
+            credit-risk-ui.cdx.json
+          if-no-files-found: error
+
+      - name: Stop platform containers
+        if: always()
+        run: docker compose --env-file .env.example -f docker-compose.platform.yml down

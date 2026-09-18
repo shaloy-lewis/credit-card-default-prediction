@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0.0",
+  "protocol_id": "phase8_v1",
+  "status": "frozen_before_platform_execution",
+  "purpose": "zero_cost_persistent_local_mlops_platform",
+  "governance": {
+    "protocol_base_commit": "447813d1e169d08137e15d6c34834cb62966250f",
+    "phase7_state_is_immutable": true,
+    "bootstrap_is_not_database_migration": true,
+    "training": "prohibited",
+    "refitting": "prohibited",
+    "sealed_test_access": "prohibited"
+  },
+  "source_evidence": {
+    "phase7_config": {
+      "path": "configs/registry/phase7_v1.json",
+      "sha256": "83a29f8e927e91336bfc39779f27c5bb27de91194b5e1b8889acfd95dafe925b"
+    },
+    "phase7_evidence_manifest": {
+      "path": "reports/registry/phase7_v1/evidence-manifest.json",
+      "sha256": "ce36f33da60fe6470d28a76b8053d102e74731115d069c4d476d0c2abbc47da9"
+    },
+    "phase7_rollback_approval": {
+      "path": "configs/registry/phase7_rollback_approval.json",
+      "sha256": "466f3b7f98480603035d907c6ff7a713c43febe0e7f3447e0d1233a3cd7fce43"
+    }
+  },
+  "bundle": {
+    "bundle_id": "selected_v1",
+    "model_id": "catboost_fixed",
+    "manifest_path": "models/selected_v1/manifest.json",
+    "manifest_sha256": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+    "model_path": "models/selected_v1/model.cbm",
+    "model_sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
+  },
+  "images": {
+    "python": {
+      "reference": "python:3.12.14-slim-bookworm",
+      "digest": "sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254"
+    },
+    "postgres": {
+      "reference": "postgres:16.15-bookworm",
+      "digest": "sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825"
+    },
+    "minio": {
+      "reference": "quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z",
+      "digest": "sha256:d249d1fb6966de4d8ad26c04754b545205ff15a62e4fd19ebd0f26fa5baacbc0"
+    }
+  },
+  "services": {
+    "postgres": {"internal_port": 5432, "persistent_volume": "phase8_postgres_data"},
+    "minio": {"internal_port": 9000, "console_port": 9001, "persistent_volume": "phase8_minio_data"},
+    "mlflow": {"version": "3.15.0", "host_port": 5000, "workers": 1},
+    "api": {"host_port": 8080, "runtime_mlflow_dependency": false},
+    "ui": {"host_port": 8501, "direct_model_access": false}
+  },
+  "registry_bootstrap": {
+    "registered_model_name": "credit-risk-default",
+    "artifact_bucket": "credit-risk-mlflow",
+    "artifact_prefix": "registry/844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c/bundle",
+    "versions": [
+      {"registry_version": "1", "release_revision": "phase7_rev_001"},
+      {"registry_version": "2", "release_revision": "phase7_rev_002"}
+    ],
+    "aliases": {"champion": "1", "rollback": "2"},
+    "active_revision": "phase7_rev_001",
+    "active_registry_version": 1,
+    "rollback_approval_sha256": "466f3b7f98480603035d907c6ff7a713c43febe0e7f3447e0d1233a3cd7fce43",
+    "rollback_receipt_sha256": "cfaa140f25b890af21cf8e1f8c60eb1edafdbabe36e41a9f6440da9c879a2b4d",
+    "writer_lock": {
+      "kind": "postgres_advisory",
+      "key": -4653285090134190835,
+      "contention_policy": "fail_fast"
+    },
+    "idempotent_only_after_complete_verification": true
+  },
+  "environment": {
+    "required_secret_variables": ["POSTGRES_PASSWORD", "MINIO_ROOT_PASSWORD"],
+    "required_identity_variables": ["POSTGRES_DB", "POSTGRES_USER", "MINIO_ROOT_USER", "MLFLOW_ARTIFACT_BUCKET"],
+    "example_file": ".env.example",
+    "committed_real_secrets": false
+  },
+  "persistence": {
+    "named_volumes": ["phase8_postgres_data", "phase8_minio_data", "phase8_deployment"],
+    "destructive_reset_command_documented": false,
+    "restart_must_preserve_registry_aliases": true,
+    "restart_must_preserve_artifact_bytes": true
+  },
+  "security": {
+    "pin_external_images_by_digest": true,
+    "api_has_no_mlflow_dependency": true,
+    "deployment_mount_read_only": true,
+    "database_not_host_published": true,
+    "object_api_not_host_published": true,
+    "fixable_high_critical_scan_blocking": true,
+    "sbom_required": true
+  },
+  "prohibitions": [
+    "phase7_database_mutation",
+    "model_fitting",
+    "model_refitting",
+    "parameter_tuning",
+    "sealed_test_loading",
+    "unversioned_external_images",
+    "committed_runtime_secrets",
+    "mlflow_dependency_in_api_image"
+  ]
+}

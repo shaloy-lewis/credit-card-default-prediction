@@ -401,4 +401,57 @@ deferred risks. It is not a substitute for commit history or CI results.
   or external production-readiness claim.
 - Phase 7's registry/rollback slice is complete. G4 and Release B remain open for
   robustness/population-shift stress tests, monitoring, and incident controls;
-  PostgreSQL, MinIO, and persistent platform services remain Phase 8 work.
+  PostgreSQL, MinIO, and persistent platform services are now available as the
+  Phase 8 prerequisite layer described below.
+
+## Phase 8 persistent local platform — prerequisites complete, evidence pending
+
+**Prepared:** 2026-09-17
+
+- ADR 0006 and digest-protected `phase8_v1` bind the exact Phase 7 evidence,
+  selected bundle, immutable service images, persistent volumes, approved aliases,
+  security boundaries, and explicit zero-training/no-test constraints.
+- Package version `0.4.0` adds a separately locked `platform` extra for MLflow,
+  PostgreSQL, and S3-compatible object-store clients; the API image still contains
+  no MLflow dependency.
+- The Compose stack runs PostgreSQL, MinIO, MLflow, the existing API, and an
+  API-only Streamlit UI. PostgreSQL and the MinIO object API are not published to
+  the host; the deployment volume is read-only in the non-root API container.
+- The one-shot bootstrap copied the exact two-file selected bundle to a
+  content-addressed MinIO prefix, created two transparent MLflow release versions,
+  restored `champion=1` and `rollback=2`, and materialised the approved revision-1
+  deployment pointer. Re-running bootstrap verified the existing state without
+  creating conflicting versions.
+- A live local restart preserved PostgreSQL metadata, MinIO bytes, registry
+  aliases, the deployment pointer, and prediction `0.190382`. All five services
+  returned healthy status after recovery.
+- Unit and static integration tests enforce the frozen config, source digests,
+  path and object allowlists, failure behaviour, internal-only ports, read-only
+  deployment mount, ignored runtime secrets, and a `>=90%` platform branch gate.
+- Pre-commit review hardened this prerequisite with controlled missing-path
+  failures, exact registered-model tag verification, and a fail-fast PostgreSQL
+  advisory lock spanning every bootstrap mutation and final verification.
+- Final pre-push review normalized every MLflow and deployment-service failure,
+  made explicit environment mappings authoritative, rejected symlinks across
+  the complete deployment path (including cleanup), and moved the percent-encoded
+  PostgreSQL URI from process arguments into the MLflow process environment.
+- Remote blocking scans found the same fixable Debian PCRE2 findings in both
+  platform runtime images. The MLflow and Streamlit images now install the exact
+  fixed Debian package while retaining the pinned base image and scan policy.
+- After inspecting their Compose labels, the three disposable rehearsal volumes
+  were irreversibly removed and recreated under the corrected contract. The
+  rebuilt state reproduced two versions, `champion=1`, `rollback=2`, exact object
+  hashes, restart persistence, and probability `0.190382`; no historical artifact
+  or non-Phase-8 volume was altered.
+- GitHub Actions now validates the Compose contract, builds and restarts the
+  stack, verifies the persistent state, checks prediction parity, blocks fixable
+  HIGH/CRITICAL findings for the new platform/UI images, and publishes their
+  CycloneDX SBOMs.
+- The first remote platform scan correctly blocked three fixable PCRE2 findings
+  plus fixed-version GitPython and cryptography findings. The remediation retains
+  the frozen base digest and blocking policy while installing Debian's fixed
+  PCRE2 package and locking the two Python packages at their published fixes.
+- This is prerequisite and runtime verification, not the reviewed official Phase
+  8 evidence package. No model fitting, refitting, tuning, final-test access, or
+  sealed-test scoring occurred. Phase 8 remains in progress until aggregate
+  evidence is published and reviewed.

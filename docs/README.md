@@ -164,3 +164,18 @@ rollback around the unchanged reviewed model. GitHub Actions blocks fixable
 HIGH/CRITICAL image findings and publishes a CycloneDX SBOM. The evidence trust
 anchor is `ce36f33d...7da9`. PostgreSQL, MinIO, a persistent registry service,
 robustness testing, monitoring, and incident controls remain deferred.
+
+## Phase 8 persistent local platform — prerequisites complete
+
+- [Persistent-platform architecture decision](adr/0006-persistent-local-mlops-platform.md)
+- [Frozen prerequisite protocol](platform/phase8-protocol.md)
+- Machine-readable contract: `../configs/platform/phase8_v1.json`
+- Compose topology: `../docker-compose.platform.yml`
+
+The prerequisite layer re-registers the unchanged Phase 7 bundle into MLflow
+3.15 backed by PostgreSQL and MinIO, restores the reviewed champion/rollback
+aliases, and materialises the approved deployment pointer into a named volume.
+The stack passed local bootstrap, idempotency, restart persistence, API/UI health,
+and prediction-parity checks with zero fitting or sealed-test access. Phase 8 is
+still in progress until its deterministic aggregate evidence is published and
+reviewed.
