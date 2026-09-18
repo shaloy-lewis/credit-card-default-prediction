@@ -18,6 +18,7 @@ SUMMARY_PATH = EVIDENCE_ROOT / "summary.json"
 REPORT_PATH = EVIDENCE_ROOT / "selection-report.md"
 MANIFEST_PATH = BUNDLE_ROOT / "manifest.json"
 MODEL_PATH = BUNDLE_ROOT / "model.cbm"
+pytestmark = [pytest.mark.integration, pytest.mark.artifact]
 
 # Change only after a new protocol, clean bounded run, explicit evidence review,
 # and a separately approved replacement release decision.

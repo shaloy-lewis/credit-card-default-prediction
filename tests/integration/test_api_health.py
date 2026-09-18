@@ -12,7 +12,7 @@ from api import create_app
 from credit_risk.inference.engine import InferenceError
 from credit_risk.modeling.selected_bundle import SelectedBundleError
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.artifact]
 
 
 def test_liveness_and_readiness_endpoints() -> None:

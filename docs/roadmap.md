@@ -91,6 +91,7 @@ This release creates the core hybrid DS/MLE story.
 | Tracking and registry | Self-hosted MLflow | Experiment lineage, artifacts, candidate/champion state, and promotion evidence |
 | Metadata store | PostgreSQL container | Durable MLflow backend metadata |
 | Artifact store | MinIO container | S3-compatible local model and report storage |
+| External binary distribution | Public revision-pinned Hugging Face model repository | Fresh-clone and build-time delivery of exact reviewed bytes; not registry promotion |
 | Batch inference | Idempotent CLI/container task | Monthly portfolio scoring and manifest generation |
 | Online inference | FastAPI container | Versioned integration and demonstration endpoint |
 | Demo UI | Streamlit calling the API | Human-readable local demonstration |

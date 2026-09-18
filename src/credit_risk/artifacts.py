@@ -67,7 +67,9 @@ def load_artifact_bundle(
     if missing:
         missing_list = ", ".join(missing)
         raise ArtifactValidationError(
-            f"Artifact directory '{directory}' is missing required file(s): {missing_list}."
+            f"Artifact directory '{directory}' is missing required file(s): {missing_list}. "
+            "Run 'credit-risk artifacts pull --group legacy' to retrieve the reviewed "
+            "trusted-pickle bundle before using this compatibility workflow."
         )
     try:
         observed = {entry.name for entry in directory.iterdir()}

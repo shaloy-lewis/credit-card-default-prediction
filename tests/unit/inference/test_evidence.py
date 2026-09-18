@@ -14,6 +14,7 @@ from catboost import CatBoostClassifier
 import credit_risk.inference.evidence as evidence
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+pytestmark = pytest.mark.artifact
 
 
 @pytest.fixture()

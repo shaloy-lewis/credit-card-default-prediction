@@ -17,7 +17,7 @@ from credit_risk.inference.batch import parse_batch_csv, run_batch
 from credit_risk.inference.contracts import load_inference_config
 from credit_risk.inference.engine import InferenceEngine
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.artifact]
 FIXTURE = Path("tests/fixtures/inference_batch_v1.csv")
 
 

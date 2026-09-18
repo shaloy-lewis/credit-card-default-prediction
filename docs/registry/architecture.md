@@ -2,7 +2,9 @@
 
 ## Control plane and serving boundary
 
-Phase 7 separates release control from inference. The optional MLflow environment
+Phase 7 separates release control from inference and from external artifact
+distribution. Hugging Face supplies exact reviewed bytes to their historical
+local path; it does not assign release aliases or activate deployments. The optional MLflow environment
 owns local registration and alias state; the API loads only a verified two-file
 bundle from an immutable deployment directory.
 
@@ -48,7 +50,7 @@ and model digests. Application startup resolves bundle roots in this order:
 
 1. an explicit `create_app(bundle_root=...)` test or integration override;
 2. the authenticated pointer beneath `CREDIT_RISK_DEPLOYMENT_ROOT`;
-3. the committed `models/selected_v1` default.
+3. the explicitly materialised `models/selected_v1` default.
 
 Changing the pointer requires an application restart. Startup fails readiness
 if the pointer, release allowlist, bundle digests, dependency versions, or model

@@ -102,7 +102,10 @@ def test_load_artifact_bundle_accepts_matching_artifacts(tmp_path: Path) -> None
 
 def test_load_artifact_bundle_lists_missing_files(tmp_path: Path) -> None:
     manifest = write_manifest(tmp_path)
-    with pytest.raises(ArtifactValidationError, match="model.pkl.*preprocessor.pkl"):
+    with pytest.raises(
+        ArtifactValidationError,
+        match=r"model.pkl.*preprocessor.pkl.*artifacts pull --group legacy",
+    ):
         load_artifact_bundle(tmp_path, manifest_path=manifest)
 
 

@@ -12,6 +12,9 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 DEFAULT_DISTRIBUTION_LOCK = Path("configs/artifacts/hf_distribution_v1.lock.json")
 DEFAULT_LEGACY_MANIFEST = Path("configs/artifacts/legacy_v1.json")
 SELECTED_MANIFEST = Path("models/selected_v1/manifest.json")
+EXPECTED_DISTRIBUTION_LOCK_SHA256 = (
+    "1cdfce61b7e251ac839c2bc834c98a45417dd11837d1b282a4bfd0c0a2625272"
+)
 
 
 class ArtifactContractError(RuntimeError):

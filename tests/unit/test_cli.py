@@ -36,6 +36,7 @@ def test_doctor_fails_with_actionable_missing_artifacts() -> None:
 
     assert result.exit_code == 1
     assert "model.pkl" in result.output
+    assert "credit-risk artifacts pull --group legacy" in result.output
     assert "preprocessor.pkl" in result.output
 
 

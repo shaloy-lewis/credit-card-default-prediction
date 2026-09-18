@@ -6,7 +6,7 @@ import pytest
 
 from credit_risk.pipeline.prediction_pipeline import CustomData, PredictPipeline
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.artifact]
 
 
 def test_committed_artifacts_load_and_preserve_documented_prediction(

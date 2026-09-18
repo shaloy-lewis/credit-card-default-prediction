@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted for implementation after Phase 8.
+Implemented after the Phase 8 prerequisite layer.
 
 ## Context
 
@@ -35,6 +35,12 @@ test evidence. Those references and bytes cannot be rewritten.
 - MLflow, PostgreSQL, and MinIO retain their separate registration, promotion,
   deployment, and rollback roles.
 - Git history is not rewritten. Only future tracking of the three binaries ends.
+
+The reviewed public source is
+`ShaloyL/credit-card-default-prediction` at full commit
+`f73ca4ee7a2c2d2ea51741e75fccf66ae7a4a640`. The repository identifier and
+revision are frozen in the Git-tracked distribution lock; no environment
+override can replace them.
 
 ## Consequences
 

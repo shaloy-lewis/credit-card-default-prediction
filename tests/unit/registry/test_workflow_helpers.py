@@ -17,6 +17,7 @@ from credit_risk.registry.contracts import (
 )
 
 REPOSITORY_ROOT = Path(__file__).parents[3]
+pytestmark = pytest.mark.artifact
 
 
 def _approval(action: str = "promote") -> ReleaseApproval:

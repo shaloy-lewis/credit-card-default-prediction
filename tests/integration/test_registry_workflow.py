@@ -11,6 +11,7 @@ from credit_risk.registry import workflow
 from credit_risk.registry.contracts import EXPECTED_CONFIG_SHA256, REQUIRED_CHECKS
 
 REPOSITORY_ROOT = Path(__file__).parents[2]
+pytestmark = [pytest.mark.integration, pytest.mark.artifact]
 
 
 def _copy_repository_contract(tmp_path: Path) -> Path:

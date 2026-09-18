@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+import pytest
+
 from credit_risk.platform.contracts import EXPECTED_CONFIG_SHA256, load_platform_config
 
 REPOSITORY_ROOT = Path(__file__).parents[2]
@@ -59,6 +61,7 @@ def test_platform_images_and_environment_do_not_leak_runtime_state() -> None:
     assert 'name = "gitpython"\nversion = "3.1.59"' in lockfile
 
 
+@pytest.mark.artifact
 def test_phase7_and_selected_bundle_sources_remain_byte_identical() -> None:
     config = load_platform_config(REPOSITORY_ROOT / "configs/platform/phase8_v1.json")
     for reference in config.source_evidence.values():

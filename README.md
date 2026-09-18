@@ -72,6 +72,8 @@ The approved scope and delivery evidence are documented in:
 - [Phase 7 evidence manifest](reports/registry/phase7_v1/evidence-manifest.json)
 - [Phase 8 persistent-platform decision](docs/adr/0006-persistent-local-mlops-platform.md)
 - [Phase 8 platform protocol](docs/platform/phase8-protocol.md)
+- [External artifact-distribution decision](docs/adr/0007-external-artifact-distribution.md)
+- [Artifact storage and recovery guide](docs/artifacts/storage-architecture.md)
 
 ## Current capabilities
 
@@ -135,6 +137,9 @@ The approved scope and delivery evidence are documented in:
   model objects, three persistent named volumes, exact Phase 7 alias/bootstrap
   reconstruction, and API/UI health checks. Bootstrap and restart verification
   perform zero fits and preserve the selected-model prediction `0.190382`.
+- Public, immutable Hugging Face distribution for the exact reviewed CatBoost
+  binary and opt-in legacy pickles. Git-tracked manifests remain the trust
+  authority; application loaders remain local-only and network-free.
 
 G3 is `closed_with_conditions`. Phase 7 completes the registry, scanning, and
 rollback slice; G4 remains open for robustness stress tests, monitoring, and
@@ -169,6 +174,24 @@ will not be used as evidence of real model performance.
 ```bash
 uv sync --locked --all-extras --dev
 ```
+
+### Materialise reviewed model artifacts
+
+Fresh clones intentionally contain no production model binaries. Retrieve and
+verify the selected model from the full immutable Hugging Face revision before
+running inference:
+
+```bash
+uv sync --locked --extra artifacts
+uv run credit-risk artifacts pull --group selected
+uv run credit-risk artifacts verify --group selected
+```
+
+The destination remains `models/selected_v1/model.cbm`, so the reviewed loader,
+governance, release, registry, and platform contracts are unchanged. A valid
+existing file is reused without network access or rewriting. `--offline` uses
+only an already populated revision-aware cache. Pulling never deserializes a
+model.
 
 ### Reproduce the governed data snapshot
 
@@ -361,20 +384,25 @@ environment mapping as authoritative; only `None` enables ambient discovery.
 ### Check the retired compatibility artifacts
 
 ```bash
+uv run credit-risk artifacts pull --group legacy
+uv run credit-risk artifacts verify --group legacy
 uv run credit-risk doctor
 ```
 
-`doctor` loads the retained legacy model and preprocessor and validates their shared feature
-contract plus the outlier-threshold schema. Because pickle deserialization can
-execute code, use this command only with trusted project artifacts.
+Legacy retrieval is always explicit and is never part of API startup. `doctor`
+authenticates the exact size and SHA-256 of all three legacy files before loading
+the model or preprocessor, then validates their shared feature contract and the
+outlier-threshold schema. Pickle can execute code; public hosting is not a trust
+guarantee, so use only bytes authenticated by the Git-tracked legacy manifest.
 
 ### Run quality checks
 
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
-uv run pytest -m "not training" --cov --cov-report=term-missing
+uv run mypy src/credit_risk/artifacts.py src/credit_risk/artifact_distribution src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
+uv run pytest -m "not training and not artifact" --cov --cov-report=term-missing
+uv run pytest tests/unit/artifact_distribution --cov=credit_risk.artifact_distribution --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/governance tests/unit/test_governance_cli.py tests/integration/test_phase5_protocol.py tests/integration/test_phase5_evidence.py tests/integration/test_governance_explanation_smoke.py --cov=credit_risk.governance --cov-branch --cov-fail-under=90
@@ -387,6 +415,7 @@ uv run pytest tests/unit/platform tests/unit/test_platform_cli.py tests/integrat
 ### Run the API
 
 ```bash
+uv run credit-risk artifacts pull --group selected
 uv run uvicorn api:app --host 0.0.0.0 --port 8080
 ```
 
@@ -410,9 +439,11 @@ uv run streamlit run app.py
 docker compose up --build
 ```
 
-The API is exposed at `http://localhost:8080`. The runtime image contains only
-`models/selected_v1/manifest.json` and `model.cbm`; legacy artifacts, generated
-data, reports, training dependencies, and experiment state are excluded.
+The API is exposed at `http://localhost:8080`. A dedicated build stage retrieves
+and verifies the selected model anonymously from the pinned Hugging Face commit.
+The final offline runtime contains only `models/selected_v1/manifest.json` and
+`model.cbm`; it contains no Hugging Face client, cache, token, legacy artifacts,
+generated data, reports, training dependencies, or experiment state.
 
 To run the API against a previously materialised Phase 7 deployment pointer,
 use the registry override; the deployment directory is mounted read-only and
@@ -444,7 +475,8 @@ released model contract.
 .
 ├── api.py                     # Governed selected-model FastAPI entrypoint
 ├── app.py                     # Local Streamlit demonstration
-├── artifacts/                 # Legacy compatibility artifacts
+├── artifacts/                 # Tracked legacy metadata; ignored opt-in binaries
+├── configs/artifacts/         # HF revision lock and legacy trust manifest
 ├── configs/data/              # Source manifest, split policy, and reviewed lock
 ├── configs/modeling/          # Feature and scientific-baseline contracts
 ├── configs/governance/        # Frozen validation-only governance contract
@@ -456,7 +488,7 @@ released model contract.
 ├── docs/                      # Product, roadmap, governance, and ADR evidence
 │   └── modeling/evidence/     # Non-importable archive of the consumed evaluator
 ├── experiment/                # Ignored MLflow, OOF, and exploratory evidence
-├── models/selected_v1/        # Digest-protected released model bundle
+├── models/selected_v1/        # Tracked manifest plus ignored materialised CBM
 ├── reports/modeling/          # Reviewed aggregate experiment evidence
 ├── reports/governance/        # Reviewed aggregate governance evidence
 ├── reports/inference/         # Authenticated aggregate inference evidence
@@ -471,8 +503,8 @@ released model contract.
 └── docker-compose.registry.yml
 ```
 
-Generated data, logs, environments, caches, and experiment outputs are excluded
-from version control.
+Generated data, logs, environments, caches, experiment outputs, and the three
+externally distributed binaries are excluded from version control.
 
 ## Delivery milestones
 

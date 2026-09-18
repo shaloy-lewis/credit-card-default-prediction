@@ -19,6 +19,7 @@ from credit_risk.registry.deployment import (
 )
 
 REPOSITORY_ROOT = Path(__file__).parents[3]
+pytestmark = pytest.mark.artifact
 
 
 def _deployment(tmp_path: Path) -> tuple[Path, Path]:

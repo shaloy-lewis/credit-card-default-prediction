@@ -10,7 +10,8 @@
 | Local ignored paths | Materialised model files, UCI data products, caches, quarantine, MLflow, and deployment state |
 | MLflow/PostgreSQL/MinIO | Local release registration, aliases, promotion, deployment, and rollback |
 
-Hugging Face is not a validation authority. The selected model is accepted only
+Hugging Face repository `ShaloyL/credit-card-default-prediction` is pinned to
+immutable commit `f73ca4ee7a2c2d2ea51741e75fccf66ae7a4a640`. Hugging Face is not a validation authority. The selected model is accepted only
 when its bytes match `models/selected_v1/manifest.json`; legacy files are
 accepted only when they match `configs/artifacts/legacy_v1.json`.
 
@@ -63,8 +64,9 @@ uv run credit-risk artifacts publish \
 
 Publication verifies local bytes first, refuses conflicting remote paths,
 uploads no training data, verifies the returned full commit anonymously, and
-writes an ignored candidate lock for review. The reviewed lock is copied into
-`configs/artifacts/` only after that external verification succeeds.
+writes an ignored candidate lock for review. The reviewed lock at
+`configs/artifacts/hf_distribution_v1.lock.json` was committed only after that
+external verification succeeded.
 
 There is no force option, no token command-line argument, and no mutable `main`
 revision in the retrieval contract.

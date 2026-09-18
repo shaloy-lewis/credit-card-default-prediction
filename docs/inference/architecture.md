@@ -13,10 +13,15 @@ strict JSON request ────────────────────
                                                    │
 Streamlit API client ──────────────────────────────┘
 
-selected_v1 manifest + model ──> digest/dependency validation ──> one loaded estimator
+explicit pinned artifact pull ──> selected_v1 manifest + model
+                                           │
+                                           v
+                            digest/dependency validation ──> one loaded estimator
 ```
 
-The engine validates the reviewed manifest/model digests and exact serving
+The local bundle is explicitly materialised from the immutable public Hugging
+Face revision before startup or baked into the image during its build. The
+engine itself is network-free and validates the reviewed manifest/model digests and exact serving
 dependency versions before deserializing the estimator. It accepts the 19
 ordered operational predictors, performs vectorised prediction and CatBoost
 native SHAP calculation, verifies class order, probability bounds, output
