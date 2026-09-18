@@ -58,6 +58,22 @@ def test_pull_normalizes_expected_failure(monkeypatch) -> None:
     assert "Traceback" not in result.output
 
 
+def test_pull_reports_filesystem_failure_without_traceback(monkeypatch) -> None:
+    def fail(**_) -> ArtifactOperationResult:
+        raise ArtifactDistributionError(
+            "Unable to materialize artifact 'models/selected_v1/model.cbm': permission denied"
+        )
+
+    monkeypatch.setattr("credit_risk.artifact_distribution.cli.pull_artifacts", fail)
+
+    result = runner.invoke(artifact_app, ["pull"])
+
+    assert result.exit_code == 1
+    assert "Unable to materialize artifact" in result.output
+    assert "permission denied" in result.output
+    assert "Traceback" not in result.output
+
+
 def test_verify_normalizes_expected_failure(monkeypatch) -> None:
     def fail(**_) -> ArtifactOperationResult:
         raise ArtifactDistributionError("reviewed bytes are missing")

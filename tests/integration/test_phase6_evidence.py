@@ -6,6 +6,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
+
 from credit_risk.inference.evidence import verify_inference_evidence
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -17,6 +19,7 @@ EXPECTED_DIGESTS = {
 }
 
 
+@pytest.mark.artifact
 def test_published_phase6_files_match_reviewed_digests() -> None:
     assert {path.name for path in EVIDENCE_ROOT.iterdir()} == set(EXPECTED_DIGESTS)
     for name, expected in EXPECTED_DIGESTS.items():

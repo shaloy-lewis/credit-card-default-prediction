@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from typer.testing import CliRunner
 
 from credit_risk.cli import app
+from credit_risk.platform import bootstrap as platform_workflow
 from credit_risk.platform import cli
 from credit_risk.platform.bootstrap import PlatformBootstrapError
 
@@ -48,7 +49,7 @@ def test_platform_command_returns_controlled_error(monkeypatch) -> None:
     assert "Traceback" not in result.output
 
 
-def test_platform_commands_normalize_missing_and_invalid_paths(tmp_path: Path) -> None:
+def test_platform_commands_normalize_missing_and_invalid_paths(tmp_path: Path, monkeypatch) -> None:
     missing_config = runner.invoke(
         app,
         ["platform", "verify", "--config", str(tmp_path / "missing.json")],
@@ -67,6 +68,7 @@ def test_platform_commands_normalize_missing_and_invalid_paths(tmp_path: Path) -
 
     deployment_file = tmp_path / "deployment-file"
     deployment_file.write_text("not a directory", encoding="utf-8")
+    monkeypatch.setattr(platform_workflow, "_validate_bundle", lambda *_: None)
     invalid_deployment = runner.invoke(
         app,
         ["platform", "bootstrap", "--deployment-root", str(deployment_file)],

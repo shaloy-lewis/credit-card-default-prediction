@@ -6,9 +6,11 @@ from pathlib import Path
 
 import pytest
 
+import credit_risk.artifact_distribution.workflow as workflow
 from credit_risk.artifact_distribution.transport import ArtifactTransportError
 from credit_risk.artifact_distribution.workflow import (
     ArtifactDistributionError,
+    ArtifactGroup,
     publish_artifacts,
     pull_artifacts,
     verify_artifacts,
@@ -213,6 +215,87 @@ def test_pull_normalizes_transport_failure(
         )
 
 
+def test_pull_normalizes_partial_cleanup_failure(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, config, payloads = distribution_repository
+
+    def fail(*_: object) -> None:
+        raise PermissionError("partial cleanup denied")
+
+    monkeypatch.setattr(workflow, "_quarantine_partials", fail)
+
+    with pytest.raises(ArtifactDistributionError, match="Unable to prepare artifact destination"):
+        pull_artifacts(
+            config_path=config,
+            repository_root=root,
+            transport=FakeTransport(_remote_files(root, payloads)),
+        )
+
+
+@pytest.mark.parametrize(
+    "failure_point", ["mkdir", "mkstemp", "copy", "fsync", "replace", "cleanup"]
+)
+def test_pull_normalizes_materialization_filesystem_failures(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+    monkeypatch: pytest.MonkeyPatch,
+    failure_point: str,
+) -> None:
+    root, config, payloads = distribution_repository
+    files = _remote_files(root, payloads)
+
+    if failure_point == "mkdir":
+        original_mkdir = Path.mkdir
+
+        def fail_mkdir(path: Path, *args: object, **kwargs: object) -> None:
+            if path == root / "models/selected_v1":
+                raise PermissionError("directory creation denied")
+            original_mkdir(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "mkdir", fail_mkdir)
+    elif failure_point == "mkstemp":
+        monkeypatch.setattr(
+            workflow.tempfile,
+            "mkstemp",
+            lambda **_: (_ for _ in ()).throw(PermissionError("staging denied")),
+        )
+    elif failure_point == "copy":
+        monkeypatch.setattr(
+            workflow.shutil,
+            "copyfileobj",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("copy failed")),
+        )
+    elif failure_point == "fsync":
+        monkeypatch.setattr(
+            workflow.os,
+            "fsync",
+            lambda *_: (_ for _ in ()).throw(OSError("fsync failed")),
+        )
+    elif failure_point == "replace":
+        monkeypatch.setattr(
+            workflow.os,
+            "replace",
+            lambda *_: (_ for _ in ()).throw(OSError("replace failed")),
+        )
+    else:
+        original_unlink = Path.unlink
+
+        def fail_cleanup(path: Path, *args: object, **kwargs: object) -> None:
+            if path.name.endswith(".partial"):
+                raise PermissionError("cleanup denied")
+            original_unlink(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "unlink", fail_cleanup)
+
+    with pytest.raises(ArtifactDistributionError, match="Unable to materialize artifact"):
+        pull_artifacts(
+            config_path=config,
+            repository_root=root,
+            transport=FakeTransport(files),
+        )
+
+
 def test_pull_accepts_hugging_face_cache_symlink(
     distribution_repository: tuple[Path, Path, dict[str, bytes]],
 ) -> None:
@@ -266,6 +349,91 @@ def test_verify_rejects_extra_file(
     (root / "models/selected_v1/foreign.bin").write_bytes(b"foreign")
     with pytest.raises(ArtifactDistributionError, match="allowlist"):
         verify_artifacts(config_path=config, repository_root=root)
+
+
+@pytest.mark.parametrize("group", ["legacy", "all"])
+@pytest.mark.parametrize("mutation", ["changed", "wrong_size"])
+def test_verify_authenticates_legacy_threshold_bytes(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+    group: ArtifactGroup,
+    mutation: str,
+) -> None:
+    root, config, payloads = distribution_repository
+    pull_artifacts(
+        config_path=config,
+        group="all",
+        repository_root=root,
+        transport=FakeTransport(_remote_files(root, payloads)),
+    )
+    threshold = root / "artifacts/outlier_threshold.json"
+    original = threshold.read_bytes()
+    if mutation == "changed":
+        threshold.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+    else:
+        threshold.write_bytes(original + b"x")
+
+    with pytest.raises(ArtifactDistributionError, match="reviewed manifest"):
+        verify_artifacts(config_path=config, group=group, repository_root=root)
+
+
+@pytest.mark.parametrize("group", ["legacy", "all"])
+def test_verify_rejects_missing_legacy_threshold(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+    group: ArtifactGroup,
+) -> None:
+    root, config, payloads = distribution_repository
+    pull_artifacts(
+        config_path=config,
+        group="all",
+        repository_root=root,
+        transport=FakeTransport(_remote_files(root, payloads)),
+    )
+    (root / "artifacts/outlier_threshold.json").unlink()
+
+    with pytest.raises(ArtifactDistributionError, match="allowlist"):
+        verify_artifacts(config_path=config, group=group, repository_root=root)
+
+
+@pytest.mark.parametrize("group", ["legacy", "all"])
+def test_verify_rejects_symlinked_legacy_threshold(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+    group: ArtifactGroup,
+) -> None:
+    root, config, payloads = distribution_repository
+    pull_artifacts(
+        config_path=config,
+        group="all",
+        repository_root=root,
+        transport=FakeTransport(_remote_files(root, payloads)),
+    )
+    threshold = root / "artifacts/outlier_threshold.json"
+    external = root / "threshold-copy.json"
+    external.write_bytes(threshold.read_bytes())
+    threshold.unlink()
+    try:
+        threshold.symlink_to(external)
+    except OSError:
+        pytest.skip("symlink creation is unavailable")
+
+    with pytest.raises(ArtifactDistributionError, match="allowlist"):
+        verify_artifacts(config_path=config, group=group, repository_root=root)
+
+
+def test_verify_legacy_counts_only_distribution_records(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+) -> None:
+    root, config, payloads = distribution_repository
+    pull_artifacts(
+        config_path=config,
+        group="all",
+        repository_root=root,
+        transport=FakeTransport(_remote_files(root, payloads)),
+    )
+
+    result = verify_artifacts(config_path=config, group="legacy", repository_root=root)
+
+    assert len(result.reused) == 2
+    assert root / "artifacts/outlier_threshold.json" not in result.reused
 
 
 def test_selected_only_lock_rejects_legacy_request(
@@ -332,16 +500,19 @@ def test_publish_refuses_to_replace_candidate_lock(
     output = root / "experiment/artifacts/candidate.json"
     output.parent.mkdir(parents=True)
     output.write_text("preserve", encoding="utf-8")
+    transport = FakeTransport(_remote_files(root, payloads))
 
     with pytest.raises(ArtifactDistributionError, match="overwrite"):
         publish_artifacts(
             repo_id="owner/repository",
             source_root=root,
             lock_output=output.relative_to(root),
-            transport=FakeTransport(_remote_files(root, payloads)),
+            transport=transport,
         )
 
     assert output.read_text(encoding="utf-8") == "preserve"
+    assert transport.published is None
+    assert transport.downloads == []
 
 
 def test_publish_normalizes_transport_and_preflight_failures(
@@ -365,11 +536,118 @@ def test_publish_rejects_absolute_lock_output(
 ) -> None:
     root, _, payloads = distribution_repository
     (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
+    transport = FakeTransport(_remote_files(root, payloads))
 
     with pytest.raises(ArtifactDistributionError, match="repository-relative"):
         publish_artifacts(
             repo_id="owner/repository",
             source_root=root,
             lock_output=root / "candidate.json",
-            transport=FakeTransport(_remote_files(root, payloads)),
+            transport=transport,
         )
+
+    assert transport.published is None
+    assert transport.downloads == []
+
+
+@pytest.mark.parametrize(
+    ("lock_output", "blocked_parent"),
+    [("../candidate.json", False), ("blocked/candidate.json", True)],
+)
+def test_publish_preflights_unsafe_or_unwritable_output_before_remote_mutation(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+    lock_output: str,
+    blocked_parent: bool,
+) -> None:
+    root, _, payloads = distribution_repository
+    (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
+    if blocked_parent:
+        (root / "blocked").write_text("not a directory", encoding="utf-8")
+    transport = FakeTransport(_remote_files(root, payloads))
+
+    with pytest.raises(ArtifactDistributionError, match="preflight"):
+        publish_artifacts(
+            repo_id="owner/repository",
+            source_root=root,
+            lock_output=lock_output,
+            transport=transport,
+        )
+
+    assert transport.published is None
+    assert transport.downloads == []
+
+
+def test_publish_probes_candidate_parent_before_remote_mutation(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, _, payloads = distribution_repository
+    (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
+    transport = FakeTransport(_remote_files(root, payloads))
+    monkeypatch.setattr(
+        workflow.tempfile,
+        "mkstemp",
+        lambda **_: (_ for _ in ()).throw(PermissionError("candidate directory is read-only")),
+    )
+
+    with pytest.raises(ArtifactDistributionError, match="preflight"):
+        publish_artifacts(
+            repo_id="owner/repository",
+            source_root=root,
+            lock_output="experiment/artifacts/candidate.json",
+            transport=transport,
+        )
+
+    assert transport.published is None
+    assert transport.downloads == []
+
+
+def test_publish_rejects_symlinked_candidate_before_remote_mutation(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+) -> None:
+    root, _, payloads = distribution_repository
+    (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
+    output = root / "experiment/artifacts/candidate.json"
+    output.parent.mkdir(parents=True)
+    try:
+        output.symlink_to(root / "future-candidate.json")
+    except OSError:
+        pytest.skip("symlink creation is unavailable")
+    transport = FakeTransport(_remote_files(root, payloads))
+
+    with pytest.raises(ArtifactDistributionError, match="symlinked component"):
+        publish_artifacts(
+            repo_id="owner/repository",
+            source_root=root,
+            lock_output=output.relative_to(root),
+            transport=transport,
+        )
+
+    assert transport.published is None
+    assert transport.downloads == []
+
+
+def test_publish_rechecks_candidate_destination_without_overwrite(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+) -> None:
+    root, _, payloads = distribution_repository
+    (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
+    output = root / "experiment/artifacts/candidate.json"
+
+    class RacingTransport(FakeTransport):
+        def publish(self, *, repo_id: str, files: dict[str, Path], commit_message: str) -> str:
+            revision = super().publish(repo_id=repo_id, files=files, commit_message=commit_message)
+            output.write_text("concurrent", encoding="utf-8")
+            return revision
+
+    transport = RacingTransport(_remote_files(root, payloads))
+
+    with pytest.raises(ArtifactDistributionError, match="changed during publication"):
+        publish_artifacts(
+            repo_id="owner/repository",
+            source_root=root,
+            lock_output=output.relative_to(root),
+            transport=transport,
+        )
+
+    assert output.read_text(encoding="utf-8") == "concurrent"

@@ -6,6 +6,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPOSITORY_ROOT / "configs" / "releases" / "release_a_v1.json"
 
@@ -13,6 +15,7 @@ CONFIG_PATH = REPOSITORY_ROOT / "configs" / "releases" / "release_a_v1.json"
 EXPECTED_CONFIG_SHA256 = "9dc78bbe1ee7c116e6c0362987d935b7258e720139943bd0203efcc5fb0b3920"
 
 
+@pytest.mark.artifact
 def test_release_a_protocol_binds_reviewed_evidence_without_computation() -> None:
     content = CONFIG_PATH.read_bytes()
     assert hashlib.sha256(content).hexdigest() == EXPECTED_CONFIG_SHA256

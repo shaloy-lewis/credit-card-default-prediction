@@ -17,6 +17,8 @@ from credit_risk.release.contracts import load_release_config
 from credit_risk.release.workflow import ReleaseWorkflowError
 from tests.unit.release.helpers import copy_release_repository, fake_data_result
 
+pytestmark = pytest.mark.artifact
+
 
 def _clean_git(root: Path) -> GitEvidence:
     return GitEvidence(

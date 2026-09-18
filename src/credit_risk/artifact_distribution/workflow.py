@@ -91,7 +91,12 @@ def pull_artifacts(
                 f"Existing artifact {record.local_path!r} failed validation and was quarantined; "
                 "rerun the pull command to retrieve the reviewed bytes."
             )
-        _quarantine_partials(repository, destination, record.artifact_id)
+        try:
+            _quarantine_partials(repository, destination, record.artifact_id)
+        except (ArtifactContractError, OSError) as error:
+            raise ArtifactDistributionError(
+                f"Unable to prepare artifact destination {record.local_path!r}: {error}"
+            ) from error
         try:
             downloaded = client.download(
                 repo_id=config.repository.repo_id,
@@ -108,7 +113,14 @@ def pull_artifacts(
                 f"Downloaded artifact {record.remote_path!r} does not match its Git-tracked "
                 "size and SHA-256 contract."
             )
-        _atomic_materialize(downloaded, destination, record, expected)
+        try:
+            _atomic_materialize(downloaded, destination, record, expected)
+        except ArtifactDistributionError:
+            raise
+        except OSError as error:
+            raise ArtifactDistributionError(
+                f"Unable to materialize artifact {record.local_path!r}: {error}"
+            ) from error
         materialized.append(destination)
     verify_artifacts(
         config_path=config_path,
@@ -148,6 +160,7 @@ def verify_artifacts(
             {"model.pkl", "preprocessor.pkl", "outlier_threshold.json"},
             "legacy bundle",
         )
+        _verify_legacy_manifest_bundle(repository)
     return ArtifactOperationResult(group=group, materialized=(), reused=tuple(verified))
 
 
@@ -168,6 +181,12 @@ def publish_artifacts(
     except (ArtifactContractError, OSError, ValueError) as error:
         raise ArtifactDistributionError(
             f"Artifact publication preflight failed: {error}"
+        ) from error
+    try:
+        output = _preflight_candidate_lock_output(repository, lock_output)
+    except (ArtifactContractError, OSError, ValueError) as error:
+        raise ArtifactDistributionError(
+            f"Candidate lock output preflight failed: {error}"
         ) from error
     files: dict[str, Path] = {}
     expected_digests: dict[str, str] = {}
@@ -227,14 +246,24 @@ def publish_artifacts(
             raise ArtifactDistributionError(
                 f"Published artifact {record.remote_path!r} failed anonymous verification."
             )
-    output = Path(lock_output)
-    if output.is_absolute():
-        raise ArtifactDistributionError("Candidate lock output must be repository-relative.")
-    output = safe_repository_path(repository, output, must_exist=False)
-    if output.exists():
-        raise ArtifactDistributionError("Refusing to overwrite an existing candidate lock.")
-    output.parent.mkdir(parents=True, exist_ok=True)
-    _atomic_write(output, _json_bytes(lock.model_dump(mode="json")))
+    try:
+        rechecked = safe_repository_path(
+            repository, output.relative_to(repository), must_exist=False
+        )
+    except (ArtifactContractError, OSError, ValueError) as error:
+        raise ArtifactDistributionError(
+            f"Candidate lock destination became unsafe during publication: {error}"
+        ) from error
+    if rechecked != output or output.exists() or output.is_symlink():
+        raise ArtifactDistributionError(
+            "Candidate lock destination changed during publication; refusing to overwrite it."
+        )
+    try:
+        _atomic_write(output, _json_bytes(lock.model_dump(mode="json")))
+    except OSError as error:
+        raise ArtifactDistributionError(
+            f"Unable to publish candidate lock {output.relative_to(repository)!s}: {error}"
+        ) from error
     return ArtifactOperationResult(
         group="all" if include_legacy else "selected",
         materialized=(output,),
@@ -376,6 +405,59 @@ def _atomic_materialize(
             )
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def _preflight_candidate_lock_output(repository: Path, lock_output: str | Path) -> Path:
+    relative_output = Path(lock_output)
+    if relative_output.is_absolute():
+        raise ArtifactDistributionError("Candidate lock output must be repository-relative.")
+    output = safe_repository_path(repository, relative_output, must_exist=False)
+    _reject_candidate_symlink_components(repository, relative_output)
+    if output.exists():
+        raise ArtifactDistributionError("Refusing to overwrite an existing candidate lock.")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    _reject_candidate_symlink_components(repository, relative_output)
+    relative_parent = output.parent.relative_to(repository)
+    safe_repository_path(repository, relative_parent, must_exist=True)
+    descriptor, probe_name = tempfile.mkstemp(
+        prefix=f".{output.name}.", suffix=".preflight", dir=output.parent
+    )
+    probe = Path(probe_name)
+    try:
+        os.close(descriptor)
+    finally:
+        probe.unlink(missing_ok=True)
+    return output
+
+
+def _reject_candidate_symlink_components(repository: Path, relative_output: Path) -> None:
+    current = repository
+    for component in relative_output.parts:
+        current /= component
+        if current.is_symlink():
+            raise ArtifactDistributionError(
+                f"Candidate lock output contains a symlinked component: {current}"
+            )
+
+
+def _verify_legacy_manifest_bundle(repository: Path) -> None:
+    try:
+        manifest_path = safe_repository_path(repository, DEFAULT_LEGACY_MANIFEST, must_exist=True)
+        manifest = load_legacy_manifest(manifest_path)
+        for filename, contract in manifest.files.items():
+            artifact_path = safe_repository_path(
+                repository, Path("artifacts") / filename, must_exist=True
+            )
+            if not _matches(artifact_path, contract.size_bytes, contract.sha256):
+                raise ArtifactDistributionError(
+                    f"Legacy artifact {filename!r} does not match its reviewed manifest."
+                )
+    except ArtifactDistributionError:
+        raise
+    except (ArtifactContractError, OSError, ValueError) as error:
+        raise ArtifactDistributionError(
+            f"Legacy bundle manifest verification failed: {error}"
+        ) from error
 
 
 def _atomic_write(path: Path, payload: bytes) -> None:

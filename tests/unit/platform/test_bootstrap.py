@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -24,6 +26,75 @@ def _unlocked(*_args: Any, **_kwargs: Any) -> Iterator[None]:
 @pytest.fixture(autouse=True)
 def _avoid_real_postgres(monkeypatch) -> None:
     monkeypatch.setattr(workflow, "_postgres_writer_lock", _unlocked)
+
+
+@pytest.fixture(autouse=True)
+def _use_synthetic_default_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep platform unit tests independent from the external production binary."""
+
+    reviewed = load_platform_config()
+    model_bytes = b"synthetic-phase8-unit-model"
+    model_sha256 = hashlib.sha256(model_bytes).hexdigest()
+    manifest_payload = json.loads(Path(reviewed.bundle.manifest_path).read_bytes())
+    manifest_payload["model_sha256"] = model_sha256
+    manifest_bytes = (
+        json.dumps(manifest_payload, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    bundle = tmp_path / "selected_v1"
+    bundle.mkdir()
+    (bundle / "manifest.json").write_bytes(manifest_bytes)
+    (bundle / "model.cbm").write_bytes(model_bytes)
+    synthetic = reviewed.model_copy(
+        update={
+            "bundle": reviewed.bundle.model_copy(
+                update={
+                    "manifest_sha256": manifest_sha256,
+                    "model_sha256": model_sha256,
+                }
+            )
+        }
+    )
+    original_load_context = workflow._load_context
+
+    class SyntheticActiveDeployment:
+        def __init__(self, **values: Any) -> None:
+            self.values = values
+            for name, value in values.items():
+                setattr(self, name, value)
+
+        def model_dump(self, *, mode: str) -> dict[str, Any]:
+            assert mode == "json"
+            return dict(self.values)
+
+    def load_synthetic_active(deployment_root: str | Path) -> SimpleNamespace:
+        try:
+            payload = json.loads((Path(deployment_root) / "active.json").read_text())
+            if not isinstance(payload, dict):
+                raise ValueError("pointer must be an object")
+            return SimpleNamespace(**payload)
+        except (OSError, ValueError, TypeError) as error:
+            raise workflow.DeploymentResolutionError(
+                f"Invalid synthetic active deployment pointer: {error}"
+            ) from error
+
+    def load_context(
+        config_path: str | Path, bundle_root: str | Path, deployment_root: str | Path
+    ) -> workflow._Context:
+        if Path(config_path) == Path("configs/platform/phase8_v1.json") and Path(
+            bundle_root
+        ) == Path("models/selected_v1"):
+            config_file = Path(config_path).resolve(strict=True)
+            project = config_file.parents[2]
+            workflow._validate_sources(project, reviewed)
+            deployment = workflow._validate_deployment_root(deployment_root)
+            workflow._validate_bundle(bundle, synthetic)
+            return workflow._Context(synthetic, config_file, project, bundle, deployment)
+        return original_load_context(config_path, bundle_root, deployment_root)
+
+    monkeypatch.setattr(workflow, "_load_context", load_context)
+    monkeypatch.setattr(workflow, "ActiveDeployment", SyntheticActiveDeployment)
+    monkeypatch.setattr(workflow, "load_active_deployment", load_synthetic_active)
 
 
 class MissingObject(Exception):

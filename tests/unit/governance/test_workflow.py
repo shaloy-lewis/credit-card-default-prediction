@@ -504,6 +504,7 @@ def test_development_boundary_rejects_test_rows_and_misaligned_population() -> N
         workflow._validate_development_boundary(governed, config)
 
 
+@pytest.mark.artifact
 def test_lineage_and_repository_evidence_are_strict() -> None:
     config = workflow.load_governance_config()
     governed = _governed(config)
