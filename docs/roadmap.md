@@ -30,7 +30,7 @@
 | 6: Governance and explanation | 10 h | Correct SHAP feature mapping; additivity tests; reason categories; demographic exclusion/invariance review; validation-only subgroup report; model card; risk register | Corrected evidence is digest-protected; two predeclared education triggers have documented conditions; G3 is closed with conditions | Responsible AI and model-risk ownership |
 | 7: Batch and API inference — complete | 10 h | Versioned model bundle; idempotent monthly scorer; `/v1` API; validated contracts; model/trace metadata; structured safe logs | Authenticated synthetic evidence proves exact offline/batch parity, API tolerance, exact policy/reason parity, and no-rewrite reuse | Production inference and parity |
 | 8: Registry, CI, and rollback — complete | 10 h | MLflow registry; candidate/champion workflow; promotion checklist; unit/integration/contract/model tests; GitHub Actions; image scan | Authenticated evidence proves the unchanged model can be registered, promoted, deployed locally, and rolled back without replacing files by hand | Controlled software and model delivery |
-| 9: Local MLOps platform | 10 h | Docker Compose stack for API, UI, MLflow, PostgreSQL, and MinIO; persistent volumes; health checks; one-command startup | A fresh machine can start the stack and reproduce the demo using documented commands | Platform architecture without paid infrastructure |
+| 9: Local MLOps platform — in progress | 10 h | Docker Compose stack for API, UI, MLflow, PostgreSQL, and MinIO; persistent volumes; health checks; one-command startup | Prerequisite stack, restart persistence, and parity are implemented; reviewed aggregate Phase 8 evidence remains to be published | Platform architecture without paid infrastructure |
 | 10: Monitoring and incidents | 10 h | Batch manifest; data and prediction drift report; delayed-label evaluation design; service metrics; runbooks; schema and drift incident drills | Injected failures are detected and lead to an actionable investigation or rollback path | Operability and failure management |
 | 11: Impact and communication | 10 h | Intervention experiment design; MDE/sample-size workbook or script; architecture diagram; executive case study; README rewrite; demo script | Model lift is not described as causal impact, and a reviewer can understand the system quickly | Product experimentation and stakeholder communication |
 | 12: Hardening and interview packet | 10 h | Clean-machine rehearsal; reproducibility audit; security/privacy checklist; 4–6 minute video; system-design walkthrough; resume bullets using measured results | CI is green, docs match behaviour, limitations are prominent, and the complete demo is repeatable | End-to-end ownership and technical leadership |
@@ -99,8 +99,9 @@ This release creates the core hybrid DS/MLE story.
 | Delivery control | GitHub Actions, container scanning, manual promotion gate | Reproducible quality checks and controlled release |
 
 PostgreSQL and MinIO are introduced in Week 9, after the scientific pipeline is
-stable. Earlier weeks may use a local MLflow file or SQLite backend so platform
-work does not block modelling.
+stable. The prerequisite implementation now re-registers—rather than migrates—
+the unchanged Phase 7 release into the persistent services. Earlier SQLite
+evidence remains immutable and independently verifiable.
 
 ## Azure and Databricks interview mapping
 

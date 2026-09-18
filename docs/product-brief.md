@@ -208,6 +208,12 @@ runbook portions of G4 using unchanged model bytes. Robustness/population-shift
 stress evidence, monitoring, incident exercises, and service-level objectives
 remain open; therefore G4 and Release B are not yet closed.
 
+Phase 8's prerequisite implementation replaces the ephemeral registry runtime
+with a zero-cost local PostgreSQL/MinIO/MLflow stack while preserving the exact
+model, aliases, deployment semantics, and API output. This platform evidence does
+not close G4: stress, monitoring, incident, and service-level controls remain
+separate decisions and later deliverables.
+
 The corrected Phase 5 aggregate evidence closes G3 with conditions. The education
 review triggers, representative-data requirement, and monitoring requirement must
 be resolved before claims about a real operating policy or production use.
