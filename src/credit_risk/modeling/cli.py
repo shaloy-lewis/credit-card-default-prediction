@@ -1,7 +1,7 @@
 """Command-line interfaces for governed model selection and test authorization."""
 
 from pathlib import Path
-from typing import Annotated, NoReturn
+from typing import Annotated
 
 import typer
 
@@ -15,57 +15,6 @@ model_app = typer.Typer(
 @model_app.callback()
 def model() -> None:
     """Operate the governed model command group."""
-
-
-def _retired(name: str) -> NoReturn:
-    typer.echo(
-        f"Model {name} is historical and cannot be rerun. Use 'credit-risk model select' "
-        "for the governed four-fit workflow.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
-
-
-@model_app.command()
-def baseline(
-    data_root: Annotated[Path, typer.Option()] = Path("data"),
-    config: Annotated[Path, typer.Option()] = Path("configs/modeling/baseline_v1.json"),
-    tracking_root: Annotated[Path, typer.Option()] = Path("experiment/mlflow"),
-    output_root: Annotated[Path, typer.Option()] = Path("reports/modeling/baseline_v1"),
-    allow_dirty: Annotated[bool, typer.Option("--allow-dirty")] = False,
-) -> None:
-    """Report the retired Phase 2 baseline interface without importing training code."""
-
-    del data_root, config, tracking_root, output_root, allow_dirty
-    _retired("baseline")
-
-
-@model_app.command()
-def candidate(
-    data_root: Annotated[Path, typer.Option()] = Path("data"),
-    config: Annotated[Path, typer.Option()] = Path("configs/modeling/candidate_v1.json"),
-    tracking_root: Annotated[Path, typer.Option()] = Path("experiment/mlflow"),
-    output_root: Annotated[Path, typer.Option()] = Path("experiment/provisional/candidate_v1"),
-    allow_dirty: Annotated[bool, typer.Option("--allow-dirty")] = False,
-) -> None:
-    """Report the retired Phase 3 candidate interface without importing training code."""
-
-    del data_root, config, tracking_root, output_root, allow_dirty
-    _retired("candidate")
-
-
-@model_app.command("candidate-evidence")
-def candidate_evidence(
-    data_root: Annotated[Path, typer.Option()] = Path("data"),
-    config: Annotated[Path, typer.Option()] = Path("configs/modeling/candidate_v1.json"),
-    tracking_root: Annotated[Path, typer.Option()] = Path("experiment/mlflow"),
-    verification_root: Annotated[Path, typer.Option()] = Path("experiment/phase3-verification"),
-    output_root: Annotated[Path, typer.Option()] = Path("reports/modeling/candidate_v1"),
-) -> None:
-    """Report the retired Phase 3 evidence interface without importing training code."""
-
-    del data_root, config, tracking_root, verification_root, output_root
-    _retired("candidate-evidence")
 
 
 @model_app.command("select")

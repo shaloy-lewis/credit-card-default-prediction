@@ -21,13 +21,11 @@ runner = CliRunner()
 
 
 @pytest.mark.parametrize("command", ("baseline", "candidate", "candidate-evidence"))
-def test_historical_commands_fail_before_importing_training(command: str) -> None:
+def test_retired_experiment_commands_are_not_exposed(command: str) -> None:
     result = runner.invoke(cli.model_app, [command])
 
-    assert result.exit_code == 1
-    assert "historical and cannot be rerun" in result.output
-    assert "credit-risk model select" in result.output
-    assert "Traceback" not in result.output
+    assert result.exit_code != 0
+    assert "No such command" in result.output
 
 
 def test_select_forwards_defaults_and_reports_governance(

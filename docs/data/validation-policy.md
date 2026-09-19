@@ -132,10 +132,9 @@ compare the complete state with the reviewed lock. A clean checkout with the
 same manifest, split configuration, lockfile, and source bytes must reproduce
 the same canonical and split hashes.
 
-The legacy `credit-risk train` workflow is compatibility-only until a later
-phase consumes the canonical data, versioned splits, and experiment lineage.
-Running it is not part of G1 and its artifacts must not be cited as results of
-the Phase 1 data contract.
+The tutorial-era `credit-risk train` workflow was not part of G1 and has been
+removed. Only the governed data commands and retained reviewed evidence may be
+cited as results of the Phase 1 data contract.
 
 ## G1 decision rule
 
