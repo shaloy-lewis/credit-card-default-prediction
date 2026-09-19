@@ -187,12 +187,11 @@ reviewed.
 - [ADR 0008: pre-Release B repository cleanup](adr/0008-pre-release-b-repository-cleanup.md)
 - [Storage, retrieval, publishing, and recovery guide](artifacts/storage-architecture.md)
 - [Public Hugging Face repository card source](artifacts/hugging-face-repository-card.md)
-- Machine-readable distribution lock: `../configs/artifacts/hf_distribution_v1.lock.json`
-- Legacy trust manifest: `../configs/artifacts/legacy_v1.json`
+- Selected-model distribution lock: `../configs/artifacts/hf_distribution_v2.lock.json`
 
 GitHub retains source, manifests, aggregate evidence, and checksums; UCI remains
 the sole data source; Hugging Face distributes exact reviewed binary bytes; and
 MLflow/MinIO retain release-control duties. Normal imports and application
 startup remain offline. The selected model is acquired only through an explicit
-pull or an isolated Docker build stage, while legacy pickles require a separate
-opt-in pull and pre-deserialization digest authentication.
+pull or an isolated Docker build stage. Legacy remote pickle files are unsupported
+historical bytes and are not exposed by the current repository.

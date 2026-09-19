@@ -18,9 +18,9 @@ exclusion and input-invariance evidence because further fitting is prohibited.
 They are not permitted inputs to the released model. `ID` is used for lineage
 and split assignment only and is never a predictor.
 
-The retired tutorial training path predated this data contract and was never
-Phase 1 scientific evidence. It has been removed; the governed selected-model
-manifest and reviewed historical evidence remain the authoritative lineage.
+The committed CatBoost artifacts and `credit-risk train` path predate this data
+contract. They remain compatibility demonstrations, not Phase 1 scientific
+evidence and not candidates for promotion.
 
 ## Source, licence, and lineage
 

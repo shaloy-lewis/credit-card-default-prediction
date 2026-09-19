@@ -17,7 +17,6 @@ def test_pull_defaults_to_selected_and_reports_reuse(monkeypatch) -> None:
     def fake_pull(**kwargs) -> ArtifactOperationResult:
         observed.update(kwargs)
         return ArtifactOperationResult(
-            group="selected",
             materialized=(),
             reused=(Path("models/selected_v1/model.cbm"),),
             revision="a" * 40,
@@ -28,21 +27,15 @@ def test_pull_defaults_to_selected_and_reports_reuse(monkeypatch) -> None:
     result = runner.invoke(artifact_app, ["pull", "--offline"])
 
     assert result.exit_code == 0
-    assert observed["group"] == "selected"
     assert observed["offline"] is True
     assert "reused=1" in result.stdout
 
 
-def test_legacy_pull_prints_pickle_warning(monkeypatch) -> None:
-    monkeypatch.setattr(
-        "credit_risk.artifact_distribution.cli.pull_artifacts",
-        lambda **_: ArtifactOperationResult("legacy", (), (), "a" * 40),
-    )
-
+def test_removed_group_option_is_rejected() -> None:
     result = runner.invoke(artifact_app, ["pull", "--group", "legacy"])
 
-    assert result.exit_code == 0
-    assert "can execute code" in result.output
+    assert result.exit_code != 0
+    assert "No such option" in result.output
 
 
 def test_pull_normalizes_expected_failure(monkeypatch) -> None:
@@ -90,9 +83,7 @@ def test_verify_normalizes_expected_failure(monkeypatch) -> None:
 def test_verify_reports_success(monkeypatch) -> None:
     monkeypatch.setattr(
         "credit_risk.artifact_distribution.cli.verify_artifacts",
-        lambda **_: ArtifactOperationResult(
-            "selected", (), (Path("models/selected_v1/model.cbm"),)
-        ),
+        lambda **_: ArtifactOperationResult((), (Path("models/selected_v1/model.cbm"),)),
     )
 
     result = runner.invoke(artifact_app, ["verify"])
@@ -106,9 +97,7 @@ def test_publish_passes_maintainer_options(monkeypatch, tmp_path: Path) -> None:
 
     def fake_publish(**kwargs) -> ArtifactOperationResult:
         observed.update(kwargs)
-        return ArtifactOperationResult(
-            "all", (Path("experiment/artifacts/candidate.json"),), (), "b" * 40
-        )
+        return ArtifactOperationResult((Path("experiment/artifacts/candidate.json"),), (), "b" * 40)
 
     monkeypatch.setattr("credit_risk.artifact_distribution.cli.publish_artifacts", fake_publish)
 
@@ -120,14 +109,23 @@ def test_publish_passes_maintainer_options(monkeypatch, tmp_path: Path) -> None:
             "owner/repository",
             "--source-root",
             str(tmp_path),
-            "--include-legacy",
         ],
     )
 
     assert result.exit_code == 0
     assert observed["repo_id"] == "owner/repository"
-    assert observed["include_legacy"] is True
+    assert "include_legacy" not in observed
     assert "b" * 40 in result.stdout
+
+
+def test_removed_include_legacy_option_is_rejected() -> None:
+    result = runner.invoke(
+        artifact_app,
+        ["publish", "--repo-id", "owner/repository", "--include-legacy"],
+    )
+
+    assert result.exit_code != 0
+    assert "No such option" in result.output
 
 
 def test_publish_normalizes_expected_failure(monkeypatch) -> None:

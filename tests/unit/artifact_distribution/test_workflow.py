@@ -10,7 +10,6 @@ import credit_risk.artifact_distribution.workflow as workflow
 from credit_risk.artifact_distribution.transport import ArtifactTransportError
 from credit_risk.artifact_distribution.workflow import (
     ArtifactDistributionError,
-    ArtifactGroup,
     publish_artifacts,
     pull_artifacts,
     verify_artifacts,
@@ -55,11 +54,8 @@ def _sha(payload: bytes) -> str:
 def distribution_repository(tmp_path: Path) -> tuple[Path, Path, dict[str, bytes]]:
     payloads = {
         "selected_v1/model.cbm": b"reviewed-selected",
-        "legacy_v1/model.pkl": b"reviewed-model-pickle",
-        "legacy_v1/preprocessor.pkl": b"reviewed-preprocessor-pickle",
     }
     (tmp_path / "models/selected_v1").mkdir(parents=True)
-    (tmp_path / "artifacts").mkdir()
     (tmp_path / "configs/artifacts").mkdir(parents=True)
     (tmp_path / "docs/artifacts").mkdir(parents=True)
     (tmp_path / "docs/artifacts/hugging-face-repository-card.md").write_text(
@@ -69,36 +65,9 @@ def distribution_repository(tmp_path: Path) -> tuple[Path, Path, dict[str, bytes
         json.dumps({"model_sha256": _sha(payloads["selected_v1/model.cbm"])}),
         encoding="utf-8",
     )
-    threshold = b'{"high_perc":{},"low_perc":{}}\n'
-    (tmp_path / "artifacts/outlier_threshold.json").write_bytes(threshold)
-    legacy = {
-        "schema_version": "1.0.0",
-        "bundle_id": "legacy_v1",
-        "trust_classification": "trusted_pickle_explicit_only",
-        "warning": "Pickle files are trusted only after exact digest verification.",
-        "files": {
-            "model.pkl": {
-                "size_bytes": len(payloads["legacy_v1/model.pkl"]),
-                "sha256": _sha(payloads["legacy_v1/model.pkl"]),
-                "serialization": "python_pickle",
-            },
-            "preprocessor.pkl": {
-                "size_bytes": len(payloads["legacy_v1/preprocessor.pkl"]),
-                "sha256": _sha(payloads["legacy_v1/preprocessor.pkl"]),
-                "serialization": "python_pickle",
-            },
-            "outlier_threshold.json": {
-                "size_bytes": len(threshold),
-                "sha256": _sha(threshold),
-                "serialization": "json",
-            },
-        },
-    }
-    (tmp_path / "configs/artifacts/legacy_v1.json").write_text(json.dumps(legacy), encoding="utf-8")
     records = [
         {
             "artifact_id": "selected_model",
-            "group": "selected",
             "remote_path": "selected_v1/model.cbm",
             "local_path": "models/selected_v1/model.cbm",
             "size_bytes": len(payloads["selected_v1/model.cbm"]),
@@ -109,36 +78,10 @@ def distribution_repository(tmp_path: Path) -> tuple[Path, Path, dict[str, bytes
                 "json_pointer": "/model_sha256",
             },
         },
-        {
-            "artifact_id": "legacy_model",
-            "group": "legacy",
-            "remote_path": "legacy_v1/model.pkl",
-            "local_path": "artifacts/model.pkl",
-            "size_bytes": len(payloads["legacy_v1/model.pkl"]),
-            "serialization": "python_pickle",
-            "trust_classification": "trusted_pickle_explicit_only",
-            "digest_reference": {
-                "manifest_path": "configs/artifacts/legacy_v1.json",
-                "json_pointer": "/files/model.pkl/sha256",
-            },
-        },
-        {
-            "artifact_id": "legacy_preprocessor",
-            "group": "legacy",
-            "remote_path": "legacy_v1/preprocessor.pkl",
-            "local_path": "artifacts/preprocessor.pkl",
-            "size_bytes": len(payloads["legacy_v1/preprocessor.pkl"]),
-            "serialization": "python_pickle",
-            "trust_classification": "trusted_pickle_explicit_only",
-            "digest_reference": {
-                "manifest_path": "configs/artifacts/legacy_v1.json",
-                "json_pointer": "/files/preprocessor.pkl/sha256",
-            },
-        },
     ]
     lock = {
-        "schema_version": "1.0.0",
-        "distribution_id": "hf_distribution_v1",
+        "schema_version": "2.0.0",
+        "distribution_id": "hf_distribution_v2",
         "repository": {
             "provider": "huggingface_hub",
             "repo_id": "owner/repository",
@@ -148,7 +91,7 @@ def distribution_repository(tmp_path: Path) -> tuple[Path, Path, dict[str, bytes
         },
         "artifacts": records,
     }
-    lock_path = tmp_path / "configs/artifacts/hf_distribution_v1.lock.json"
+    lock_path = tmp_path / "configs/artifacts/hf_distribution_v2.lock.json"
     lock_path.write_text(json.dumps(lock), encoding="utf-8")
     return tmp_path, lock_path.relative_to(tmp_path), payloads
 
@@ -170,19 +113,17 @@ def test_pull_materializes_and_reuses_without_network(
     transport = FakeTransport(_remote_files(root, payloads))
     first = pull_artifacts(
         config_path=config,
-        group="all",
         repository_root=root,
         transport=transport,
     )
-    assert len(first.materialized) == 3
-    assert len(transport.downloads) == 3
+    assert len(first.materialized) == 1
+    assert len(transport.downloads) == 1
     second = pull_artifacts(
         config_path=config,
-        group="all",
         repository_root=root,
         transport=FakeTransport({}),
     )
-    assert len(second.reused) == 3
+    assert len(second.reused) == 1
 
 
 def test_pull_propagates_offline_and_rejects_bad_download(
@@ -351,104 +292,6 @@ def test_verify_rejects_extra_file(
         verify_artifacts(config_path=config, repository_root=root)
 
 
-@pytest.mark.parametrize("group", ["legacy", "all"])
-@pytest.mark.parametrize("mutation", ["changed", "wrong_size"])
-def test_verify_authenticates_legacy_threshold_bytes(
-    distribution_repository: tuple[Path, Path, dict[str, bytes]],
-    group: ArtifactGroup,
-    mutation: str,
-) -> None:
-    root, config, payloads = distribution_repository
-    pull_artifacts(
-        config_path=config,
-        group="all",
-        repository_root=root,
-        transport=FakeTransport(_remote_files(root, payloads)),
-    )
-    threshold = root / "artifacts/outlier_threshold.json"
-    original = threshold.read_bytes()
-    if mutation == "changed":
-        threshold.write_bytes(bytes([original[0] ^ 1]) + original[1:])
-    else:
-        threshold.write_bytes(original + b"x")
-
-    with pytest.raises(ArtifactDistributionError, match="reviewed manifest"):
-        verify_artifacts(config_path=config, group=group, repository_root=root)
-
-
-@pytest.mark.parametrize("group", ["legacy", "all"])
-def test_verify_rejects_missing_legacy_threshold(
-    distribution_repository: tuple[Path, Path, dict[str, bytes]],
-    group: ArtifactGroup,
-) -> None:
-    root, config, payloads = distribution_repository
-    pull_artifacts(
-        config_path=config,
-        group="all",
-        repository_root=root,
-        transport=FakeTransport(_remote_files(root, payloads)),
-    )
-    (root / "artifacts/outlier_threshold.json").unlink()
-
-    with pytest.raises(ArtifactDistributionError, match="allowlist"):
-        verify_artifacts(config_path=config, group=group, repository_root=root)
-
-
-@pytest.mark.parametrize("group", ["legacy", "all"])
-def test_verify_rejects_symlinked_legacy_threshold(
-    distribution_repository: tuple[Path, Path, dict[str, bytes]],
-    group: ArtifactGroup,
-) -> None:
-    root, config, payloads = distribution_repository
-    pull_artifacts(
-        config_path=config,
-        group="all",
-        repository_root=root,
-        transport=FakeTransport(_remote_files(root, payloads)),
-    )
-    threshold = root / "artifacts/outlier_threshold.json"
-    external = root / "threshold-copy.json"
-    external.write_bytes(threshold.read_bytes())
-    threshold.unlink()
-    try:
-        threshold.symlink_to(external)
-    except OSError:
-        pytest.skip("symlink creation is unavailable")
-
-    with pytest.raises(ArtifactDistributionError, match="allowlist"):
-        verify_artifacts(config_path=config, group=group, repository_root=root)
-
-
-def test_verify_legacy_counts_only_distribution_records(
-    distribution_repository: tuple[Path, Path, dict[str, bytes]],
-) -> None:
-    root, config, payloads = distribution_repository
-    pull_artifacts(
-        config_path=config,
-        group="all",
-        repository_root=root,
-        transport=FakeTransport(_remote_files(root, payloads)),
-    )
-
-    result = verify_artifacts(config_path=config, group="legacy", repository_root=root)
-
-    assert len(result.reused) == 2
-    assert root / "artifacts/outlier_threshold.json" not in result.reused
-
-
-def test_selected_only_lock_rejects_legacy_request(
-    distribution_repository: tuple[Path, Path, dict[str, bytes]],
-) -> None:
-    root, config, _ = distribution_repository
-    lock_path = root / config
-    payload = json.loads(lock_path.read_text(encoding="utf-8"))
-    payload["artifacts"] = payload["artifacts"][:1]
-    lock_path.write_text(json.dumps(payload), encoding="utf-8")
-
-    with pytest.raises(ArtifactDistributionError, match="does not contain"):
-        verify_artifacts(config_path=config, group="legacy", repository_root=root)
-
-
 def test_verify_normalizes_missing_artifact(
     distribution_repository: tuple[Path, Path, dict[str, bytes]],
 ) -> None:
@@ -457,27 +300,16 @@ def test_verify_normalizes_missing_artifact(
         verify_artifacts(config_path=config, repository_root=root)
 
 
-def test_workflow_rejects_unknown_group(
-    distribution_repository: tuple[Path, Path, dict[str, bytes]],
-) -> None:
-    root, config, _ = distribution_repository
-    with pytest.raises(ArtifactDistributionError, match="Unsupported artifact group"):
-        verify_artifacts(config_path=config, group="unknown", repository_root=root)  # type: ignore[arg-type]
-
-
 def test_publish_verifies_remote_and_writes_candidate_lock(
     distribution_repository: tuple[Path, Path, dict[str, bytes]],
 ) -> None:
     root, _, payloads = distribution_repository
     (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
-    (root / "artifacts/model.pkl").write_bytes(payloads["legacy_v1/model.pkl"])
-    (root / "artifacts/preprocessor.pkl").write_bytes(payloads["legacy_v1/preprocessor.pkl"])
     transport = FakeTransport(_remote_files(root, payloads))
     result = publish_artifacts(
         repo_id="owner/repository",
         source_root=root,
         lock_output="experiment/artifacts/candidate.json",
-        include_legacy=True,
         transport=transport,
     )
     assert result.revision == "b" * 40
@@ -485,11 +317,10 @@ def test_publish_verifies_remote_and_writes_candidate_lock(
     assert set(transport.published) == {
         "README.md",
         "selected_v1/model.cbm",
-        "legacy_v1/model.pkl",
-        "legacy_v1/preprocessor.pkl",
     }
     candidate = json.loads((root / "experiment/artifacts/candidate.json").read_text())
     assert candidate["repository"]["revision"] == "b" * 40
+    assert candidate["distribution_id"] == "hf_distribution_v2"
 
 
 def test_publish_refuses_to_replace_candidate_lock(
@@ -528,6 +359,55 @@ def test_publish_normalizes_transport_and_preflight_failures(
             repo_id="owner/repository",
             source_root=root,
             transport=FailingTransport({}),
+        )
+
+
+def test_publish_rejects_changed_local_bytes_before_remote_mutation(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+) -> None:
+    root, _, payloads = distribution_repository
+    (root / "models/selected_v1/model.cbm").write_bytes(b"changed-selected")
+    transport = FakeTransport(_remote_files(root, payloads))
+
+    with pytest.raises(ArtifactDistributionError, match="reviewed metadata"):
+        publish_artifacts(
+            repo_id="owner/repository",
+            source_root=root,
+            transport=transport,
+        )
+
+    assert transport.published is None
+
+
+def test_publish_normalizes_anonymous_verification_failure(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+) -> None:
+    root, _, payloads = distribution_repository
+    (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
+
+    class VerificationFailureTransport(FakeTransport):
+        def download(self, **kwargs) -> Path:
+            raise ArtifactTransportError("anonymous retrieval denied")
+
+    with pytest.raises(ArtifactDistributionError, match="anonymously verified"):
+        publish_artifacts(
+            repo_id="owner/repository",
+            source_root=root,
+            transport=VerificationFailureTransport({}),
+        )
+
+
+def test_publish_rejects_nonimmutable_returned_revision(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+) -> None:
+    root, _, payloads = distribution_repository
+    (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
+
+    with pytest.raises(ArtifactDistributionError, match="Published revision failed"):
+        publish_artifacts(
+            repo_id="owner/repository",
+            source_root=root,
+            transport=FakeTransport(_remote_files(root, payloads), revision="short"),
         )
 
 

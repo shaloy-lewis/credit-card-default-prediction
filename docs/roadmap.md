@@ -175,7 +175,9 @@ At each weekly checkpoint:
 4. Run the relevant tests and capture reproducible outputs.
 5. Update the decision log and portfolio narrative before expanding scope.
 
-The next implementation slice is Week 9 local platform integration: persistent
-MLflow service wiring, PostgreSQL, MinIO, health checks, and one-command startup.
-It will reuse the unchanged reviewed bundle and will not repeat model selection,
-training, calibration, or sealed-test evaluation.
+The persistent local platform prerequisite is implemented. After the pre-Release
+B repository cleanup, the next slice is the remaining G4 work: prediction-only
+robustness and population-shift stress evidence, monitoring contracts, and
+incident exercises. It will reuse the unchanged reviewed bundle and existing
+synthetic/runtime evidence without repeating model selection, training,
+calibration, or sealed-test evaluation.

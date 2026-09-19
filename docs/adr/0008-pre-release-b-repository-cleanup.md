@@ -58,3 +58,11 @@ generation, final-test evaluation, or sealed-test access.
   historical blobs remain reachable through normal Git history by design.
 - Removing public compatibility commands is a pre-1.0 breaking change, so the
   package version advances from `0.5.0` to `0.6.0`.
+
+## Measured outcome
+
+The reviewed baseline contained 286 tracked files totalling 6,199,850 bytes
+(5.913 MiB). After the cleanup, the index contains 241 tracked files totalling
+2,393,181 bytes (2.282 MiB): 45 fewer files and 3,806,669 fewer bytes in the
+current checkout, while ordinary Git history and all retained audit evidence
+remain intact.

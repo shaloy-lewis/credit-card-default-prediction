@@ -27,20 +27,28 @@ def test_distribution_lock_is_complete_and_byte_identical() -> None:
     assert lock.repository.revision == "f73ca4ee7a2c2d2ea51741e75fccf66ae7a4a640"
     assert [artifact.artifact_id for artifact in lock.artifacts] == [
         "selected_model",
-        "legacy_model",
-        "legacy_preprocessor",
     ]
+    assert lock.distribution_id == "hf_distribution_v2"
     assert lock.artifacts[0].digest_reference.json_pointer == "/model_sha256"
+
+
+def test_publishable_repository_card_describes_only_the_supported_model() -> None:
+    card = (REPOSITORY_ROOT / "docs/artifacts/hugging-face-repository-card.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "selected_v1/model.cbm" in card
+    assert "legacy_v1" not in card
+    assert "pickle" not in card.lower()
 
 
 @pytest.mark.artifact
 def test_materialized_distribution_is_compatible_with_existing_loaders() -> None:
     result = verify_artifacts(
         config_path=DEFAULT_DISTRIBUTION_LOCK,
-        group="all",
         repository_root=REPOSITORY_ROOT,
     )
-    assert len(result.reused) == 3
+    assert len(result.reused) == 1
 
     manifest, model = load_selected_bundle(REPOSITORY_ROOT / "models/selected_v1")
     assert manifest.model_sha256 == (

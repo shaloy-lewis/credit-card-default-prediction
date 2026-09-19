@@ -475,3 +475,27 @@ deferred risks. It is not a substitute for commit history or CI results.
   Hugging Face dependencies, cache state, credentials, nor legacy files.
 - No model fitting, refitting, calibration, final-test execution, sealed-test
   access, or historical evidence regeneration occurred.
+
+## Pre-Release B repository cleanup
+
+**Prepared:** 2026-09-19
+
+- ADR 0008 separates immutable audit evidence from obsolete executable paths.
+  Baseline, candidate, selection, final-test, Release A, and Phase 5-8 evidence
+  remains available without retaining superseded experiment runners.
+- Generated CatBoost telemetry, the obsolete exploratory notebook, tutorial-era
+  pipeline packages, retired Phase 2/3 executors, and their execution tests were
+  removed from the current tree without rewriting Git history.
+- The unused pickle compatibility interface, its fixtures, metadata, commands,
+  and `0.44088` regression path were retired. Pickles already present in the
+  immutable Hugging Face revision remain unsupported historical bytes.
+- Package version `0.6.0` exposes a selected-model-only artifact interface backed
+  by `hf_distribution_v2`; the repository, immutable revision, selected manifest,
+  and model bytes are unchanged.
+- CI now rejects generated training outputs, notebooks, model binaries, pickle
+  files, and retired source packages in tracked content. Fresh checkouts retrieve
+  only `selected_v1/model.cbm`.
+- The cleanup performs no training, tuning, calibration, bootstrap generation,
+  sealed-test evaluation, or evidence regeneration. The repository is narrowed
+  to the active Release B foundations: inference, governance, registry,
+  deployment, persistent platform, and upcoming monitoring/incident controls.

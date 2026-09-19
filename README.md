@@ -138,8 +138,8 @@ The approved scope and delivery evidence are documented in:
   reconstruction, and API/UI health checks. Bootstrap and restart verification
   perform zero fits and preserve the selected-model prediction `0.190382`.
 - Public, immutable Hugging Face distribution for the exact reviewed CatBoost
-  binary and opt-in legacy pickles. Git-tracked manifests remain the trust
-  authority; application loaders remain local-only and network-free.
+  binary. The Git-tracked selected manifest remains the trust authority;
+  application loaders remain local-only and network-free.
 
 G3 is `closed_with_conditions`. Phase 7 completes the registry, scanning, and
 rollback slice; G4 remains open for robustness stress tests, monitoring, and
@@ -183,8 +183,8 @@ running inference:
 
 ```bash
 uv sync --locked --extra artifacts
-uv run credit-risk artifacts pull --group selected
-uv run credit-risk artifacts verify --group selected
+uv run credit-risk artifacts pull
+uv run credit-risk artifacts verify
 ```
 
 The destination remains `models/selected_v1/model.cbm`, so the reviewed loader,
@@ -209,9 +209,10 @@ checks the complete raw-to-split lineage against the reviewed lock.
 
 Downloaded raw data, processed outputs, quality reports, and split assignments
 remain under the Git-ignored root `data/` directory. Source and split manifests,
-governance evidence, and the reviewed lock are version controlled. The legacy
-`credit-risk train` command and the Phase 2/3 experiment commands are retired;
-their reviewed evidence and source remain available for audit.
+governance evidence, and the reviewed lock are version controlled. Retired
+Phase 2/3 experiment executors are no longer shipped; their reviewed
+configurations, reports, protocols, and integrity checks remain available for
+audit.
 
 ### Run the governed one-pass selection
 
@@ -247,7 +248,7 @@ receipts and the active no-option tombstone permanently prevent reevaluation; th
 reviewed evidence is under `reports/modeling/final_test_v1/`. The exact executed
 source is preserved as a non-importable text artifact under
 `docs/modeling/evidence/`. Historical baseline and candidate reports remain
-available, while their public fitting commands fail fast.
+available, while their retired public fitting commands are absent.
 
 ### Verify Phase 5 governance evidence
 
@@ -381,30 +382,35 @@ rather than command arguments. Platform workflows reject symlinked deployment
 ancestors, normalize expected service failures, and treat an explicitly supplied
 environment mapping as authoritative; only `None` enables ambient discovery.
 
-### Check the retired compatibility artifacts
-
-```bash
-uv run credit-risk artifacts pull --group legacy
-uv run credit-risk artifacts verify --group legacy
-uv run credit-risk doctor
-```
-
-Legacy retrieval is always explicit and is never part of API startup. `doctor`
-authenticates the exact size and SHA-256 of all three legacy files before loading
-the model or preprocessor, then validates their shared feature contract and the
-outlier-threshold schema. Pickle can execute code; public hosting is not a trust
-guarantee, so use only bytes authenticated by the Git-tracked legacy manifest.
-
 ### Run quality checks
 
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifacts.py src/credit_risk/artifact_distribution src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/artifact_distribution src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
 uv run pytest -m "not training and not artifact" --cov --cov-report=term-missing
 uv run pytest tests/unit/artifact_distribution --cov=credit_risk.artifact_distribution --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
-uv run pytest tests/unit/modeling tests/unit/test_modeling_cli.py tests/integration/test_baseline_experiment.py tests/integration/test_candidate_model.py --cov=credit_risk.modeling --cov-branch --cov-fail-under=90
+uv run pytest \
+  tests/unit/modeling/test_selection_workflow.py \
+  tests/unit/modeling/test_final_test.py \
+  tests/unit/modeling/test_final_test_workflow.py \
+  tests/unit/modeling/test_selection_contracts.py \
+  tests/unit/modeling/test_selection_analysis.py \
+  tests/unit/modeling/test_selection_models.py \
+  tests/unit/modeling/test_selected_bundle.py \
+  tests/integration/test_selection_protocol.py \
+  tests/integration/test_selection_split.py \
+  -m "not training" \
+  --cov=credit_risk.modeling.selection_contracts \
+  --cov=credit_risk.modeling.selection_analysis \
+  --cov=credit_risk.modeling.selection_models \
+  --cov=credit_risk.modeling.selected_bundle \
+  --cov=credit_risk.modeling.selection_workflow \
+  --cov=credit_risk.modeling.final_test \
+  --cov=credit_risk.modeling.final_test_workflow \
+  --cov=credit_risk.modeling.risk_policy \
+  --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/governance tests/unit/test_governance_cli.py tests/integration/test_phase5_protocol.py tests/integration/test_phase5_evidence.py tests/integration/test_governance_explanation_smoke.py --cov=credit_risk.governance --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/release tests/unit/test_release_cli.py tests/integration/test_release_a_protocol.py tests/integration/test_release_a_evidence.py --cov=credit_risk.release --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/inference tests/unit/test_inference_cli.py tests/integration/test_api_health.py tests/integration/test_phase6_protocol.py tests/integration/test_phase6_evidence.py tests/integration/test_inference_parity.py --cov=credit_risk.inference --cov-branch --cov-fail-under=90
@@ -415,7 +421,7 @@ uv run pytest tests/unit/platform tests/unit/test_platform_cli.py tests/integrat
 ### Run the API
 
 ```bash
-uv run credit-risk artifacts pull --group selected
+uv run credit-risk artifacts pull
 uv run uvicorn api:app --host 0.0.0.0 --port 8080
 ```
 
@@ -475,8 +481,7 @@ released model contract.
 .
 ├── api.py                     # Governed selected-model FastAPI entrypoint
 ├── app.py                     # Local Streamlit demonstration
-├── artifacts/                 # Tracked legacy metadata; ignored opt-in binaries
-├── configs/artifacts/         # HF revision lock and legacy trust manifest
+├── configs/artifacts/         # Selected-model-only HF revision lock
 ├── configs/data/              # Source manifest, split policy, and reviewed lock
 ├── configs/modeling/          # Feature and scientific-baseline contracts
 ├── configs/governance/        # Frozen validation-only governance contract
@@ -495,7 +500,7 @@ released model contract.
 ├── reports/registry/          # Authenticated aggregate release-control evidence
 ├── reports/releases/          # Authenticated release dossiers
 ├── src/credit_risk/           # Installable application package
-├── tests/                     # Unit, integration, and compatibility tests
+├── tests/                     # Unit, integration, and evidence-integrity tests
 ├── pyproject.toml             # Direct dependencies and tool configuration
 ├── uv.lock                    # Exact cross-platform dependency resolution
 ├── Dockerfile
@@ -503,8 +508,8 @@ released model contract.
 └── docker-compose.registry.yml
 ```
 
-Generated data, logs, environments, caches, experiment outputs, and the three
-externally distributed binaries are excluded from version control.
+Generated data, logs, environments, caches, experiment outputs, and the
+externally distributed selected-model binary are excluded from version control.
 
 ## Delivery milestones
 
