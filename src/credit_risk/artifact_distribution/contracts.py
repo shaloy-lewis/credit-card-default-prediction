@@ -9,11 +9,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-DEFAULT_DISTRIBUTION_LOCK = Path("configs/artifacts/hf_distribution_v1.lock.json")
-DEFAULT_LEGACY_MANIFEST = Path("configs/artifacts/legacy_v1.json")
+DEFAULT_DISTRIBUTION_LOCK = Path("configs/artifacts/hf_distribution_v2.lock.json")
 SELECTED_MANIFEST = Path("models/selected_v1/manifest.json")
 EXPECTED_DISTRIBUTION_LOCK_SHA256 = (
-    "1cdfce61b7e251ac839c2bc834c98a45417dd11837d1b282a4bfd0c0a2625272"
+    "d14be69fd454a0461a5baf1ee51a587f2a35821d808d0f81565c5afb6311586f"
 )
 
 
@@ -36,51 +35,27 @@ class DigestReference(StrictModel):
 
 
 class ArtifactRecord(StrictModel):
-    artifact_id: Literal["selected_model", "legacy_model", "legacy_preprocessor"]
-    group: Literal["selected", "legacy"]
+    artifact_id: Literal["selected_model"]
     remote_path: str
     local_path: str
     size_bytes: int = Field(gt=0)
-    serialization: Literal["catboost_cbm", "python_pickle"]
-    trust_classification: Literal["digest_authenticated", "trusted_pickle_explicit_only"]
+    serialization: Literal["catboost_cbm"]
+    trust_classification: Literal["digest_authenticated"]
     digest_reference: DigestReference
 
     @model_validator(mode="after")
     def safe_and_compatible(self) -> ArtifactRecord:
         _validate_remote_path(self.remote_path)
         _validate_relative_path(self.local_path, "local path")
-        approved_mappings = {
-            "selected_model": (
-                "selected",
-                "models/selected_v1/model.cbm",
-                "selected_v1/model.cbm",
-                "catboost_cbm",
-                "digest_authenticated",
-                SELECTED_MANIFEST.as_posix(),
-                "/model_sha256",
-            ),
-            "legacy_model": (
-                "legacy",
-                "artifacts/model.pkl",
-                "legacy_v1/model.pkl",
-                "python_pickle",
-                "trusted_pickle_explicit_only",
-                DEFAULT_LEGACY_MANIFEST.as_posix(),
-                "/files/model.pkl/sha256",
-            ),
-            "legacy_preprocessor": (
-                "legacy",
-                "artifacts/preprocessor.pkl",
-                "legacy_v1/preprocessor.pkl",
-                "python_pickle",
-                "trusted_pickle_explicit_only",
-                DEFAULT_LEGACY_MANIFEST.as_posix(),
-                "/files/preprocessor.pkl/sha256",
-            ),
-        }
-        expected = approved_mappings[self.artifact_id]
+        expected = (
+            "models/selected_v1/model.cbm",
+            "selected_v1/model.cbm",
+            "catboost_cbm",
+            "digest_authenticated",
+            SELECTED_MANIFEST.as_posix(),
+            "/model_sha256",
+        )
         observed = (
-            self.group,
             self.local_path,
             self.remote_path,
             self.serialization,
@@ -102,62 +77,20 @@ class RepositoryContract(StrictModel):
 
 
 class DistributionLock(StrictModel):
-    schema_version: Literal["1.0.0"]
-    distribution_id: Literal["hf_distribution_v1"]
+    schema_version: Literal["2.0.0"]
+    distribution_id: Literal["hf_distribution_v2"]
     repository: RepositoryContract
     artifacts: tuple[ArtifactRecord, ...]
 
     @model_validator(mode="after")
     def exact_inventory(self) -> DistributionLock:
-        complete_ids = {"selected_model", "legacy_model", "legacy_preprocessor"}
-        observed_ids = {record.artifact_id for record in self.artifacts}
-        if observed_ids not in ({"selected_model"}, complete_ids) or len(self.artifacts) != len(
-            observed_ids
-        ):
-            raise ValueError(
-                "distribution lock must contain the selected artifact alone or the complete "
-                "approved selected-and-legacy inventory"
-            )
-        for attribute in ("local_path", "remote_path"):
-            values = [getattr(record, attribute) for record in self.artifacts]
-            if len(set(values)) != len(values):
-                raise ValueError(f"artifact {attribute} values must be unique")
-        return self
-
-
-class LegacyFileContract(StrictModel):
-    size_bytes: int = Field(gt=0)
-    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    serialization: Literal["python_pickle", "json"]
-
-
-class LegacyManifest(StrictModel):
-    schema_version: Literal["1.0.0"]
-    bundle_id: Literal["legacy_v1"]
-    trust_classification: Literal["trusted_pickle_explicit_only"]
-    warning: str = Field(min_length=20)
-    files: dict[str, LegacyFileContract]
-
-    @model_validator(mode="after")
-    def exact_inventory(self) -> LegacyManifest:
-        if set(self.files) != {"model.pkl", "preprocessor.pkl", "outlier_threshold.json"}:
-            raise ValueError("legacy manifest must contain the exact approved three-file bundle")
-        if self.files["outlier_threshold.json"].serialization != "json":
-            raise ValueError("legacy threshold file must use JSON serialization")
-        if any(
-            self.files[name].serialization != "python_pickle"
-            for name in ("model.pkl", "preprocessor.pkl")
-        ):
-            raise ValueError("legacy executable artifacts must use pickle serialization")
+        if len(self.artifacts) != 1 or self.artifacts[0].artifact_id != "selected_model":
+            raise ValueError("distribution lock must contain exactly the selected model")
         return self
 
 
 def load_distribution_lock(path: str | Path) -> DistributionLock:
     return _load_json_contract(path, DistributionLock, "artifact distribution lock")
-
-
-def load_legacy_manifest(path: str | Path = DEFAULT_LEGACY_MANIFEST) -> LegacyManifest:
-    return _load_json_contract(path, LegacyManifest, "legacy artifact manifest")
 
 
 def resolve_digest_reference(repository: Path, reference: DigestReference) -> str:

@@ -19,13 +19,13 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src ./src
-COPY configs/artifacts/hf_distribution_v1.lock.json ./configs/artifacts/hf_distribution_v1.lock.json
+COPY configs/artifacts/hf_distribution_v2.lock.json ./configs/artifacts/hf_distribution_v2.lock.json
 COPY models/selected_v1/manifest.json ./models/selected_v1/manifest.json
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/root/.cache/huggingface \
     uv sync --locked --no-dev --no-editable --extra artifacts \
-    && uv run --no-sync credit-risk artifacts pull --group selected \
-    && uv run --no-sync credit-risk artifacts verify --group selected
+    && uv run --no-sync credit-risk artifacts pull \
+    && uv run --no-sync credit-risk artifacts verify
 
 FROM python:3.12.14-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 AS runtime
 

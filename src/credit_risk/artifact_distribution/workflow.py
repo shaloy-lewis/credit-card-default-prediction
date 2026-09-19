@@ -8,10 +8,9 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Protocol
 
 from credit_risk.artifact_distribution.contracts import (
-    DEFAULT_LEGACY_MANIFEST,
     SELECTED_MANIFEST,
     ArtifactContractError,
     ArtifactRecord,
@@ -19,7 +18,6 @@ from credit_risk.artifact_distribution.contracts import (
     DistributionLock,
     RepositoryContract,
     load_distribution_lock,
-    load_legacy_manifest,
     resolve_digest_reference,
     safe_repository_path,
     sha256_file,
@@ -28,8 +26,6 @@ from credit_risk.artifact_distribution.transport import (
     ArtifactTransportError,
     HuggingFaceTransport,
 )
-
-ArtifactGroup = Literal["selected", "legacy", "all"]
 
 
 class ArtifactDistributionError(RuntimeError):
@@ -55,7 +51,6 @@ class PublishTransport(DownloadTransport, Protocol):
 
 @dataclass(frozen=True, slots=True)
 class ArtifactOperationResult:
-    group: ArtifactGroup
     materialized: tuple[Path, ...]
     reused: tuple[Path, ...]
     revision: str | None = None
@@ -64,14 +59,13 @@ class ArtifactOperationResult:
 def pull_artifacts(
     *,
     config_path: str | Path,
-    group: ArtifactGroup = "selected",
     cache_dir: str | Path | None = None,
     offline: bool = False,
     repository_root: str | Path = ".",
     transport: DownloadTransport | None = None,
 ) -> ArtifactOperationResult:
     repository, config = _context(repository_root, config_path)
-    records = _records(config, group)
+    records = config.artifacts
     client = transport or HuggingFaceTransport()
     materialized: list[Path] = []
     reused: list[Path] = []
@@ -124,11 +118,9 @@ def pull_artifacts(
         materialized.append(destination)
     verify_artifacts(
         config_path=config_path,
-        group=group,
         repository_root=repository,
     )
     return ArtifactOperationResult(
-        group=group,
         materialized=tuple(materialized),
         reused=tuple(reused),
         revision=config.repository.revision,
@@ -138,43 +130,32 @@ def pull_artifacts(
 def verify_artifacts(
     *,
     config_path: str | Path,
-    group: ArtifactGroup = "selected",
     repository_root: str | Path = ".",
 ) -> ArtifactOperationResult:
     repository, config = _context(repository_root, config_path)
     verified: list[Path] = []
-    for record in _records(config, group):
+    for record in config.artifacts:
         path, expected = _artifact_location(repository, record, must_exist=True)
         if not _matches(path, record.size_bytes, expected):
             raise ArtifactDistributionError(
                 f"Artifact {record.local_path!r} does not match its reviewed contract."
             )
         verified.append(path)
-    if group in {"selected", "all"}:
-        selected_root = repository / "models" / "selected_v1"
-        _require_allowlist(selected_root, {"manifest.json", "model.cbm"}, "selected bundle")
-    if group in {"legacy", "all"}:
-        legacy_root = repository / "artifacts"
-        _require_allowlist(
-            legacy_root,
-            {"model.pkl", "preprocessor.pkl", "outlier_threshold.json"},
-            "legacy bundle",
-        )
-        _verify_legacy_manifest_bundle(repository)
-    return ArtifactOperationResult(group=group, materialized=(), reused=tuple(verified))
+    selected_root = repository / "models" / "selected_v1"
+    _require_allowlist(selected_root, {"manifest.json", "model.cbm"}, "selected bundle")
+    return ArtifactOperationResult(materialized=(), reused=tuple(verified))
 
 
 def publish_artifacts(
     *,
     repo_id: str,
     source_root: str | Path = ".",
-    lock_output: str | Path = "experiment/artifacts/hf_distribution_v1.candidate.json",
-    include_legacy: bool = False,
+    lock_output: str | Path = "experiment/artifacts/hf_distribution_v2.candidate.json",
     transport: PublishTransport | None = None,
 ) -> ArtifactOperationResult:
     try:
         repository = Path(source_root).resolve(strict=True)
-        records = _publication_records(repository, include_legacy)
+        records = _publication_records(repository)
         card = safe_repository_path(
             repository, "docs/artifacts/hugging-face-repository-card.md", must_exist=True
         )
@@ -206,14 +187,14 @@ def publish_artifacts(
         revision = client.publish(
             repo_id=repo_id,
             files=files,
-            commit_message="Publish reviewed credit-risk artifacts v1",
+            commit_message="Publish reviewed credit-risk selected artifact v2",
         )
     except ArtifactTransportError as error:
         raise ArtifactDistributionError(str(error)) from error
     try:
         lock = DistributionLock(
-            schema_version="1.0.0",
-            distribution_id="hf_distribution_v1",
+            schema_version="2.0.0",
+            distribution_id="hf_distribution_v2",
             repository=RepositoryContract(
                 provider="huggingface_hub",
                 repo_id=repo_id,
@@ -221,7 +202,7 @@ def publish_artifacts(
                 revision=revision,
                 public=True,
             ),
-            artifacts=tuple(_publication_records(repository, include_legacy)),
+            artifacts=_publication_records(repository),
         )
     except (ArtifactContractError, OSError, ValueError) as error:
         raise ArtifactDistributionError(
@@ -265,22 +246,20 @@ def publish_artifacts(
             f"Unable to publish candidate lock {output.relative_to(repository)!s}: {error}"
         ) from error
     return ArtifactOperationResult(
-        group="all" if include_legacy else "selected",
         materialized=(output,),
         reused=(),
         revision=revision,
     )
 
 
-def _publication_records(repository: Path, include_legacy: bool) -> tuple[ArtifactRecord, ...]:
+def _publication_records(repository: Path) -> tuple[ArtifactRecord, ...]:
     selected_model = safe_repository_path(
         repository, "models/selected_v1/model.cbm", must_exist=True
     )
     selected_size = selected_model.stat().st_size
-    records = [
+    return (
         ArtifactRecord(
             artifact_id="selected_model",
-            group="selected",
             remote_path="selected_v1/model.cbm",
             local_path="models/selected_v1/model.cbm",
             size_bytes=selected_size,
@@ -289,34 +268,8 @@ def _publication_records(repository: Path, include_legacy: bool) -> tuple[Artifa
             digest_reference=DigestReference(
                 manifest_path=SELECTED_MANIFEST.as_posix(), json_pointer="/model_sha256"
             ),
-        )
-    ]
-    if not include_legacy:
-        return tuple(records)
-    legacy_path = safe_repository_path(repository, DEFAULT_LEGACY_MANIFEST, must_exist=True)
-    legacy = load_legacy_manifest(legacy_path)
-    legacy_artifacts: tuple[tuple[Literal["legacy_model", "legacy_preprocessor"], str], ...] = (
-        ("legacy_model", "model.pkl"),
-        ("legacy_preprocessor", "preprocessor.pkl"),
+        ),
     )
-    for artifact_id, filename in legacy_artifacts:
-        contract = legacy.files[filename]
-        records.append(
-            ArtifactRecord(
-                artifact_id=artifact_id,
-                group="legacy",
-                remote_path=f"legacy_v1/{filename}",
-                local_path=f"artifacts/{filename}",
-                size_bytes=contract.size_bytes,
-                serialization="python_pickle",
-                trust_classification="trusted_pickle_explicit_only",
-                digest_reference=DigestReference(
-                    manifest_path=DEFAULT_LEGACY_MANIFEST.as_posix(),
-                    json_pointer=f"/files/{filename}/sha256",
-                ),
-            )
-        )
-    return tuple(records)
 
 
 def _context(repository_root: str | Path, config_path: str | Path) -> tuple[Path, DistributionLock]:
@@ -339,19 +292,6 @@ def _artifact_location(
             f"Artifact contract failed for {record.artifact_id!r}: {error}"
         ) from error
     return path, digest
-
-
-def _records(config: DistributionLock, group: ArtifactGroup) -> tuple[ArtifactRecord, ...]:
-    if group not in {"selected", "legacy", "all"}:
-        raise ArtifactDistributionError(f"Unsupported artifact group: {group!r}")
-    records = tuple(
-        record for record in config.artifacts if group == "all" or record.group == group
-    )
-    if not records:
-        raise ArtifactDistributionError(
-            f"The reviewed distribution lock does not contain the requested {group!r} group."
-        )
-    return records
 
 
 def _matches(path: Path, expected_size: int, expected_sha256: str) -> bool:
@@ -439,26 +379,6 @@ def _reject_candidate_symlink_components(repository: Path, relative_output: Path
             raise ArtifactDistributionError(
                 f"Candidate lock output contains a symlinked component: {current}"
             )
-
-
-def _verify_legacy_manifest_bundle(repository: Path) -> None:
-    try:
-        manifest_path = safe_repository_path(repository, DEFAULT_LEGACY_MANIFEST, must_exist=True)
-        manifest = load_legacy_manifest(manifest_path)
-        for filename, contract in manifest.files.items():
-            artifact_path = safe_repository_path(
-                repository, Path("artifacts") / filename, must_exist=True
-            )
-            if not _matches(artifact_path, contract.size_bytes, contract.sha256):
-                raise ArtifactDistributionError(
-                    f"Legacy artifact {filename!r} does not match its reviewed manifest."
-                )
-    except ArtifactDistributionError:
-        raise
-    except (ArtifactContractError, OSError, ValueError) as error:
-        raise ArtifactDistributionError(
-            f"Legacy bundle manifest verification failed: {error}"
-        ) from error
 
 
 def _atomic_write(path: Path, payload: bytes) -> None:

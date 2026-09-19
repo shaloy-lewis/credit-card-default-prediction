@@ -1,14 +1,9 @@
 """Cross-platform command-line entry points for project workflows."""
 
-from pathlib import Path
-from typing import Annotated
-
 import typer
 
 from credit_risk import __version__
 from credit_risk.artifact_distribution.cli import artifact_app
-from credit_risk.artifact_distribution.contracts import DEFAULT_LEGACY_MANIFEST
-from credit_risk.artifacts import ArtifactValidationError, load_artifact_bundle
 from credit_risk.data.cli import data_app
 from credit_risk.governance.cli import governance_app
 from credit_risk.inference.cli import inference_app
@@ -36,38 +31,6 @@ app.add_typer(artifact_app)
 def version() -> None:
     """Print the installed project version."""
     typer.echo(__version__)
-
-
-@app.command()
-def doctor(
-    artifact_dir: Annotated[
-        Path,
-        typer.Option(help="Directory containing trusted legacy inference artifacts."),
-    ] = Path("artifacts"),
-    manifest: Annotated[
-        Path,
-        typer.Option(help="Git-tracked trust manifest for the legacy artifact bytes."),
-    ] = DEFAULT_LEGACY_MANIFEST,
-) -> None:
-    """Load trusted artifacts and validate the complete inference contract."""
-    try:
-        load_artifact_bundle(artifact_dir, manifest_path=manifest)
-    except ArtifactValidationError as error:
-        typer.echo(f"Artifact validation failed: {error}", err=True)
-        raise typer.Exit(code=1) from None
-
-    typer.echo(f"Inference artifacts validated: {artifact_dir.resolve()}")
-
-
-@app.command()
-def train() -> None:
-    """Reject the retired legacy fitting path before importing training code."""
-    typer.echo(
-        "Legacy training is retired and cannot be rerun. Use 'credit-risk model select' for "
-        "the governed four-fit workflow.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

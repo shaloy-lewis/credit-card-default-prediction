@@ -10,7 +10,7 @@ tags:
 
 # Governed credit-card default early-warning artifacts
 
-This public model repository distributes exact binary artifacts for the
+This public model repository distributes the exact selected-model binary for the
 [`credit-card-default-prediction`](https://github.com/shaloy-lewis/credit-card-default-prediction)
 portfolio project. The GitHub repository remains the source of validation
 authority through reviewed manifests and SHA-256 digests.
@@ -32,13 +32,6 @@ The project does not redistribute training data here. Data is acquired directly
 from the UCI Default of Credit Card Clients dataset using a checksum-pinned
 source manifest. The dataset is attributed under CC BY 4.0 and represents a
 historical 2005 Taiwanese population.
-
-## Legacy compatibility files
-
-Files under `legacy_v1/` use Python pickle semantics and can execute arbitrary
-code. Public hosting does not establish their safety. They must be retrieved
-explicitly and loaded only after exact verification against the Git-tracked
-legacy trust manifest.
 
 ## Reproducibility
 

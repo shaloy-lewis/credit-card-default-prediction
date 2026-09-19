@@ -2,7 +2,6 @@
 
 from importlib.metadata import version as distribution_version
 
-import pytest
 from typer.testing import CliRunner
 
 from credit_risk import __version__
@@ -19,43 +18,8 @@ def test_version_reports_package_version() -> None:
     assert result.stdout.strip() == __version__
 
 
-@pytest.mark.artifact
-def test_doctor_accepts_complete_artifact_directory() -> None:
-    result = runner.invoke(
-        app,
-        ["doctor", "--artifact-dir", "artifacts"],
-    )
-
-    assert result.exit_code == 0
-    assert "Inference artifacts validated" in result.stdout
-
-
-def test_doctor_fails_with_actionable_missing_artifacts() -> None:
-    result = runner.invoke(
-        app,
-        ["doctor", "--artifact-dir", "tests/fixtures/empty_artifacts"],
-    )
-
-    assert result.exit_code == 1
-    assert "model.pkl" in result.output
-    assert "credit-risk artifacts pull --group legacy" in result.output
-    assert "preprocessor.pkl" in result.output
-
-
-def test_doctor_rejects_corrupt_artifacts() -> None:
-    result = runner.invoke(
-        app,
-        ["doctor", "--artifact-dir", "tests/fixtures/corrupt_artifacts"],
-    )
-
-    assert result.exit_code == 1
-    assert "Artifact validation failed" in result.output
-
-
-def test_legacy_train_is_retired_without_importing_training_code() -> None:
-    result = runner.invoke(app, ["train"])
-
-    assert result.exit_code == 1
-    assert "Legacy training is retired" in result.output
-    assert "credit-risk model select" in result.output
-    assert "Traceback" not in result.output
+def test_removed_legacy_commands_are_not_exposed() -> None:
+    for command in ("doctor", "train"):
+        result = runner.invoke(app, [command])
+        assert result.exit_code != 0
+        assert "No such command" in result.output

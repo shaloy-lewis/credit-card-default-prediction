@@ -11,10 +11,8 @@ from credit_risk.artifact_distribution.contracts import (
     ArtifactRecord,
     DigestReference,
     DistributionLock,
-    LegacyManifest,
     RepositoryContract,
     load_distribution_lock,
-    load_legacy_manifest,
     resolve_digest_reference,
     safe_repository_path,
     sha256_file,
@@ -24,7 +22,6 @@ from credit_risk.artifact_distribution.contracts import (
 def _record(**updates: object) -> ArtifactRecord:
     values: dict[str, object] = {
         "artifact_id": "selected_model",
-        "group": "selected",
         "remote_path": "selected_v1/model.cbm",
         "local_path": "models/selected_v1/model.cbm",
         "size_bytes": 10,
@@ -48,8 +45,8 @@ def test_distribution_requires_full_commit_and_approved_inventory() -> None:
         public=True,
     )
     lock = DistributionLock(
-        schema_version="1.0.0",
-        distribution_id="hf_distribution_v1",
+        schema_version="2.0.0",
+        distribution_id="hf_distribution_v2",
         repository=repository,
         artifacts=(_record(),),
     )
@@ -62,26 +59,12 @@ def test_distribution_requires_full_commit_and_approved_inventory() -> None:
             revision="a" * 7,
             public=True,
         )
-    with pytest.raises(ValidationError, match="approved selected-and-legacy inventory"):
+    with pytest.raises(ValidationError, match="exactly the selected model"):
         DistributionLock(
-            schema_version="1.0.0",
-            distribution_id="hf_distribution_v1",
+            schema_version="2.0.0",
+            distribution_id="hf_distribution_v2",
             repository=repository,
-            artifacts=(
-                _record(),
-                _record(
-                    artifact_id="legacy_model",
-                    group="legacy",
-                    local_path="artifacts/model.pkl",
-                    remote_path="legacy_v1/model.pkl",
-                    serialization="python_pickle",
-                    trust_classification="trusted_pickle_explicit_only",
-                    digest_reference=DigestReference(
-                        manifest_path="configs/artifacts/legacy_v1.json",
-                        json_pointer="/files/model.pkl/sha256",
-                    ),
-                ),
-            ),
+            artifacts=(),
         )
 
 
@@ -100,7 +83,7 @@ def test_artifact_record_rejects_unsafe_and_changed_paths(field: str, value: str
 
 
 def test_artifact_record_rejects_changed_approved_mapping() -> None:
-    with pytest.raises(ValidationError, match="approved mapping"):
+    with pytest.raises(ValidationError, match="approved mapping|selected_model"):
         _record(local_path="models/other/model.cbm")
 
 
@@ -119,14 +102,13 @@ def test_artifact_record_rejects_changed_approved_mapping() -> None:
                 json_pointer="/other_sha256",
             )
         },
-        {"artifact_id": "legacy_preprocessor"},
-        {"group": "legacy"},
+        {"artifact_id": "other_model"},
     ],
 )
-def test_artifact_record_binds_identity_group_and_digest_authority(
+def test_artifact_record_binds_identity_and_digest_authority(
     updates: dict[str, object],
 ) -> None:
-    with pytest.raises(ValidationError, match="approved mapping"):
+    with pytest.raises(ValidationError, match="approved mapping|selected_model"):
         _record(**updates)
 
 
@@ -138,71 +120,12 @@ def test_distribution_rejects_duplicate_destinations() -> None:
         revision="a" * 40,
         public=True,
     )
-    with pytest.raises(ValidationError, match="inventory"):
+    with pytest.raises(ValidationError, match="exactly the selected model"):
         DistributionLock(
-            schema_version="1.0.0",
-            distribution_id="hf_distribution_v1",
+            schema_version="2.0.0",
+            distribution_id="hf_distribution_v2",
             repository=repository,
             artifacts=(_record(), _record()),
-        )
-
-
-@pytest.mark.parametrize(
-    "files",
-    [
-        {
-            "model.pkl": {
-                "size_bytes": 1,
-                "sha256": "a" * 64,
-                "serialization": "python_pickle",
-            }
-        },
-        {
-            "model.pkl": {
-                "size_bytes": 1,
-                "sha256": "a" * 64,
-                "serialization": "json",
-            },
-            "preprocessor.pkl": {
-                "size_bytes": 1,
-                "sha256": "b" * 64,
-                "serialization": "python_pickle",
-            },
-            "outlier_threshold.json": {
-                "size_bytes": 1,
-                "sha256": "c" * 64,
-                "serialization": "json",
-            },
-        },
-        {
-            "model.pkl": {
-                "size_bytes": 1,
-                "sha256": "a" * 64,
-                "serialization": "python_pickle",
-            },
-            "preprocessor.pkl": {
-                "size_bytes": 1,
-                "sha256": "b" * 64,
-                "serialization": "python_pickle",
-            },
-            "outlier_threshold.json": {
-                "size_bytes": 1,
-                "sha256": "c" * 64,
-                "serialization": "python_pickle",
-            },
-        },
-    ],
-)
-def test_legacy_manifest_requires_exact_inventory_and_serialization(
-    files: dict[str, object],
-) -> None:
-    with pytest.raises(ValidationError):
-        LegacyManifest(
-            schema_version="1.0.0",
-            bundle_id="legacy_v1",
-            trust_classification="trusted_pickle_explicit_only",
-            warning="Only digest-authenticated pickle files may be loaded.",
-            files=files,
         )
 
 
@@ -224,8 +147,6 @@ def test_contract_loaders_and_hashing_normalize_file_errors(tmp_path: Path) -> N
     invalid.write_text("not-json", encoding="utf-8")
     with pytest.raises(ArtifactContractError, match="Invalid artifact distribution lock"):
         load_distribution_lock(invalid)
-    with pytest.raises(ArtifactContractError, match="Unable to read legacy"):
-        load_legacy_manifest(tmp_path / "missing.json")
     with pytest.raises(ArtifactContractError, match="Unable to hash"):
         sha256_file(tmp_path / "missing.bin")
 
