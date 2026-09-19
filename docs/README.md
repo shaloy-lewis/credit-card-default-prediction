@@ -184,6 +184,7 @@ reviewed.
 ## External artifact distribution
 
 - [ADR 0007: external binary-artifact distribution](adr/0007-external-artifact-distribution.md)
+- [ADR 0008: pre-Release B repository cleanup](adr/0008-pre-release-b-repository-cleanup.md)
 - [Storage, retrieval, publishing, and recovery guide](artifacts/storage-architecture.md)
 - [Public Hugging Face repository card source](artifacts/hugging-face-repository-card.md)
 - Machine-readable distribution lock: `../configs/artifacts/hf_distribution_v1.lock.json`
