@@ -2,6 +2,7 @@
 
 from importlib.metadata import version as distribution_version
 
+import pytest
 from typer.testing import CliRunner
 
 from credit_risk import __version__
@@ -18,6 +19,7 @@ def test_version_reports_package_version() -> None:
     assert result.stdout.strip() == __version__
 
 
+@pytest.mark.artifact
 def test_doctor_accepts_complete_artifact_directory() -> None:
     result = runner.invoke(
         app,
@@ -36,6 +38,7 @@ def test_doctor_fails_with_actionable_missing_artifacts() -> None:
 
     assert result.exit_code == 1
     assert "model.pkl" in result.output
+    assert "credit-risk artifacts pull --group legacy" in result.output
     assert "preprocessor.pkl" in result.output
 
 

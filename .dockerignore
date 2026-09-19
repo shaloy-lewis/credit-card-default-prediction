@@ -20,11 +20,11 @@ htmlcov
 logs
 tests
 
-# The runtime image receives only the reviewed selected-model bundle. Legacy
-# pickles, raw data, reports, tracking state, and unrelated model files stay out.
+# The artifact-fetch stage receives only reviewed distribution metadata. The
+# selected model is downloaded from the pinned public revision during the build;
+# no local model binary, legacy pickle, cache, or credential enters the context.
 artifacts
 models/*
 !models/selected_v1/
 models/selected_v1/*
 !models/selected_v1/manifest.json
-!models/selected_v1/model.cbm

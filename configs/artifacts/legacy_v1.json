@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "bundle_id": "legacy_v1",
+  "trust_classification": "trusted_pickle_explicit_only",
+  "warning": "Pickle deserialization can execute arbitrary code. Load only files whose bytes match this reviewed manifest.",
+  "files": {
+    "model.pkl": {
+      "size_bytes": 669203,
+      "sha256": "092a9f54958364f371ff489f58cad060f54a9342703fc517319f89a3c6ea36ad",
+      "serialization": "python_pickle"
+    },
+    "preprocessor.pkl": {
+      "size_bytes": 4112,
+      "sha256": "5cdbf1a48e14430dc729676828356593508b8ddb7f0b0e7a29dfad9a0330339b",
+      "serialization": "python_pickle"
+    },
+    "outlier_threshold.json": {
+      "size_bytes": 660,
+      "sha256": "5914a23eaa8dc0ebcf6ff21207324741a98bfcf29987f63c8a4c3120bb31b4c4",
+      "serialization": "json"
+    }
+  }
+}

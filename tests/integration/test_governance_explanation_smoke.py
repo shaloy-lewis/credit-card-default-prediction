@@ -13,6 +13,7 @@ from credit_risk.modeling.risk_policy import risk_band
 from credit_risk.modeling.selected_bundle import load_selected_bundle
 
 
+@pytest.mark.artifact
 @pytest.mark.integration
 def test_reviewed_bundle_native_shap_smoke(
     readme_prediction_payload: dict[str, int | float | str],

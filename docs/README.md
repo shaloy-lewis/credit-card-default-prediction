@@ -72,9 +72,10 @@ as an executable release process, while its evidence remains immutable.
 The authoritative workflow fits four fixed binary classifiers exactly once on
 the frozen training slice, selects on one shared validation slice, and bundles
 the exact winner without refitting. Calibration and bootstrap diagnostics reuse
-stored predictions. The clean four-fit run selected `catboost_fixed`; its exact
-native CBM is committed under `../models/selected_v1/` with digest-protected
-lineage. A separately reviewed approval authorized one prediction-only test
+stored predictions. The clean four-fit run selected `catboost_fixed`; its
+digest-protected manifest remains committed under `../models/selected_v1/`, and
+the unchanged native CBM is explicitly materialised there from its immutable
+public distribution revision. A separately reviewed approval authorized one prediction-only test
 evaluation. The unchanged bundle scored exactly 6,000 test accounts, passed all
 three frozen gates, and closed G2 with zero fitting, refitting, or retuning.
 Durable receipts prevent reevaluation, and row-level test predictions remain
@@ -179,3 +180,18 @@ The stack passed local bootstrap, idempotency, restart persistence, API/UI healt
 and prediction-parity checks with zero fitting or sealed-test access. Phase 8 is
 still in progress until its deterministic aggregate evidence is published and
 reviewed.
+
+## External artifact distribution
+
+- [ADR 0007: external binary-artifact distribution](adr/0007-external-artifact-distribution.md)
+- [Storage, retrieval, publishing, and recovery guide](artifacts/storage-architecture.md)
+- [Public Hugging Face repository card source](artifacts/hugging-face-repository-card.md)
+- Machine-readable distribution lock: `../configs/artifacts/hf_distribution_v1.lock.json`
+- Legacy trust manifest: `../configs/artifacts/legacy_v1.json`
+
+GitHub retains source, manifests, aggregate evidence, and checksums; UCI remains
+the sole data source; Hugging Face distributes exact reviewed binary bytes; and
+MLflow/MinIO retain release-control duties. Normal imports and application
+startup remain offline. The selected model is acquired only through an explicit
+pull or an isolated Docker build stage, while legacy pickles require a separate
+opt-in pull and pre-deserialization digest authentication.

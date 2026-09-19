@@ -14,6 +14,27 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable
 
 
+FROM python:3.12.14-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 AS artifact-fetcher
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.28@sha256:0f36cb9361a3346885ca3677e3767016687b5a170c1a6b88465ec14aefec90aa /uv /uvx /bin/
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY src ./src
+COPY configs/artifacts/hf_distribution_v1.lock.json ./configs/artifacts/hf_distribution_v1.lock.json
+COPY models/selected_v1/manifest.json ./models/selected_v1/manifest.json
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=cache,target=/root/.cache/huggingface \
+    uv sync --locked --no-dev --no-editable --extra artifacts \
+    && uv run --no-sync credit-risk artifacts pull --group selected \
+    && uv run --no-sync credit-risk artifacts verify --group selected
+
+
 FROM python:3.12.14-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 AS runtime
 
 RUN apt-get update \
@@ -34,7 +55,7 @@ RUN addgroup --system app && \
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --chown=app:app api.py ./api.py
 COPY --chown=app:app configs/inference/phase6_v1.json ./configs/inference/phase6_v1.json
-COPY --chown=app:app models/selected_v1/manifest.json models/selected_v1/model.cbm ./models/selected_v1/
+COPY --from=artifact-fetcher --chown=app:app /app/models/selected_v1/manifest.json /app/models/selected_v1/model.cbm ./models/selected_v1/
 
 USER app
 

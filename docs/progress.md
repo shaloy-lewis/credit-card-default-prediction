@@ -455,3 +455,23 @@ deferred risks. It is not a substitute for commit history or CI results.
   8 evidence package. No model fitting, refitting, tuning, final-test access, or
   sealed-test scoring occurred. Phase 8 remains in progress until aggregate
   evidence is published and reviewed.
+
+## External artifact distribution migration
+
+**Prepared:** 2026-09-18
+
+- Package version `0.5.0` adds an optional, pinned artifact client and explicit
+  `artifacts pull`, `verify`, and maintainer-only `publish` commands.
+- The exact selected CatBoost model and two legacy compatibility pickles were
+  published to public repository `ShaloyL/credit-card-default-prediction` at
+  immutable revision `f73ca4ee7a2c2d2ea51741e75fccf66ae7a4a640`.
+- Anonymous downloads matched the existing selected manifest and the new legacy
+  trust manifest before Git stopped tracking the three binary paths.
+- Selected-model loaders, API, batch, governance, Release A, registry, deployment,
+  and platform paths remain local-only and continue using the historical path and
+  unchanged SHA-256. Legacy loading authenticates all bytes before `pickle.load`.
+- Docker retrieves and verifies only the selected model in an isolated build
+  stage. The final API and platform images remain offline and contain neither
+  Hugging Face dependencies, cache state, credentials, nor legacy files.
+- No model fitting, refitting, calibration, final-test execution, sealed-test
+  access, or historical evidence regeneration occurred.

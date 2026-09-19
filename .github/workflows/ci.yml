@@ -41,10 +41,16 @@ jobs:
         run: uv run ruff check api.py app.py src/credit_risk tests
 
       - name: Type-check maintained boundaries
-        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
+        run: uv run mypy src/credit_risk/artifacts.py src/credit_risk/artifact_distribution src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
-        run: uv run pytest -m "not training" --cov --cov-report=term-missing
+        run: uv run pytest -m "not training and not artifact" --cov --cov-report=term-missing
+
+      - name: Enforce artifact-distribution branch coverage
+        run: >-
+          uv run pytest tests/unit/artifact_distribution
+          --cov=credit_risk.artifact_distribution --cov-branch --cov-report=term-missing
+          --cov-fail-under=90
 
       - name: Enforce Phase 1 data-package branch coverage
         run: >-
@@ -80,9 +86,50 @@ jobs:
           uv run pytest tests/unit/governance tests/unit/test_governance_cli.py
           tests/integration/test_phase5_protocol.py
           tests/integration/test_phase5_evidence.py
-          tests/integration/test_governance_explanation_smoke.py -m "not training"
+          tests/integration/test_governance_explanation_smoke.py
+          -m "not training and not artifact"
           --cov=credit_risk.governance --cov-branch --cov-report=term-missing
           --cov-fail-under=90
+
+      - name: Enforce Phase 8 platform branch coverage
+        run: >-
+          uv run pytest tests/unit/platform tests/unit/test_platform_cli.py
+          tests/integration/test_phase8_protocol.py
+          -m "not training and not artifact"
+          --cov=credit_risk.platform --cov-branch --cov-report=term-missing
+          --cov-fail-under=90
+
+  artifact-integration:
+    name: Pull and test reviewed artifacts
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 30
+    env:
+      UV_PYTHON: "3.12"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install locked project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Pull and verify reviewed artifact groups
+        run: |
+          uv run credit-risk artifacts pull --group selected --cache-dir .hf-cache
+          uv run credit-risk artifacts pull --group legacy --cache-dir .hf-cache
+          uv run credit-risk artifacts verify --group all
+
+      - name: Run artifact-dependent tests
+        run: uv run pytest -m "artifact and not training"
 
       - name: Enforce Release A evidence branch coverage
         run: >-
@@ -111,17 +158,18 @@ jobs:
           --cov=credit_risk.registry --cov-branch --cov-report=term-missing
           --cov-fail-under=90
 
-      - name: Enforce Phase 8 platform branch coverage
-        run: >-
-          uv run pytest tests/unit/platform tests/unit/test_platform_cli.py
-          tests/integration/test_phase8_protocol.py -m "not training"
-          --cov=credit_risk.platform --cov-branch --cov-report=term-missing
-          --cov-fail-under=90
+      - name: Prove offline clean recovery from the pinned cache
+        run: |
+          rm models/selected_v1/model.cbm artifacts/model.pkl artifacts/preprocessor.pkl
+          uv run credit-risk artifacts pull --group all --cache-dir .hf-cache --offline
+          uv run credit-risk artifacts verify --group all
+          test "$(sha256sum models/selected_v1/model.cbm | cut -d ' ' -f 1)" = "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
+          uv run pytest tests/integration/test_artifact_compatibility.py -q
 
   container:
     name: Build, test, and scan API container
     runs-on: ubuntu-latest
-    needs: quality
+    needs: [quality, artifact-integration]
     timeout-minutes: 20
 
     steps:
@@ -186,11 +234,12 @@ jobs:
         shell: bash
         run: |
           test "$(docker exec credit-risk-api-ci whoami)" = "app"
-          test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.4.0"
+          test "$(docker exec credit-risk-api-ci credit-risk version)" = "0.5.0"
           docker exec credit-risk-api-ci python -c "import credit_risk.data"
           docker exec credit-risk-api-ci python -c "import credit_risk.modeling"
           docker exec credit-risk-api-ci python -c "import importlib.util; assert importlib.util.find_spec('pandera') is None"
           docker exec credit-risk-api-ci python -c "import importlib.util; assert importlib.util.find_spec('mlflow') is None"
+          docker exec credit-risk-api-ci python -c "import importlib.util; assert importlib.util.find_spec('huggingface_hub') is None"
           set +e
           data_output="$(docker exec credit-risk-api-ci credit-risk data build --offline 2>&1)"
           data_status=$?
@@ -275,7 +324,7 @@ jobs:
   platform:
     name: Build, persist, verify, and scan local platform
     runs-on: ubuntu-latest
-    needs: quality
+    needs: [quality, artifact-integration]
     timeout-minutes: 35
 
     steps:
@@ -293,8 +342,9 @@ jobs:
         run: |
           test "$(docker run --rm --entrypoint whoami credit-risk-mlflow:phase8)" = "app"
           test "$(docker run --rm --entrypoint whoami credit-risk-ui:phase8)" = "app"
-          test "$(docker run --rm --entrypoint credit-risk credit-risk-mlflow:phase8 version)" = "0.4.0"
+          test "$(docker run --rm --entrypoint credit-risk credit-risk-mlflow:phase8 version)" = "0.5.0"
           docker run --rm --entrypoint python credit-risk-mlflow:phase8 -c "from pathlib import Path; assert not Path('/app/.env').exists(); assert not Path('/app/data').exists(); assert not Path('/app/experiment').exists()"
+          docker run --rm --entrypoint python credit-risk-mlflow:phase8 -c "import importlib.util; assert importlib.util.find_spec('huggingface_hub') is None"
           docker run --rm --entrypoint python credit-risk-ui:phase8 -c "from pathlib import Path; assert not Path('/app/.env').exists(); assert not Path('/app/models').exists(); assert not Path('/app/data').exists(); assert not Path('/app/experiment').exists()"
 
       - name: Start persistent local platform

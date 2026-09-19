@@ -6,6 +6,8 @@ from typing import Annotated
 import typer
 
 from credit_risk import __version__
+from credit_risk.artifact_distribution.cli import artifact_app
+from credit_risk.artifact_distribution.contracts import DEFAULT_LEGACY_MANIFEST
 from credit_risk.artifacts import ArtifactValidationError, load_artifact_bundle
 from credit_risk.data.cli import data_app
 from credit_risk.governance.cli import governance_app
@@ -27,6 +29,7 @@ app.add_typer(release_app)
 app.add_typer(inference_app)
 app.add_typer(registry_app)
 app.add_typer(platform_app)
+app.add_typer(artifact_app)
 
 
 @app.command()
@@ -41,10 +44,14 @@ def doctor(
         Path,
         typer.Option(help="Directory containing trusted legacy inference artifacts."),
     ] = Path("artifacts"),
+    manifest: Annotated[
+        Path,
+        typer.Option(help="Git-tracked trust manifest for the legacy artifact bytes."),
+    ] = DEFAULT_LEGACY_MANIFEST,
 ) -> None:
     """Load trusted artifacts and validate the complete inference contract."""
     try:
-        load_artifact_bundle(artifact_dir)
+        load_artifact_bundle(artifact_dir, manifest_path=manifest)
     except ArtifactValidationError as error:
         typer.echo(f"Artifact validation failed: {error}", err=True)
         raise typer.Exit(code=1) from None

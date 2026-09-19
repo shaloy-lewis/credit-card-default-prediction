@@ -46,6 +46,7 @@ def test_phase8_config_rejects_any_byte_change(tmp_path: Path) -> None:
         load_platform_config(altered)
 
 
+@pytest.mark.artifact
 def test_all_bound_sources_and_bundle_files_match() -> None:
     config = load_platform_config(CONFIG)
     for reference in config.source_evidence.values():

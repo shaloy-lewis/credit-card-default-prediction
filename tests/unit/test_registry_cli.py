@@ -107,8 +107,8 @@ def test_registry_cli_converts_expected_failure_without_traceback(
     )
     result = runner.invoke(app, ["registry", "register"])
     assert result.exit_code == 1
-    assert "Registry registration failed: bad" in result.stdout
-    assert "Traceback" not in result.stdout
+    assert "Registry registration failed: bad" in result.output
+    assert "Traceback" not in result.output
 
 
 def test_registry_cli_exposes_no_force_or_bypass() -> None:

@@ -167,5 +167,8 @@ cython_debug/
 /data/
 /experiment/
 /mlruns/
+/models/selected_v1/model.cbm
+/artifacts/model.pkl
+/artifacts/preprocessor.pkl
 *.csv
 !tests/fixtures/inference_batch_v1.csv
