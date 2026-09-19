@@ -36,7 +36,7 @@ class DigestReference(StrictModel):
 
 
 class ArtifactRecord(StrictModel):
-    artifact_id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]{2,63}$")
+    artifact_id: Literal["selected_model", "legacy_model", "legacy_preprocessor"]
     group: Literal["selected", "legacy"]
     remote_path: str
     local_path: str
@@ -49,32 +49,44 @@ class ArtifactRecord(StrictModel):
     def safe_and_compatible(self) -> ArtifactRecord:
         _validate_remote_path(self.remote_path)
         _validate_relative_path(self.local_path, "local path")
-        if self.group == "selected":
-            expected = (
+        approved_mappings = {
+            "selected_model": (
+                "selected",
                 "models/selected_v1/model.cbm",
                 "selected_v1/model.cbm",
                 "catboost_cbm",
                 "digest_authenticated",
-            )
-        elif self.artifact_id == "legacy_model":
-            expected = (
+                SELECTED_MANIFEST.as_posix(),
+                "/model_sha256",
+            ),
+            "legacy_model": (
+                "legacy",
                 "artifacts/model.pkl",
                 "legacy_v1/model.pkl",
                 "python_pickle",
                 "trusted_pickle_explicit_only",
-            )
-        else:
-            expected = (
+                DEFAULT_LEGACY_MANIFEST.as_posix(),
+                "/files/model.pkl/sha256",
+            ),
+            "legacy_preprocessor": (
+                "legacy",
                 "artifacts/preprocessor.pkl",
                 "legacy_v1/preprocessor.pkl",
                 "python_pickle",
                 "trusted_pickle_explicit_only",
-            )
+                DEFAULT_LEGACY_MANIFEST.as_posix(),
+                "/files/preprocessor.pkl/sha256",
+            ),
+        }
+        expected = approved_mappings[self.artifact_id]
         observed = (
+            self.group,
             self.local_path,
             self.remote_path,
             self.serialization,
             self.trust_classification,
+            self.digest_reference.manifest_path,
+            self.digest_reference.json_pointer,
         )
         if observed != expected:
             raise ValueError(f"artifact {self.artifact_id!r} differs from its approved mapping")

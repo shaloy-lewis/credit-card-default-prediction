@@ -76,6 +76,10 @@ def test_distribution_requires_full_commit_and_approved_inventory() -> None:
                     remote_path="legacy_v1/model.pkl",
                     serialization="python_pickle",
                     trust_classification="trusted_pickle_explicit_only",
+                    digest_reference=DigestReference(
+                        manifest_path="configs/artifacts/legacy_v1.json",
+                        json_pointer="/files/model.pkl/sha256",
+                    ),
                 ),
             ),
         )
@@ -98,6 +102,32 @@ def test_artifact_record_rejects_unsafe_and_changed_paths(field: str, value: str
 def test_artifact_record_rejects_changed_approved_mapping() -> None:
     with pytest.raises(ValidationError, match="approved mapping"):
         _record(local_path="models/other/model.cbm")
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {
+            "digest_reference": DigestReference(
+                manifest_path="configs/artifacts/other.json",
+                json_pointer="/model_sha256",
+            )
+        },
+        {
+            "digest_reference": DigestReference(
+                manifest_path="models/selected_v1/manifest.json",
+                json_pointer="/other_sha256",
+            )
+        },
+        {"artifact_id": "legacy_preprocessor"},
+        {"group": "legacy"},
+    ],
+)
+def test_artifact_record_binds_identity_group_and_digest_authority(
+    updates: dict[str, object],
+) -> None:
+    with pytest.raises(ValidationError, match="approved mapping"):
+        _record(**updates)
 
 
 def test_distribution_rejects_duplicate_destinations() -> None:

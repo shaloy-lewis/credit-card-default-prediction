@@ -651,3 +651,30 @@ def test_publish_rechecks_candidate_destination_without_overwrite(
         )
 
     assert output.read_text(encoding="utf-8") == "concurrent"
+
+
+def test_publish_uses_atomic_no_clobber_for_candidate_lock(
+    distribution_repository: tuple[Path, Path, dict[str, bytes]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, _, payloads = distribution_repository
+    (root / "models/selected_v1/model.cbm").write_bytes(payloads["selected_v1/model.cbm"])
+    output = root / "experiment/artifacts/candidate.json"
+    transport = FakeTransport(_remote_files(root, payloads))
+    real_link = workflow.os.link
+
+    def race_link(source: str | Path, destination: str | Path) -> None:
+        Path(destination).write_text("concurrent", encoding="utf-8")
+        real_link(source, destination)
+
+    monkeypatch.setattr(workflow.os, "link", race_link)
+
+    with pytest.raises(ArtifactDistributionError, match="refusing to overwrite"):
+        publish_artifacts(
+            repo_id="owner/repository",
+            source_root=root,
+            lock_output=output.relative_to(root),
+            transport=transport,
+        )
+
+    assert output.read_text(encoding="utf-8") == "concurrent"

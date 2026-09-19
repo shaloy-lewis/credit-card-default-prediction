@@ -295,10 +295,11 @@ def _publication_records(repository: Path, include_legacy: bool) -> tuple[Artifa
         return tuple(records)
     legacy_path = safe_repository_path(repository, DEFAULT_LEGACY_MANIFEST, must_exist=True)
     legacy = load_legacy_manifest(legacy_path)
-    for artifact_id, filename in (
+    legacy_artifacts: tuple[tuple[Literal["legacy_model", "legacy_preprocessor"], str], ...] = (
         ("legacy_model", "model.pkl"),
         ("legacy_preprocessor", "preprocessor.pkl"),
-    ):
+    )
+    for artifact_id, filename in legacy_artifacts:
         contract = legacy.files[filename]
         records.append(
             ArtifactRecord(
@@ -468,7 +469,12 @@ def _atomic_write(path: Path, payload: bytes) -> None:
             file_obj.write(payload)
             file_obj.flush()
             os.fsync(file_obj.fileno())
-        os.replace(temporary, path)
+        try:
+            os.link(temporary, path)
+        except FileExistsError as error:
+            raise ArtifactDistributionError(
+                "Candidate lock appeared during final publication; refusing to overwrite it."
+            ) from error
     finally:
         temporary.unlink(missing_ok=True)
 
