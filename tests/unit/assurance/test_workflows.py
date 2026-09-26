@@ -218,6 +218,12 @@ def test_platform_receipts_bind_image_and_recovery(sandbox):
     receipt, folder = platform_receipt(sandbox)
     sha = platform_evidence.publish_evidence(str(folder))
     assert platform_evidence.verify_evidence(platform_evidence.OUTPUT, sha)["states_verified"] == 3
+    for service in platform_evidence.SERVICES:
+        for artifact in ("scan", "sbom"):
+            name = f"{service}-{artifact}.json"
+            assert (sandbox / platform_evidence.OUTPUT / name).read_bytes() == (
+                folder / name
+            ).read_bytes()
 
 
 @pytest.mark.parametrize(

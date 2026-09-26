@@ -102,8 +102,8 @@ def publish_evidence(runtime: str, output: str = OUTPUT) -> str:
             raise EvidenceError("Scan receipt hash mismatch.")
         if receipt["sbom_sha256"].get(service) != hash_file(folder / f"{service}-sbom.json"):
             raise EvidenceError("SBOM receipt hash mismatch.")
-        extra[f"{service}-scan.json"] = encode(scan)
-        extra[f"{service}-sbom.json"] = encode(sbom)
+        extra[f"{service}-scan.json"] = (folder / f"{service}-scan.json").read_bytes()
+        extra[f"{service}-sbom.json"] = (folder / f"{service}-sbom.json").read_bytes()
         scan_summary[service] = {"image_id": receipt["images"][service], "fixable_high_critical": 0}
     return publish(
         safe_path(output, "reports/platform"),
@@ -127,6 +127,13 @@ def verify_evidence(root: str, expected: str) -> dict[str, Any]:
     manifest = read_json(folder / "evidence-manifest.json")
     receipt = read_json(folder / "receipt.json")
     validate_receipt(receipt, manifest["implementation_commit"])
+    for service in SERVICES:
+        for artifact in ("scan", "sbom"):
+            if (
+                hash_file(folder / f"{service}-{artifact}.json")
+                != receipt[f"{artifact}_sha256"][service]
+            ):
+                raise EvidenceError("Platform scan/SBOM differs from its runtime receipt.")
     if summary.get("status") != "platform_verified" or summary.get("states_verified") != 3:
         raise EvidenceError("Platform evidence is incomplete.")
     return summary
