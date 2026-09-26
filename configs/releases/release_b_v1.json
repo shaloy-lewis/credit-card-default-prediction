@@ -1,0 +1,38 @@
+{
+  "release_id": "release_b_v1",
+  "status": "awaiting_measured_evidence",
+  "evidence": {
+    "platform": {
+      "root": "reports/platform/phase8_v1",
+      "expected_manifest_sha256": null
+    },
+    "robustness": {
+      "root": "reports/robustness/release_b_v1",
+      "expected_manifest_sha256": null
+    },
+    "reference": {
+      "root": "reports/monitoring/reference_v1",
+      "expected_manifest_sha256": null
+    },
+    "batch_monitoring": {
+      "root": "reports/monitoring/batch_v1",
+      "expected_manifest_sha256": null
+    },
+    "service_monitoring": {
+      "root": "reports/monitoring/service_v1",
+      "expected_manifest_sha256": null
+    },
+    "benchmark": {
+      "root": "reports/monitoring/benchmark_v1",
+      "expected_manifest_sha256": null
+    },
+    "acceptance": {
+      "root": "reports/monitoring/acceptance_v1",
+      "expected_manifest_sha256": null
+    },
+    "incidents": {
+      "root": "reports/incidents/release_b_v1",
+      "expected_manifest_sha256": null
+    }
+  }
+}

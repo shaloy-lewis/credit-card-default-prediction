@@ -511,6 +511,15 @@ released model contract.
 Generated data, logs, environments, caches, experiment outputs, and the
 externally distributed selected-model binary are excluded from version control.
 
+## Release B sign-off implementation
+
+The additive platform-evidence, robustness, monitoring, benchmark, incident and
+Release B dossier commands are implemented. Official measured evidence and
+project-owner approval remain required before G4 closes. Follow the
+[sign-off procedure](docs/operations/release-b-signoff.md); the separate
+Release B evidence workflow runs Linux container checks and prediction-only
+diagnostics without training or sealed-test evaluation.
+
 ## Delivery milestones
 
 - **Release A — defensible model (complete):** reproducible data, baselines,

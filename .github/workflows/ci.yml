@@ -53,7 +53,7 @@ jobs:
         run: uv run ruff check api.py app.py src/credit_risk tests
 
       - name: Type-check maintained boundaries
-        run: uv run mypy src/credit_risk/artifact_distribution src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
+        run: uv run mypy src/credit_risk/assurance src/credit_risk/robustness src/credit_risk/monitoring src/credit_risk/incidents src/credit_risk/artifact_distribution src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
 
       - name: Run tests
         run: uv run pytest -m "not training and not artifact" --cov --cov-report=term-missing
@@ -105,11 +105,21 @@ jobs:
 
       - name: Enforce Phase 8 platform branch coverage
         run: >-
-          uv run pytest tests/unit/platform tests/unit/test_platform_cli.py
+          uv run pytest tests/unit/assurance tests/unit/platform tests/unit/test_platform_cli.py
           tests/integration/test_phase8_protocol.py
           -m "not training and not artifact"
           --cov=credit_risk.platform --cov-branch --cov-report=term-missing
           --cov-fail-under=90
+
+      - name: Enforce Release B assurance branch coverage
+        run: >-
+          uv run pytest tests/unit/assurance tests/unit/monitoring tests/unit/robustness
+          -m "not training and not artifact"
+          --cov=credit_risk.assurance --cov=credit_risk.monitoring
+          --cov=credit_risk.robustness --cov=credit_risk.incidents
+          --cov=credit_risk.platform.evidence --cov=credit_risk.platform.rehearsal
+          --cov=credit_risk.release.release_b --cov=credit_risk.release.ci_evidence
+          --cov-branch --cov-fail-under=90
 
   artifact-integration:
     name: Pull and test reviewed artifacts
@@ -144,7 +154,7 @@ jobs:
 
       - name: Enforce Release A evidence branch coverage
         run: >-
-          uv run pytest tests/unit/release tests/unit/test_release_cli.py
+          uv run pytest tests/unit/assurance tests/unit/release tests/unit/test_release_cli.py
           tests/integration/test_release_a_protocol.py
           tests/integration/test_release_a_evidence.py -m "not training"
           --cov=credit_risk.release --cov-branch --cov-report=term-missing

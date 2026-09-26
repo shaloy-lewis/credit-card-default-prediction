@@ -499,3 +499,23 @@ deferred risks. It is not a substitute for commit history or CI results.
   sealed-test evaluation, or evidence regeneration. The repository is narrowed
   to the active Release B foundations: inference, governance, registry,
   deployment, persistent platform, and upcoming monitoring/incident controls.
+
+
+## Release B sign-off implementation — evidence and approval pending
+
+**Prepared:** 2026-09-26
+
+- Added immutable platform evidence publication and offline verification,
+  validation-only robustness scenarios, fixed-reference drift monitoring,
+  safe service event aggregation, measured benchmark/acceptance commands,
+  isolated incident exercises, and a zero-scoring Release B review dossier.
+- Added a separate Linux evidence workflow with exact reviewed model bytes,
+  blocking scans, SBOMs and aggregate-only artifact upload.
+- Local locked-environment checks passed 885 tests, with six Windows symlink
+  skips and 32 training tests excluded. The new assurance gate measured 92%
+  branch coverage. Historical Release A and Phase 5–7 evidence authenticated.
+- Windows Docker execution is unavailable because WSL is not installed.
+  The project owner selected Linux GitHub Actions on the implementation branch
+  for official container and platform checks.
+- G4 and Release B remain open. No owner approval is implied by implementation,
+  a successful test run, or publication of a review candidate.

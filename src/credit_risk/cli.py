@@ -8,9 +8,11 @@ from credit_risk.data.cli import data_app
 from credit_risk.governance.cli import governance_app
 from credit_risk.inference.cli import inference_app
 from credit_risk.modeling.cli import model_app
+from credit_risk.monitoring.cli import monitor_app
 from credit_risk.platform.cli import platform_app
 from credit_risk.registry.cli import registry_app
 from credit_risk.release.cli import release_app
+from credit_risk.robustness.cli import robustness_app
 
 app = typer.Typer(
     name="credit-risk",
@@ -25,6 +27,8 @@ app.add_typer(inference_app)
 app.add_typer(registry_app)
 app.add_typer(platform_app)
 app.add_typer(artifact_app)
+app.add_typer(robustness_app)
+app.add_typer(monitor_app)
 
 
 @app.command()
