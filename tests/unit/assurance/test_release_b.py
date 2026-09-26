@@ -93,6 +93,7 @@ def test_build_is_zero_scoring_and_cannot_approve_itself(candidate):
     summary = published["summary"]
     assert summary["status"] == "pending_owner_signoff"
     assert summary["g4_status"] == "open"
+    assert all("\\" not in key for key in published["sources"])
     template = json.loads(published["extra"]["owner-approval-template.json"])
     assert template["decision"] == "pending"
     assert template["dossier_sha256"] is None

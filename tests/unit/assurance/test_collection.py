@@ -162,3 +162,29 @@ def test_collector_sequences_new_packages_and_keeps_release_pending(tmp_path, mo
         (tmp_path / "experiment/release_b/proposed-release-contract.json").read_bytes()
     )
     assert contract["status"] == "evidence_collected_ci_and_owner_review_pending"
+
+
+def test_collector_authenticates_committed_reports_without_scoring(tmp_path, monkeypatch):
+    from credit_risk.release.release_b import NEW_EVIDENCE
+
+    monkeypatch.setattr(collect, "ROOT", tmp_path)
+    (tmp_path / "reports/platform/phase8_v1").mkdir(parents=True)
+    monkeypatch.setattr(collect, "platform", lambda: pytest.fail("Must not rerun official scoring"))
+    monkeypatch.setattr(collect, "verify_platform", lambda *a: {})
+    monkeypatch.setattr(collect, "verify_robustness", lambda *a: {})
+    contract = {
+        "evidence": {
+            name: {"root": f"reports/{name}/v1", "expected_manifest_sha256": "a" * 64}
+            for name in NEW_EVIDENCE
+        }
+    }
+    monkeypatch.setattr(collect, "read_json", lambda *a: contract)
+    verified = []
+    monkeypatch.setattr(collect, "verify", lambda *a: verified.append(a))
+    collect.main()
+    assert len(verified) == len(NEW_EVIDENCE)
+    monkeypatch.setattr(
+        collect, "verify", lambda *a: (_ for _ in ()).throw(ev.EvidenceError("tampered"))
+    )
+    with pytest.raises(ev.EvidenceError, match="tampered"):
+        collect.main()

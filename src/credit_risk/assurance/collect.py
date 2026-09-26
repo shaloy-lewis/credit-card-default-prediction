@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 
-from credit_risk.assurance.evidence import ROOT, encode, read_json
+from credit_risk.assurance.evidence import ROOT, encode, read_json, verify
 from credit_risk.assurance.runtime import COMPOSE, command, request, write_new
 from credit_risk.incidents.workflow import build as incidents
 from credit_risk.inference.batch import run_batch
@@ -19,11 +19,17 @@ from credit_risk.monitoring.benchmark import acceptance, synthetic_batch
 from credit_risk.monitoring.benchmark import rehearse as benchmark
 from credit_risk.monitoring.workflow import batch, reference, service
 from credit_risk.platform.evidence import publish_evidence
+from credit_risk.platform.evidence import verify_evidence as verify_platform
 from credit_risk.platform.rehearsal import rehearse as platform
+from credit_risk.release.release_b import NEW_EVIDENCE
 from credit_risk.robustness.workflow import build as robustness
+from credit_risk.robustness.workflow import verify_evidence as verify_robustness
 
 
 def main() -> None:
+    if (ROOT / "reports/platform/phase8_v1").exists():
+        verify_collected()
+        return
     # Each output is new; any failed measurement stops collection before sign-off.
     platform()
     platform_sha = publish_evidence("experiment/platform/release_b_v1")
@@ -106,6 +112,18 @@ def main() -> None:
     contract["status"] = "evidence_collected_ci_and_owner_review_pending"
     write_new(ROOT / "experiment/release_b/proposed-release-contract.json", contract)
     print(encode({"status": "evidence_collected", "anchors": anchors}).decode())
+
+
+def verify_collected() -> None:
+    """A later report/approval commit authenticates existing evidence without scoring."""
+    contract = read_json(ROOT / "configs/releases/release_b_v1.json")
+    for name, kind in NEW_EVIDENCE.items():
+        item = contract["evidence"][name]
+        verify(item["root"], item["expected_manifest_sha256"], kind)
+    for name, function in (("platform", verify_platform), ("robustness", verify_robustness)):
+        item = contract["evidence"][name]
+        function(item["root"], item["expected_manifest_sha256"])
+    print(encode({"status": "existing_evidence_verified", "scoring_performed": False}).decode())
 
 
 if __name__ == "__main__":

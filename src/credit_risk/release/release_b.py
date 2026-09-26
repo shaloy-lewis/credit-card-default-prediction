@@ -149,11 +149,13 @@ def build(
         expected = item.get("expected_manifest_sha256")
         require_sha(expected)
         evidence[name] = verify(item["root"], expected, kind)
-        manifest_path = str(Path(item["root"]) / "evidence-manifest.json")
+        manifest_path = (Path(item["root"]) / "evidence-manifest.json").as_posix()
         sources[manifest_path] = expected
         # Include all authenticated outputs, not just child manifests.
         child = read_json(safe_path(manifest_path))
-        sources.update({str(Path(item["root"]) / p): sha for p, sha in child["outputs"].items()})
+        sources.update(
+            {(Path(item["root"]) / p).as_posix(): sha for p, sha in child["outputs"].items()}
+        )
     from credit_risk.platform.evidence import verify_evidence as verify_platform
     from credit_risk.robustness.workflow import verify_evidence as verify_robustness
 
