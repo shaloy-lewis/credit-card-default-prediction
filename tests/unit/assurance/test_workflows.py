@@ -196,6 +196,9 @@ def platform_receipt(sandbox):
         "states": [state] * 3,
         "health": {"api": True, "mlflow": True, "ui": True},
         "smoke_probabilities": [0.190382, 0.190382],
+        "infrastructure_images": {
+            service: "sha256:" + "c" * 64 for service in ("minio", "postgres")
+        },
         "images": {s: "sha256:" + "b" * 64 for s in platform_evidence.SERVICES},
         "scan_sha256": {},
         "sbom_sha256": {},

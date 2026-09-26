@@ -27,6 +27,7 @@ SOURCE_FILES = [
     "Dockerfile",
     "Dockerfile.platform",
     "Dockerfile.demo",
+    "Dockerfile.minio",
     "uv.lock",
     "reports/registry/phase7_v1/evidence-manifest.json",
     "models/selected_v1/manifest.json",
@@ -64,6 +65,12 @@ def validate_receipt(receipt: dict[str, Any], commit: str) -> None:
         for value in images.values()
     ):
         raise EvidenceError("Missing built-image identities.")
+    infrastructure = receipt.get("infrastructure_images", {})
+    if set(infrastructure) != {"minio", "postgres"} or any(
+        not isinstance(value, str) or not value.startswith("sha256:") or len(value) != 71
+        for value in infrastructure.values()
+    ):
+        raise EvidenceError("Missing infrastructure image identities.")
 
 
 def publish_evidence(runtime: str, output: str = OUTPUT) -> str:

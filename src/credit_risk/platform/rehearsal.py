@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 from credit_risk.assurance.evidence import (
@@ -103,19 +104,21 @@ def rehearse(runtime: str = "experiment/platform/release_b_v1", trivy: str = "tr
     before = request("/v1/predict", payload)["probability_of_default"]
     command([*COMPOSE, "restart", "postgres", "minio", "mlflow", "api", "ui"])
     await_ready()
+    wait_health()
     after = platform_state()
     final = request("/v1/predict", payload)["probability_of_default"]
-    health = {
-        "api": request("/ready") == {"status": "ready"},
-        "mlflow": request("/health", port=5000) in {"OK", "ok"},
-        "ui": request("/_stcore/health", port=8501) == "ok",
-    }
+    health = wait_health()
+    infrastructure = {}
+    for service in ("minio", "postgres"):
+        container = command([*COMPOSE, "ps", "-q", service])
+        infrastructure[service] = json.loads(command(["docker", "inspect", container]))[0]["Image"]
     receipt = {
         "implementation_commit": commit,
         "sources": source_map(SOURCE_FILES),
         "states": [first, repeat, after],
         "health": health,
         "images": images,
+        "infrastructure_images": infrastructure,
         "smoke_probabilities": [before, final],
         "scanner_version": scanner_version,
         "scan_sha256": scan_hashes,
@@ -123,3 +126,20 @@ def rehearse(runtime: str = "experiment/platform/release_b_v1", trivy: str = "tr
     }
     write_new(folder / "receipt.json", receipt)
     return runtime
+
+
+def wait_health(timeout: float = 240) -> dict[str, bool]:
+    started = time.perf_counter()
+    while time.perf_counter() - started < timeout:
+        try:
+            health = {
+                "api": request("/ready") == {"status": "ready"},
+                "mlflow": request("/health", port=5000) in {"OK", "ok"},
+                "ui": request("/_stcore/health", port=8501) == "ok",
+            }
+            if all(health.values()):
+                return health
+        except OSError:
+            pass
+        time.sleep(0.25)
+    raise EvidenceError("Platform services did not become healthy after restart.")

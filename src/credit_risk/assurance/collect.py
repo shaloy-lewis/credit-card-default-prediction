@@ -7,12 +7,14 @@ It is deliberately separate from routine CI and may perform synthetic scoring.
 from __future__ import annotations
 
 import json
+import logging
 
 from credit_risk.assurance.evidence import ROOT, encode, read_json
-from credit_risk.assurance.runtime import COMPOSE, command, write_new
+from credit_risk.assurance.runtime import COMPOSE, command, request, write_new
 from credit_risk.incidents.workflow import build as incidents
 from credit_risk.inference.batch import run_batch
 from credit_risk.inference.engine import InferenceEngine
+from credit_risk.inference.logging import LOGGER
 from credit_risk.monitoring.benchmark import acceptance, synthetic_batch
 from credit_risk.monitoring.benchmark import rehearse as benchmark
 from credit_risk.monitoring.workflow import batch, reference, service
@@ -29,7 +31,16 @@ def main() -> None:
     reference_sha = reference()
     benchmark_sha = benchmark()
     acceptance_sha = acceptance(benchmark_sha)
-    incident_sha = incidents(benchmark_sha)
+    incident_log = ROOT / "experiment/release_b/incident-events.jsonl"
+    incident_log.parent.mkdir(parents=True, exist_ok=True)
+    handler = logging.FileHandler(incident_log, mode="x", encoding="utf-8")
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    LOGGER.addHandler(handler)
+    try:
+        incident_sha = incidents(benchmark_sha)
+    finally:
+        LOGGER.removeHandler(handler)
+        handler.close()
     engine = InferenceEngine()
     operational = ROOT / "experiment/monitoring/operational"
     operational.mkdir(parents=True)
@@ -53,7 +64,7 @@ def main() -> None:
     # Docker combines Uvicorn text and safe JSON. Preserve only reviewed event objects.
     raw = command([*COMPOSE, "logs", "--no-log-prefix", "--no-color", "api"])
     events = []
-    for line in raw.splitlines():
+    for line in raw.splitlines() + incident_log.read_text(encoding="utf-8").splitlines():
         try:
             event = json.loads(line)
         except ValueError:
@@ -62,7 +73,11 @@ def main() -> None:
             events.append(event)
     events.extend(
         [
-            {"event": "service_health_probe", "route": "/ready", "status": "ready"},
+            {
+                "event": "service_health_probe",
+                "route": "/ready",
+                "status": "ready" if request("/ready") == {"status": "ready"} else "unavailable",
+            },
             {
                 "event": "batch_attempt_completed",
                 "operation": "batch",

@@ -37,6 +37,7 @@ RISK_IDS = (
     "production_privacy",
     "phase7_phase8_boundary",
     "production_monitoring",
+    "object_store_upstream_availability",
 )
 REQUIRED_JOBS = {
     "Lint, type-check, and test",

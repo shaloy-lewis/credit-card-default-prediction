@@ -52,3 +52,15 @@ Exact-commit CI is supplied as an externally hashed runtime receipt to build-b,
 not stored as a hash inside the implementation commit it describes. This avoids
 a circular commit/CI/configuration dependency. Owner approval is likewise a
 separate record bound to the finalized dossier digest.
+
+
+The original MinIO image at Quay returned unauthorized in both Linux CI runs on
+2026-09-26; its corresponding official binary archive returned HTTP 410. Phase 8
+now builds the same signed upstream release commit
+`7ced9663e6a791fef9dc6be798ff24cda9c730ac` from a checksum-pinned source archive,
+with pinned Go and runtime image digests. This is a packaging recovery, not an
+object-store version upgrade. The MinIO source license and credits are included.
+The existing blocking scan scope remains API, MLflow and UI; the old MinIO
+application/dependency risk and upstream distribution availability need an
+explicit local-demo restriction in the current Release B disposition. Production
+supportability and a maintained object-store replacement remain G5 work.

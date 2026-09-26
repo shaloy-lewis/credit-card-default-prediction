@@ -145,6 +145,7 @@ def test_collector_sequences_new_packages_and_keeps_release_pending(tmp_path, mo
     monkeypatch.setattr(
         collect, "read_json", lambda *args: {"evidence": {key: {} for key in NEW_EVIDENCE}}
     )
+    monkeypatch.setattr(collect, "request", lambda *args: {"status": "ready"})
     collect.main()
     assert operations == [
         "platform",

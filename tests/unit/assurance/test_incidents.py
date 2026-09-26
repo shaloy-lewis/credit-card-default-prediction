@@ -59,7 +59,7 @@ def test_incident_runner_restores_service_and_publishes_pending_review(tmp_path,
     monkeypatch.setattr(incidents, "clean_commit", lambda: "a" * 40)
     monkeypatch.setattr(incidents, "verify", lambda *a: {"targets": {"recovery_seconds": 1000}})
     monkeypatch.setattr(incidents, "InferenceEngine", lambda: None)
-    monkeypatch.setattr(incidents, "data_drills", lambda engine: [])
+    monkeypatch.setattr(incidents, "data_drills", lambda *args: [])
     monkeypatch.setattr(incidents, "artifact_drill", lambda *a: {"drill": "artifact_integrity"})
     monkeypatch.setattr(incidents, "rollback_paths", lambda *a: {"drill": "phase7_sqlite_rollback"})
     monkeypatch.setattr(incidents, "platform_state", lambda: {"same": True})
@@ -82,3 +82,15 @@ def test_incident_runner_restores_service_and_publishes_pending_review(tmp_path,
     assert commands[-1][-2:] == ["start", "api"]
     with pytest.raises(ev.EvidenceError, match="exists"):
         incidents.build("b" * 64)
+
+
+@pytest.mark.artifact
+def test_real_invalid_batches_leave_verified_receipts(tmp_path):
+    from credit_risk.inference.engine import InferenceEngine
+
+    outcomes = incidents.data_drills(InferenceEngine(), tmp_path)
+    assert outcomes[0]["batch_status"] == "failed"
+    assert outcomes[1]["rejected_rows"] == 1
+    assert outcomes[2]["rejected_rows"] == 2
+    assert all(len(x["input_sha256"]) == 64 for x in outcomes[:3])
+    assert all(len(x["batch_id"]) == 64 for x in outcomes[1:3])

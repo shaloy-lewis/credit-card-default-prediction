@@ -151,6 +151,8 @@ def test_platform_rehearsal_collects_measured_not_claimed_state(monkeypatch, tmp
     def command(args, timeout=900):
         if args[:3] == ["docker", "image", "inspect"]:
             return json.dumps([{"Id": "sha256:" + "b" * 64}])
+        if args[:2] == ["docker", "inspect"]:
+            return json.dumps([{"Image": "sha256:" + "c" * 64}])
         if "--output" in args:
             Path(args[args.index("--output") + 1]).write_bytes(b"{}")
         return ""
@@ -168,3 +170,24 @@ def test_platform_rehearsal_collects_measured_not_claimed_state(monkeypatch, tmp
     monkeypatch.setattr(rehearsal, "command", lambda *a: "existing-volume")
     with pytest.raises(EvidenceError, match="volumes"):
         rehearsal.rehearse(runtime="experiment/platform/other")
+
+
+def test_platform_health_waits_for_dependencies_and_times_out(monkeypatch):
+    readings = iter([0, 0, 1, 2])
+    monkeypatch.setattr(rehearsal.time, "perf_counter", lambda: next(readings))
+    monkeypatch.setattr(rehearsal.time, "sleep", lambda _: None)
+    calls = []
+
+    def request(path, port=8080):
+        calls.append(path)
+        if len(calls) == 1:
+            raise OSError("restarting")
+        return {"/ready": {"status": "ready"}, "/health": "OK", "/_stcore/health": "ok"}[path]
+
+    monkeypatch.setattr(rehearsal, "request", request)
+    assert all(rehearsal.wait_health().values())
+    readings = iter([0, 0, 300])
+    monkeypatch.setattr(rehearsal.time, "perf_counter", lambda: next(readings))
+    monkeypatch.setattr(rehearsal, "request", lambda *a, **k: "not-ready")
+    with pytest.raises(EvidenceError, match="healthy"):
+        rehearsal.wait_health()
