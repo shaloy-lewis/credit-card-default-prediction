@@ -93,7 +93,9 @@ def test_real_invalid_batches_leave_verified_receipts(tmp_path):
     assert outcomes[1]["rejected_rows"] == 1
     assert outcomes[2]["rejected_rows"] == 2
     assert all(len(x["input_sha256"]) == 64 for x in outcomes[:3])
-    assert all(len(x["batch_id"]) == 64 for x in outcomes[1:3])
+    assert all(len(x["batch_id"]) == 64 for x in outcomes[:3])
+    assert all(x["recovered"] and x["verified"] for x in outcomes)
+    assert all(len(x["recovery_batch_id"]) == 64 for x in outcomes[:3])
 
 
 @pytest.mark.parametrize("invalid_result", [False, True])
@@ -107,6 +109,10 @@ def test_batch_drills_reconcile_published_rejections(tmp_path, monkeypatch, inva
         calls.append(name)
         if name == "missing_columns":
             raise BatchInferenceError("rejected schema")
+        if name.startswith("restored-"):
+            return SimpleNamespace(
+                status="completed", rejected_rows=0, run_root=tmp_path, batch_id="c" * 64
+            )
         return SimpleNamespace(
             status="completed" if invalid_result else "completed_with_rejections",
             rejected_rows=1 if name == "invalid_values" else 2,
@@ -121,7 +127,14 @@ def test_batch_drills_reconcile_published_rejections(tmp_path, monkeypatch, inva
             incidents.data_drills(SimpleNamespace(config=load_inference_config()), tmp_path)
     else:
         outcomes = incidents.data_drills(SimpleNamespace(config=load_inference_config()), tmp_path)
-        assert calls == ["missing_columns", "invalid_values", "duplicate_ids"]
+        assert calls == [
+            "missing_columns",
+            "restored-missing_columns",
+            "invalid_values",
+            "restored-invalid_values",
+            "duplicate_ids",
+            "restored-duplicate_ids",
+        ]
         assert [x["rejected_rows"] for x in outcomes[1:3]] == [1, 2]
 
 
@@ -145,3 +158,4 @@ def test_real_rollback_drill_uses_phase7_relative_paths(tmp_path, monkeypatch):
         tmp_path / "experiment/registry/drill", tmp_path / "experiment/deployments/drill"
     )
     assert result["recovered"] and result["prediction"] == 0.190382
+    assert result["deployment_pointer_failures_refused"] == 2

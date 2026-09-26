@@ -181,7 +181,11 @@ def build(
     drills = evidence["incidents"].get("drills", [])
     if len(drills) != len(required_drills) or {d["drill"] for d in drills} != required_drills:
         raise EvidenceError("Incident exercise coverage is incomplete.")
-    if any(d.get("detected") is not True or d.get("contained") is not True for d in drills):
+    if any(
+        d.get(control) is not True
+        for d in drills
+        for control in ("detected", "contained", "recovered", "verified")
+    ):
         raise EvidenceError("A mandatory incident control failed.")
     ci_path = safe_path(ci_receipt, "experiment")
     require_sha(expected_ci_sha256)

@@ -38,7 +38,13 @@ def candidate(tmp_path, monkeypatch):
         "acceptance": {"status": "passed"},
         "incidents": {
             "drills": [
-                {"drill": name, "detected": True, "contained": True}
+                {
+                    "drill": name,
+                    "detected": True,
+                    "contained": True,
+                    "recovered": True,
+                    "verified": True,
+                }
                 for name in (
                     "missing_columns",
                     "invalid_values",

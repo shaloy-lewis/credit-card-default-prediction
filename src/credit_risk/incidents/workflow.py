@@ -14,6 +14,7 @@ from credit_risk.assurance.evidence import (
     EvidenceError,
     clean_commit,
     digest,
+    encode,
     publish,
     read_json,
     safe_path,
@@ -23,10 +24,13 @@ from credit_risk.assurance.evidence import (
 from credit_risk.assurance.runtime import COMPOSE, await_ready, command, platform_state, request
 from credit_risk.inference.batch import (
     BatchInferenceError,
+    _batch_id,
+    _batch_identity,
     parse_batch_csv,
     run_batch,
     verify_batch_run,
 )
+from credit_risk.inference.contracts import PHASE6_CONFIG_SHA256
 from credit_risk.inference.engine import InferenceEngine, InferenceError
 from credit_risk.inference.logging import emit_event
 from credit_risk.monitoring.drift import compare, profile
@@ -104,7 +108,20 @@ def data_drills(engine: InferenceEngine, runtime: Path | None = None) -> list[di
             except BatchInferenceError:
                 if name != "missing_columns":
                     raise
-                emit_event("batch_attempt_completed", operation="batch", status="failed")
+                attempt = _batch_id(
+                    _batch_identity(
+                        input_sha256=digest(payload),
+                        as_of_date="2026-09-30",
+                        snapshot_id=name,
+                        config_sha256=PHASE6_CONFIG_SHA256,
+                        manifest_sha256=engine.config.bundle.manifest_sha256,
+                        model_sha256=engine.config.bundle.model_sha256,
+                    )
+                )
+                emit_event(
+                    "batch_attempt_completed", operation="batch", status="failed", batch_id=attempt
+                )
+                outcome["batch_id"] = attempt
                 outcome["batch_status"] = "failed"
                 outcome["input_sha256"] = digest(payload)
             else:
@@ -131,6 +148,35 @@ def data_drills(engine: InferenceEngine, runtime: Path | None = None) -> list[di
                     rejected_rows=run.rejected_rows,
                     input_sha256=manifest["input_sha256"],
                 )
+            restored = runtime / f"restored-{name}.csv"
+            restored.write_bytes(content)
+            recovery = run_batch(
+                input_path=restored,
+                as_of_date="2026-09-30",
+                snapshot_id=f"restored-{name}",
+                output_root=runtime / "batches",
+                config=engine.config,
+                engine=engine,
+            )
+            recovered_manifest = verify_batch_run(recovery.run_root, config=engine.config)
+            if recovery.status != "completed" or recovery.rejected_rows != 0:
+                raise EvidenceError("Corrected batch did not recover cleanly.")
+            outcome.update(
+                recovery_batch_id=recovery.batch_id,
+                recovery_manifest_sha256=digest(encode(recovered_manifest)),
+            )
+            emit_event(
+                "batch_attempt_completed",
+                operation="batch",
+                status=recovery.status,
+                batch_id=recovery.batch_id,
+                rejection_count=0,
+            )
+    # Recovery restores the original valid fixture/distribution; it never alters the model.
+    if len(clean.rejections) or compare(reference, control)["status"] != "clear":
+        raise EvidenceError("Incident control fixture did not recover.")
+    for outcome in outcomes:
+        outcome.update(recovered=True, verified=True)
     return outcomes
 
 
@@ -158,7 +204,13 @@ def artifact_drill(folder: Path, engine: InferenceEngine) -> dict[str, Any]:
         engine.score(fixture).probabilities, recovered.score(fixture).probabilities
     ):
         raise EvidenceError("Artifact recovery changed predictions.")
-    return {"drill": "artifact_integrity", "detected": True, "contained": True, "recovered": True}
+    return {
+        "drill": "artifact_integrity",
+        "detected": True,
+        "contained": True,
+        "recovered": True,
+        "verified": True,
+    }
 
 
 def build(
@@ -221,6 +273,7 @@ def build(
             "contained": True,
             "recovered": True,
             "recovery_seconds": recovery,
+            "verified": True,
         }
     )
     for outcome in outcomes:
@@ -270,8 +323,25 @@ def rollback_paths(registry: Path, deployment: Path) -> dict[str, Any]:
     from fastapi.testclient import TestClient
 
     from credit_risk.inference.api import create_app
-    from credit_risk.registry.deployment import resolve_active_bundle
+    from credit_risk.registry.deployment import DeploymentResolutionError, resolve_active_bundle
 
+    # Faults are injected only into the newly created isolated deployment tree.
+    pointer = ROOT / deployment / "active.json"
+    original = pointer.read_bytes()
+    try:
+        for corrupt in (None, b"{}"):
+            if corrupt is None:
+                pointer.unlink()
+            else:
+                pointer.write_bytes(corrupt)
+            try:
+                resolve_active_bundle(ROOT / deployment)
+            except DeploymentResolutionError:
+                pass
+            else:
+                raise EvidenceError("Missing/corrupt deployment pointer was accepted.")
+    finally:
+        pointer.write_bytes(original)
     with TestClient(create_app(bundle_root=resolve_active_bundle(ROOT / deployment))) as client:
         response = client.post(
             "/v1/predict", json=read_json(ROOT / "tests/fixtures/prediction_request.json")
@@ -288,4 +358,7 @@ def rollback_paths(registry: Path, deployment: Path) -> dict[str, Any]:
         "contained": True,
         "recovered": True,
         "prediction": 0.190382,
+        "verified": True,
+        "deployment_pointer_failures_refused": 2,
+        "restored_pointer_sha256": digest(original),
     }
