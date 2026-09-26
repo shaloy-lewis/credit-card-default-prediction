@@ -193,7 +193,7 @@ def platform_receipt(sandbox):
     receipt = {
         "implementation_commit": "a" * 40,
         "sources": ev.source_map(platform_evidence.SOURCE_FILES),
-        "states": [state] * 3,
+        "states": [{**state, "status": status} for status in ("verified", "ready", "verified")],
         "health": {"api": True, "mlflow": True, "ui": True},
         "smoke_probabilities": [0.190382, 0.190382],
         "infrastructure_images": {

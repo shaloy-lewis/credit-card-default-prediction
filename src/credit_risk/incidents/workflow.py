@@ -246,9 +246,12 @@ def build(
 
 
 def rollback_paths(registry: Path, deployment: Path) -> dict[str, Any]:
+    # Phase 7 deliberately accepts repository-relative governed paths only.
+    registry = registry.relative_to(ROOT) if registry.is_absolute() else registry
+    deployment = deployment.relative_to(ROOT) if deployment.is_absolute() else deployment
     register_release_revisions(registry_root=registry)
-    promote = ROOT / "configs/registry/phase7_promotion_approval.json"
-    rollback = ROOT / "configs/registry/phase7_rollback_approval.json"
+    promote = Path("configs/registry/phase7_promotion_approval.json")
+    rollback = Path("configs/registry/phase7_rollback_approval.json")
     promote_candidate(
         registry_root=registry,
         approval_path=promote,
@@ -269,7 +272,7 @@ def rollback_paths(registry: Path, deployment: Path) -> dict[str, Any]:
     from credit_risk.inference.api import create_app
     from credit_risk.registry.deployment import resolve_active_bundle
 
-    with TestClient(create_app(bundle_root=resolve_active_bundle(deployment))) as client:
+    with TestClient(create_app(bundle_root=resolve_active_bundle(ROOT / deployment))) as client:
         response = client.post(
             "/v1/predict", json=read_json(ROOT / "tests/fixtures/prediction_request.json")
         )

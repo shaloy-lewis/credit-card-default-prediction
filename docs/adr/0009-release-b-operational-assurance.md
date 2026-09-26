@@ -58,7 +58,9 @@ The original MinIO image at Quay returned unauthorized in both Linux CI runs on
 2026-09-26; its corresponding official binary archive returned HTTP 410. Phase 8
 now builds the same signed upstream release commit
 `7ced9663e6a791fef9dc6be798ff24cda9c730ac` from a checksum-pinned source archive,
-with pinned Go and runtime image digests. This is a packaging recovery, not an
+with pinned Go and runtime image digests. The separate
+`configs/platform/minio_source_v1.json` distribution amendment preserves the
+original frozen Phase 8 configuration and records the superseded image identity. This is a packaging recovery, not an
 object-store version upgrade. The MinIO source license and credits are included.
 The existing blocking scan scope remains API, MLflow and UI; the old MinIO
 application/dependency risk and upstream distribution availability need an

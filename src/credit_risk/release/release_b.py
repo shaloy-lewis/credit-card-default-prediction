@@ -30,15 +30,54 @@ NEW_EVIDENCE = {
     "acceptance": "monitor_acceptance_v1",
     "incidents": "release_b_incidents_v1",
 }
-RISK_IDS = (
-    "education_disparities",
-    "geographic_temporal_transportability",
-    "calibration_drift",
-    "production_privacy",
-    "phase7_phase8_boundary",
-    "production_monitoring",
-    "object_store_upstream_availability",
-)
+RISK_DETAILS = {
+    "education_disparities": (
+        "Demographic disparity",
+        "Retain both G3 education disparity conditions; audit-only demographic fields and human review.",
+    ),
+    "geographic_temporal_transportability": (
+        "Geographic and temporal transportability",
+        "Local demonstration only; no claims for current or other populations without representative evaluation.",
+    ),
+    "calibration_drift": (
+        "Calibration or feature drift",
+        "Identity calibration remains fixed; investigate drift manually, with no automatic recalibration.",
+    ),
+    "production_privacy": (
+        "Privacy and logging",
+        "Use synthetic operational fixtures; keep validation scores and account mappings in ignored local storage.",
+    ),
+    "phase7_phase8_boundary": (
+        "Missing registry and rollback",
+        "Phase 7 SQLite demonstrates promotion/rollback; Phase 8 demonstrates fixed bootstrap/persistence only.",
+    ),
+    "production_monitoring": (
+        "Missing production monitoring",
+        "CLI monitoring is a local demonstration; longitudinal evaluation and production operations remain G5 work.",
+    ),
+    "explanation_language": (
+        "Misleading explanations",
+        "Explanations describe model attribution, never causality or adverse-action reasons.",
+    ),
+    "human_owned_use": (
+        "Unsafe automation",
+        "Human-owned outreach demonstration only; prohibit lending, adverse action and automated customer decisions.",
+    ),
+    "artifact_integrity": (
+        "Artifact integrity",
+        "Authenticate model and deployment digests before use; reject missing or corrupt artifacts.",
+    ),
+    "consumed_test_protection": (
+        "Consumed-test protection",
+        "The sealed test remains retired; no fits, tuning, bootstrap regeneration or new test scoring.",
+    ),
+    "object_store_upstream_availability": (
+        None,
+        "Use the source-pinned legacy MinIO build only in isolated local resources with private S3 networking; maintained object storage and production supportability remain G5 work.",
+    ),
+}
+RISK_IDS = tuple(RISK_DETAILS)
+
 REQUIRED_JOBS = {
     "Lint, type-check, and test",
     "Pull and test reviewed artifacts",
@@ -166,6 +205,7 @@ def build(
                 config,
                 "docs/operations/release-b-runbooks.md",
                 "docs/operations/delayed-label-contract.md",
+                "reports/governance/phase5_v1/risk-register.md",
             ]
         )
     )
@@ -197,6 +237,22 @@ def build(
         extra={
             "release-b-report.md": report.encode(),
             "owner-approval-template.json": encode(approval_template),
+            "current-risk-disposition.json": encode(
+                {
+                    "status": "pending_owner_review",
+                    "historical_register": "reports/governance/phase5_v1/risk-register.md",
+                    "historical_register_rewritten": False,
+                    "risks": [
+                        {
+                            "id": name,
+                            "historical_entry": historical,
+                            "proposed_restriction": restriction,
+                            "decision": "pending",
+                        }
+                        for name, (historical, restriction) in RISK_DETAILS.items()
+                    ],
+                }
+            ),
         },
     )
 

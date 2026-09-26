@@ -23,6 +23,7 @@ OUTPUT = "reports/platform/phase8_v1"
 SERVICES = ("api", "mlflow", "ui")
 SOURCE_FILES = [
     "configs/platform/phase8_v1.json",
+    "configs/platform/minio_source_v1.json",
     "docker-compose.platform.yml",
     "Dockerfile",
     "Dockerfile.platform",
@@ -41,7 +42,6 @@ def validate_receipt(receipt: dict[str, Any], commit: str) -> None:
     if receipt.get("sources") != source_map(SOURCE_FILES):
         raise EvidenceError("Platform rehearsal source identities changed.")
     expected = {
-        "status": "ready",
         "registered_model_name": "credit-risk-default",
         "aliases": {"champion": "1", "rollback": "2"},
         "object_sha256": {
@@ -53,7 +53,10 @@ def validate_receipt(receipt: dict[str, Any], commit: str) -> None:
         "sealed_test_accessed": False,
     }
     states = receipt.get("states")
-    if not isinstance(states, list) or len(states) != 3 or any(x != expected for x in states):
+    expected_states = [
+        {**expected, "status": status} for status in ("verified", "ready", "verified")
+    ]
+    if states != expected_states:
         raise EvidenceError("Startup, idempotency and restart states must agree exactly.")
     if receipt.get("health") != {"api": True, "mlflow": True, "ui": True}:
         raise EvidenceError("All platform services must be healthy after recovery.")

@@ -94,3 +94,54 @@ def test_real_invalid_batches_leave_verified_receipts(tmp_path):
     assert outcomes[2]["rejected_rows"] == 2
     assert all(len(x["input_sha256"]) == 64 for x in outcomes[:3])
     assert all(len(x["batch_id"]) == 64 for x in outcomes[1:3])
+
+
+@pytest.mark.parametrize("invalid_result", [False, True])
+def test_batch_drills_reconcile_published_rejections(tmp_path, monkeypatch, invalid_result):
+    from credit_risk.inference.batch import BatchInferenceError
+
+    calls = []
+
+    def run_batch(**kwargs):
+        name = kwargs["snapshot_id"]
+        calls.append(name)
+        if name == "missing_columns":
+            raise BatchInferenceError("rejected schema")
+        return SimpleNamespace(
+            status="completed" if invalid_result else "completed_with_rejections",
+            rejected_rows=1 if name == "invalid_values" else 2,
+            run_root=tmp_path,
+            batch_id="a" * 64,
+        )
+
+    monkeypatch.setattr(incidents, "run_batch", run_batch)
+    monkeypatch.setattr(incidents, "verify_batch_run", lambda *a, **k: {"input_sha256": "b" * 64})
+    if invalid_result:
+        with pytest.raises(ev.EvidenceError, match="expected batch evidence"):
+            incidents.data_drills(SimpleNamespace(config=load_inference_config()), tmp_path)
+    else:
+        outcomes = incidents.data_drills(SimpleNamespace(config=load_inference_config()), tmp_path)
+        assert calls == ["missing_columns", "invalid_values", "duplicate_ids"]
+        assert [x["rejected_rows"] for x in outcomes[1:3]] == [1, 2]
+
+
+@pytest.mark.artifact
+def test_real_rollback_drill_uses_phase7_relative_paths(tmp_path, monkeypatch):
+    import shutil
+
+    from credit_risk.registry import workflow as registry
+    from tests.integration.test_registry_workflow import _copy_repository_contract
+
+    _copy_repository_contract(tmp_path)
+    for name in ("phase7_promotion_approval.json", "phase7_rollback_approval.json"):
+        shutil.copyfile(
+            incidents.ROOT / "configs/registry" / name, tmp_path / "configs/registry" / name
+        )
+    monkeypatch.setattr(incidents, "ROOT", tmp_path)
+    monkeypatch.setattr(registry, "_repository_root", lambda: tmp_path)
+    monkeypatch.setattr(registry, "_git_is_ancestor", lambda *a: True)
+    # Pass absolute roots as the incident collector does; Phase 7 must get relative paths.
+    result = incidents.rollback_paths(
+        tmp_path / "experiment/registry/drill", tmp_path / "experiment/deployments/drill"
+    )
+    assert result["recovered"] and result["prediction"] == 0.190382

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -32,7 +33,20 @@ def test_phase8_contract_and_compose_preserve_security_boundaries() -> None:
     assert "phase8_minio_data:" in compose
     assert "phase8_deployment:" in compose
     assert f"{config.images.postgres.reference}@{config.images.postgres.digest}" in compose
-    assert f"{config.images.minio.reference}@{config.images.minio.digest}" in compose
+    # Immutable distribution amendment restores the same upstream release.
+    source = json.loads((REPOSITORY_ROOT / "configs/platform/minio_source_v1.json").read_bytes())
+    minio = (REPOSITORY_ROOT / "Dockerfile.minio").read_text(encoding="utf-8")
+    assert (
+        source["superseded_image"]
+        == f"{config.images.minio.reference}@{config.images.minio.digest}"
+    )
+    assert source["built_image"] in compose and "dockerfile: Dockerfile.minio" in compose
+    assert source["release"] == config.images.minio.reference.split(":")[-1]
+    assert source["release"] in minio and source["source_commit"] in minio
+    assert f"--checksum=sha256:{source['source_archive_sha256']}" in minio
+    assert source["compiler_image"] in minio and source["runtime_image"] in minio
+    assert "go mod verify" in minio and "-mod=readonly" in minio
+    assert "USER app" in minio and "COPY --from=builder /src/LICENSE" in minio
     assert "credit_risk.platform.mlflow_server" in compose
     assert "--backend-store-uri" not in compose
     assert "postgresql+psycopg2://${POSTGRES_USER}" not in compose

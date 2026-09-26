@@ -97,6 +97,10 @@ def test_build_is_zero_scoring_and_cannot_approve_itself(candidate):
     assert template["decision"] == "pending"
     assert template["dossier_sha256"] is None
     assert "risk:education_disparities" in template["dispositions"]
+    risks = json.loads(published["extra"]["current-risk-disposition.json"])
+    assert risks["historical_register_rewritten"] is False
+    assert len([row for row in risks["risks"] if row["historical_entry"]]) == 10
+    assert all(row["decision"] == "pending" for row in risks["risks"])
 
 
 @pytest.mark.parametrize(

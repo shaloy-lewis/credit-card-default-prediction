@@ -62,6 +62,7 @@ jobs:
             reports/monitoring/
             reports/incidents/release_b_v1/
             experiment/release_b/proposed-release-contract.json
+            experiment/platform/release_b_v1/receipt.json
             experiment/platform/release_b_v1/*-scan.json
             experiment/platform/release_b_v1/*-sbom.json
       - name: Stop isolated rehearsal services
