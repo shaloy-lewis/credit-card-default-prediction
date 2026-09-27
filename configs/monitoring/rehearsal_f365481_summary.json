@@ -1,0 +1,34 @@
+{
+  "hardware": {
+    "architecture": "x86_64",
+    "logical_cpus": 4,
+    "os": "Linux",
+    "processor": "x86_64",
+    "python": "3.12.3"
+  },
+  "rehearsals": [
+    {
+      "api_p95_ms": 12.39360080001859,
+      "batch_seconds": 0.6935937509999803,
+      "recovery_seconds": 3.222710951999943
+    },
+    {
+      "api_p95_ms": 16.00507934996355,
+      "batch_seconds": 0.7281090430000177,
+      "recovery_seconds": 3.4003261870000188
+    },
+    {
+      "api_p95_ms": 16.182731100008137,
+      "batch_seconds": 0.6864266189999171,
+      "recovery_seconds": 3.475427393000018
+    }
+  ],
+  "status": "targets_frozen",
+  "synthetic_input_sha256": "782e120c0067a18d5a93f37705c8ffc0ae29e8289fd88dd64917f94f6daa8592",
+  "targets": {
+    "api_p95_ms": 32.365462200016275,
+    "batch_seconds": 1.4562180860000353,
+    "recovery_seconds": 6.950854786000036
+  },
+  "valid_request_failures": 0
+}

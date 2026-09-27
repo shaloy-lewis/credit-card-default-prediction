@@ -70,3 +70,13 @@ ongoing review and Release C communication remain separate work.
 Existing evidence is immutable. A failed official run requires diagnosis and a
 new reviewed evidence version; never overwrite reports, delete historical
 volumes, relax a scan threshold, or adjust a timing target to make a run pass.
+
+
+The 2026-09-27 outage rehearsal exceeded its 6.950855-second recovery target.
+The targets from the original three rehearsals in implementation `f365481`
+are now preserved in `configs/monitoring/release_b_service_targets_v1.json`,
+with the original manifest and summary bytes. The collector reuses these
+externally authenticated targets; it does not estimate new targets after this
+failure. The recovery fix starts only the identified isolated API container,
+without Compose dependency orchestration. A new separate acceptance run and
+outage drill must pass the unchanged limits. Failed-run archives remain ignored.

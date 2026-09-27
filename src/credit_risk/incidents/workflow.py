@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 import time
 from pathlib import Path
@@ -21,7 +22,14 @@ from credit_risk.assurance.evidence import (
     source_map,
     verify,
 )
-from credit_risk.assurance.runtime import COMPOSE, await_ready, command, platform_state, request
+from credit_risk.assurance.runtime import (
+    COMPOSE,
+    await_ready,
+    command,
+    platform_state,
+    request,
+    write_new,
+)
 from credit_risk.inference.batch import (
     BatchInferenceError,
     _batch_id,
@@ -237,7 +245,10 @@ def build(
         raise EvidenceError("Isolated rollback rehearsal paths already exist.")
     outcomes.append(rollback_paths(registry_folder, deployment_folder))
     before = platform_state()
-    command([*COMPOSE, "stop", "api"])
+    container = command([*COMPOSE, "ps", "-q", "api"])
+    if re.fullmatch(r"[0-9a-f]{64}", container) is None:
+        raise EvidenceError("The isolated API container identity is invalid.")
+    command(["docker", "stop", container])
     try:
         try:
             request("/ready")
@@ -250,14 +261,20 @@ def build(
         )
     finally:
         started = time.perf_counter()
-        command([*COMPOSE, "start", "api"])
+        command(["docker", "start", container])
         await_ready()
         recovery = time.perf_counter() - started
-    if (
-        not detected
-        or recovery > frozen["targets"]["recovery_seconds"]
-        or platform_state() != before
-    ):
+    state_preserved = platform_state() == before
+    write_new(
+        folder / "service-recovery.json",
+        {
+            "detected": detected,
+            "recovery_seconds": recovery,
+            "target_seconds": frozen["targets"]["recovery_seconds"],
+            "state_preserved": state_preserved,
+        },
+    )
+    if not detected or recovery > frozen["targets"]["recovery_seconds"] or not state_preserved:
         raise EvidenceError("Service interruption detection, recovery or persistence failed.")
     if (
         request("/v1/predict", read_json(ROOT / "tests/fixtures/prediction_request.json"))[

@@ -38,3 +38,9 @@ machine. A separate acceptance run and outage drill must meet those frozen targe
 Retain G3 restrictions: demographics are audit-only; outreach is human-owned;
 no adverse action, fairness/compliance certification, or geographic transfer claim.
 Representative data, privacy design and ongoing monitoring are required before real use.
+
+
+For the isolated API outage drill, resolve the API container with the dedicated
+Compose project and restart that container by its verified ID. Do not invoke
+project dependency startup during recovery. Preserve the existing frozen target
+and the failed recovery receipt; never increase the target after a timing failure.

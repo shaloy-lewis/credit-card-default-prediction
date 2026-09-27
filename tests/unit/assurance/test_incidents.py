@@ -66,7 +66,12 @@ def test_incident_runner_restores_service_and_publishes_pending_review(tmp_path,
     monkeypatch.setattr(incidents, "read_json", lambda *a: {})
     monkeypatch.setattr(incidents, "source_map", lambda *a: {})
     commands = []
-    monkeypatch.setattr(incidents, "command", lambda args: commands.append(args))
+
+    def command(args):
+        commands.append(args)
+        return "c" * 64 if args[-3:] == ["ps", "-q", "api"] else ""
+
+    monkeypatch.setattr(incidents, "command", command)
     monkeypatch.setattr(incidents, "await_ready", lambda: 1)
 
     def request(path, payload=None):
@@ -79,7 +84,7 @@ def test_incident_runner_restores_service_and_publishes_pending_review(tmp_path,
     result = ev.verify(incidents.OUTPUT, sha, incidents.KIND)
     assert result["status"] == "pending_owner_review"
     assert result["drills"][-1]["recovered"] is True
-    assert commands[-1][-2:] == ["start", "api"]
+    assert commands[-1] == ["docker", "start", "c" * 64]
     with pytest.raises(ev.EvidenceError, match="exists"):
         incidents.build("b" * 64)
 

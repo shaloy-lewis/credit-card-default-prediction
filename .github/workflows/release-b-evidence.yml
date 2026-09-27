@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      UV_PYTHON: "3.12"
+      UV_PYTHON: "3.12.3"
       HF_HUB_DISABLE_TELEMETRY: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -62,6 +62,7 @@ jobs:
             reports/monitoring/
             reports/incidents/release_b_v1/
             experiment/release_b/proposed-release-contract.json
+            experiment/incidents/release_b_v1/service-recovery.json
             experiment/platform/release_b_v1/receipt.json
             experiment/platform/release_b_v1/*-scan.json
             experiment/platform/release_b_v1/*-sbom.json

@@ -61,11 +61,23 @@ def verify(
 def benchmark(
     output: Annotated[str, typer.Option()] = "reports/monitoring/benchmark_v1",
     runtime: Annotated[str, typer.Option()] = "experiment/monitoring/benchmark_v1",
+    frozen_targets: Annotated[str | None, typer.Option()] = None,
+    expected_origin_sha256: Annotated[str | None, typer.Option()] = None,
 ) -> None:
     """Measure three rehearsals and freeze service targets."""
     from credit_risk.monitoring.benchmark import rehearse
 
-    invoke(rehearse, output=output, runtime=runtime)
+    if frozen_targets is not None:
+        from credit_risk.monitoring.benchmark import retain_targets
+
+        invoke(
+            retain_targets,
+            expected_manifest_sha256=expected_origin_sha256,
+            config=frozen_targets,
+            output=output,
+        )
+    else:
+        invoke(rehearse, output=output, runtime=runtime)
 
 
 @monitor_app.command("acceptance")

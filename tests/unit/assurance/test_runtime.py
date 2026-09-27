@@ -191,3 +191,46 @@ def test_platform_health_waits_for_dependencies_and_times_out(monkeypatch):
     monkeypatch.setattr(rehearsal, "request", lambda *a, **k: "not-ready")
     with pytest.raises(EvidenceError, match="healthy"):
         rehearsal.wait_health()
+
+
+@pytest.mark.parametrize("change", [None, "target", "hardware", "digest"])
+def test_retained_targets_keep_original_measurements_and_reject_changes(
+    tmp_path, monkeypatch, change
+):
+    import shutil
+
+    from credit_risk.assurance import evidence
+
+    real = Path(__file__).resolve().parents[3]
+    for source in (real / "configs/monitoring").glob("*.json"):
+        target = tmp_path / "configs/monitoring" / source.name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+    monkeypatch.setattr(evidence, "ROOT", tmp_path)
+    monkeypatch.setattr(benchmark, "clean_commit", lambda: "a" * 40)
+    monkeypatch.setattr(benchmark, "code_sources", lambda: {})
+    monkeypatch.setattr(
+        benchmark, "measure", lambda *a: pytest.fail("Targets must not be re-estimated")
+    )
+    config_path = tmp_path / "configs/monitoring/release_b_service_targets_v1.json"
+    config = json.loads(config_path.read_bytes())
+    summary = json.loads((tmp_path / config["origin_summary"]).read_bytes())
+    monkeypatch.setattr(benchmark, "hardware", lambda: summary["hardware"])
+    expected = config["origin_manifest_sha256"]
+    if change == "target":
+        config["targets"]["recovery_seconds"] *= 2
+        config_path.write_bytes(evidence.encode(config))
+    elif change == "hardware":
+        monkeypatch.setattr(benchmark, "hardware", lambda: {})
+    elif change == "digest":
+        expected = "0" * 64
+    if change:
+        with pytest.raises(EvidenceError):
+            benchmark.retain_targets(expected)
+    else:
+        sha = benchmark.retain_targets(expected)
+        result = evidence.verify(benchmark.BENCHMARK, sha, "monitor_benchmark_v1")
+        assert result["targets"] == summary["targets"]
+        assert result["rehearsals"] == summary["rehearsals"]
+        assert result["origin_rehearsal"]["targets_adjusted"] is False
+        assert result["origin_rehearsal"]["rehearsals_reexecuted"] is False

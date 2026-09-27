@@ -19,6 +19,7 @@ from credit_risk.assurance.evidence import (
     hash_file,
     publish,
     read_json,
+    require_sha,
     safe_path,
     source_map,
     verify,
@@ -169,4 +170,57 @@ def acceptance(
         },
         sources=source_map([str(Path(benchmark_root) / "evidence-manifest.json")]),
         commit=commit,
+    )
+
+
+def retain_targets(
+    expected_manifest_sha256: str,
+    config: str = "configs/monitoring/release_b_service_targets_v1.json",
+    output: str = BENCHMARK,
+) -> str:
+    """Carry forward authenticated targets after a recovery fix, without re-estimation."""
+    commit = clean_commit()
+    require_sha(expected_manifest_sha256)
+    frozen = read_json(safe_path(config, "configs/monitoring"))
+    manifest_path = safe_path(frozen["origin_manifest"], "configs/monitoring")
+    summary_path = safe_path(frozen["origin_summary"], "configs/monitoring")
+    if (
+        hash_file(manifest_path) != expected_manifest_sha256
+        or frozen["origin_manifest_sha256"] != expected_manifest_sha256
+        or hash_file(summary_path) != frozen["origin_summary_sha256"]
+    ):
+        raise EvidenceError("Original rehearsal receipt differs from its external digest.")
+    manifest = read_json(manifest_path)
+    summary = read_json(summary_path)
+    if (
+        manifest["kind"] != "monitor_benchmark_v1"
+        or manifest["implementation_commit"] != frozen["origin_commit"]
+        or manifest["outputs"]["summary.json"] != frozen["origin_summary_sha256"]
+        or summary["status"] != "targets_frozen"
+        or summary["valid_request_failures"] != 0
+        or summary["hardware"] != hardware()
+        or summary["targets"] != targets(summary["rehearsals"])
+        or summary["targets"] != frozen["targets"]
+    ):
+        raise EvidenceError("Frozen service targets, hardware or rehearsal provenance changed.")
+    summary["origin_rehearsal"] = {
+        "implementation_commit": frozen["origin_commit"],
+        "manifest_sha256": expected_manifest_sha256,
+        "run_url": frozen["origin_run_url"],
+        "archive_sha256": frozen["origin_archive_sha256"],
+        "targets_adjusted": False,
+        "rehearsals_reexecuted": False,
+    }
+    sources = code_sources()
+    sources.update(source_map([config, manifest_path, summary_path]))
+    return publish(
+        safe_path(output, "reports/monitoring"),
+        kind="monitor_benchmark_v1",
+        summary=summary,
+        sources=sources,
+        commit=commit,
+        extra={
+            "origin-rehearsal-manifest.json": manifest_path.read_bytes(),
+            "origin-rehearsal-summary.json": summary_path.read_bytes(),
+        },
     )

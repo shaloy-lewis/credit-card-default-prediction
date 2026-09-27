@@ -16,7 +16,7 @@ from credit_risk.inference.batch import run_batch
 from credit_risk.inference.engine import InferenceEngine
 from credit_risk.inference.logging import LOGGER
 from credit_risk.monitoring.benchmark import acceptance, synthetic_batch
-from credit_risk.monitoring.benchmark import rehearse as benchmark
+from credit_risk.monitoring.benchmark import retain_targets as benchmark
 from credit_risk.monitoring.workflow import batch, reference, service
 from credit_risk.platform.evidence import publish_evidence
 from credit_risk.platform.evidence import verify_evidence as verify_platform
@@ -35,7 +35,7 @@ def main() -> None:
     platform_sha = publish_evidence("experiment/platform/release_b_v1")
     robustness_sha = robustness()
     reference_sha = reference()
-    benchmark_sha = benchmark()
+    benchmark_sha = benchmark("e8e12b787365ba832bce5bee66569be51b88a09f89dc60e8745011ab0caf7815")
     acceptance_sha = acceptance(benchmark_sha)
     incident_log = ROOT / "experiment/release_b/incident-events.jsonl"
     incident_log.parent.mkdir(parents=True, exist_ok=True)
