@@ -16,7 +16,7 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > G3 with documented conditions; it is not a fairness or production certification.
 > Release A is now complete and consolidated in one externally authenticated,
 > zero-computation evidence dossier. Robustness and population-shift stress
-> evidence is explicitly deferred to G4/Release B. Phase 6 now adds a shared
+> evidence was delivered separately in Release B. Phase 6 adds a shared
 > prediction-only engine, idempotent monthly batch scoring, the breaking
 > `/v1/predict` API, reviewed SHAP reason categories, safe traceable logging,
 > and authenticated offline/batch/API parity evidence. Phase 7 adds a governed
@@ -348,10 +348,12 @@ This is deployment-control evidence, not a comparison of different models.
 Runtime SQLite, MLflow, deployment, and receipt state remains ignored. The API
 image contains no MLflow dependency. Its CI job pins build inputs, blocks
 fixable HIGH/CRITICAL findings without an in-repository waiver, uploads a
-CycloneDX SBOM, and exercises the deployment-pointer contract. PostgreSQL,
-Phase 8's persistent replacement is now available as an in-progress prerequisite
-stack; its aggregate evidence and milestone closure remain later work. Robustness
-stress tests, monitoring, and incident drills are also still open.
+CycloneDX SBOM, and exercises the deployment-pointer contract. Phase 8 adds the
+persistent PostgreSQL/MinIO stack with authenticated startup, bootstrap, restart
+and parity evidence. Release B also completes robustness, monitoring and incident
+controls for the local portfolio scope. Promotion and rollback remain the
+separate Phase 7 SQLite demonstration; Phase 8 provides fixed-state bootstrap
+and restart recovery.
 
 ### Run the Phase 8 persistent local platform
 
