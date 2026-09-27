@@ -67,13 +67,13 @@ completed local registry promotion, blocking image scanning, immutable deploymen
 authenticated two-revision smoke parity, and demonstrated rollback around unchanged
 model bytes. Official Linux evidence now covers the Phase 8 platform, robustness,
 monitoring, service acceptance and incident controls. G4 remains open pending the
-final authenticated dossier and explicit local-scope owner decision.
+explicit local-scope owner decision on the verified dossier.
 
 - Model and data cards, risk register, subgroup evaluation, and explanation tests.
 - Versioned batch/API inference with parity.
 - Registry, promotion gates, CI, container checks, and rollback (complete).
 - Robustness, monitoring, service acceptance and incident controls (evidenced).
-- Final dossier and project-owner sign-off (remaining).
+- Final dossier and exact-commit CI (verified); project-owner sign-off (remaining).
 
 This release creates the core hybrid DS/MLE story.
 
@@ -178,7 +178,7 @@ At each weekly checkpoint:
 5. Update the decision log and portfolio narrative before expanding scope.
 
 The Release B implementation and measured operational evidence are complete.
-The next step is exact-commit CI, zero-scoring dossier assembly, independent
-verification and an explicit project-owner decision. The reviewed model and
+Exact-commit CI, zero-scoring dossier assembly and independent verification have
+passed. The next step is the [project-owner decision](reviews/release-b-owner-review.md). The reviewed model and
 historical evidence remain unchanged. Training, tuning, calibration fitting,
 bootstrap regeneration and sealed-test evaluation remain prohibited.

@@ -25,7 +25,7 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > two-revision smoke parity, and demonstrated rollback. Release B now has
 > authenticated Phase 8 platform, robustness, monitoring, service acceptance,
 > and incident evidence. All mandatory live controls passed on Linux GitHub
-> Actions. G4 remains open pending the final dossier and explicit owner sign-off
+> Actions. G4 remains open pending explicit owner sign-off on the verified dossier
 > for the local portfolio scope; G3 conditions, G5 and Release C remain in force/open.
 
 ## Product intent
@@ -141,9 +141,9 @@ The approved scope and delivery evidence are documented in:
   binary. The Git-tracked selected manifest remains the trust authority;
   application loaders remain local-only and network-free.
 
-G3 is `closed_with_conditions`. Phase 7 completes the registry, scanning, and
-rollback slice; G4 remains open for robustness stress tests, monitoring, and
-incident exercises.
+G3 is `closed_with_conditions`. Release B operational evidence and the final
+dossier are verified; G4 remains open only for explicit owner sign-off on the
+local portfolio scope and the proposed operating restrictions.
 
 ## Dataset and evidence limits
 
@@ -514,9 +514,10 @@ externally distributed selected-model binary are excluded from version control.
 ## Release B sign-off implementation
 
 The additive platform-evidence, robustness, monitoring, benchmark, incident and
-Release B dossier commands are implemented. Official Linux evidence is published
-and verifies offline; final dossier assembly and project-owner approval remain
-required before G4 closes. Follow the
+Release B dossier commands are implemented. Official Linux evidence and the
+[dossier](reports/releases/release_b_v1/release-b-report.md) verify from a clean
+checkout. The [owner review and proposed restrictions](docs/reviews/release-b-owner-review.md)
+are ready; explicit project-owner approval remains required before G4 closes. Follow the
 [sign-off procedure](docs/operations/release-b-signoff.md); the separate
 Release B evidence workflow runs Linux container checks and prediction-only
 diagnostics without training or sealed-test evaluation.
@@ -529,7 +530,7 @@ diagnostics without training or sealed-test evaluation.
 - **Release B — governed ML product (in progress):** model/data cards, subgroup
   analysis, reason-category tests, batch/API parity, registry promotion gates,
   scanning, rollback, robustness, monitoring, and incident controls have measured
-  evidence. Final dossier review and owner approval remain before G4 can close.
+  evidence and a verified dossier. Owner approval remains before G4 can close.
 - **Release C — local platform:** Docker Compose services, monitoring, incident
   drills, and recorded portfolio demo.
 

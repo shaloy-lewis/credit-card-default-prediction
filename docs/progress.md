@@ -532,3 +532,14 @@ deferred risks. It is not a substitute for commit history or CI results.
 - All eight incident drills passed detection, containment, recovery and verification. Isolated API outage recovery took 1.754615 s. The original 6.950855 s limit and all other service targets were retained after the earlier failed drill; none was relaxed.
 - Monitoring captured the injected failed batch and health failure. The intentionally different synthetic population triggered investigation without automatic model changes or discarding its completed batch.
 - Historical evidence and model bytes remain unchanged. Final exact-commit CI, dossier verification and owner approval are still required; G4 remains open.
+
+
+## Release B dossier verified — explicit owner decision required
+
+**Prepared:** 2026-09-27.
+
+- All four mandatory CI jobs passed on evidence commit `179f893b9675041fd7b1be6e1a48cf03d7a81a79`; the separate evidence workflow verified the committed reports without scoring.
+- Restored the selected-model artifact and checksum-pinned Phase 1 data in an isolated clean checkout. All eight new packages and Release A/Phase 5–7 authenticated without training or scoring.
+- Built the zero-scoring dossier with manifest SHA-256 `f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88` and verified it as `verified_pending_owner_signoff`.
+- Published the [owner review](reviews/release-b-owner-review.md) and 36 proposed dispositions, including both material repayment sensitivities and the local-only object-store restriction. The proposal grants no approval.
+- G4 remains open pending a separate explicit owner decision bound to this digest. G3 conditions remain; G5 and Release C communication deliverables remain open.
