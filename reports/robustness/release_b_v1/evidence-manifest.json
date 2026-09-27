@@ -1,0 +1,21 @@
+{
+  "boundary": {
+    "fits": 0,
+    "scope": "local_portfolio_only",
+    "sealed_test_scored": false
+  },
+  "implementation_commit": "29b5317d8681e05dfe748b75c0ee5852e760b74f",
+  "kind": "release_b_robustness_v1",
+  "outputs": {
+    "protocol.json": "f48d2e37b011b188006aae44d845e818b78a3c9eb8ff4eb886ff3057a63c5931",
+    "summary.json": "bc696551251e4b0a1fc5cf4f27b8e8d7086618b906a4082095260d317c51c7e8"
+  },
+  "schema_version": "1.0.0",
+  "sources": {
+    "configs/data/split_v1.lock.json": "b2312380fa46924ca414acbcfef63b0435d1321083e87e4df5ec04f18736093d",
+    "configs/governance/phase5_v1.json": "1717abd20e5dad6819d2f67fc13eecfa38a8800decf9e6954ffd0c74a913f68c",
+    "configs/inference/phase6_v1.json": "84227bb48c7ba812bdf2a2752ed151ede2ce5daa398911af9311491a852500a8",
+    "configs/robustness/release_b_v1.json": "17f52777d8a15c2f64fdb71c5a6c47c70a55ce5c794e94c31c4af28f40575fa5",
+    "models/selected_v1/manifest.json": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88"
+  }
+}

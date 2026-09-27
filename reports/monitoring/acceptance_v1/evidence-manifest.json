@@ -1,0 +1,16 @@
+{
+  "boundary": {
+    "fits": 0,
+    "scope": "local_portfolio_only",
+    "sealed_test_scored": false
+  },
+  "implementation_commit": "29b5317d8681e05dfe748b75c0ee5852e760b74f",
+  "kind": "monitor_acceptance_v1",
+  "outputs": {
+    "summary.json": "4fbf2fbf5ad0415872d806088ee833a74b3c9d567f4ca8ccfbf1b1539129653f"
+  },
+  "schema_version": "1.0.0",
+  "sources": {
+    "reports/monitoring/benchmark_v1/evidence-manifest.json": "ad287ba70df8b284fe279703ae0071ee5135fc596fd0655b477bf12144a43523"
+  }
+}

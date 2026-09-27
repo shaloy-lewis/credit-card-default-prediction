@@ -1,0 +1,20 @@
+{
+  "boundary": {
+    "fits": 0,
+    "scope": "local_portfolio_only",
+    "sealed_test_scored": false
+  },
+  "implementation_commit": "29b5317d8681e05dfe748b75c0ee5852e760b74f",
+  "kind": "monitor_batch_v1",
+  "outputs": {
+    "summary.json": "9108d80f8d384c3a3b597ce602f4706c94fad5bc8603db4a5bb64a3b5a59e5d3"
+  },
+  "schema_version": "1.0.0",
+  "sources": {
+    "configs/governance/phase5_v1.json": "1717abd20e5dad6819d2f67fc13eecfa38a8800decf9e6954ffd0c74a913f68c",
+    "configs/inference/phase6_v1.json": "84227bb48c7ba812bdf2a2752ed151ede2ce5daa398911af9311491a852500a8",
+    "docs/adr/0009-release-b-operational-assurance.md": "058d465e643a4f869dd4bcbdc100d6d9567ddd5e77300c4283192173a8c0c0f9",
+    "models/selected_v1/manifest.json": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+    "reports/monitoring/reference_v1/evidence-manifest.json": "5f2a43675cbd9f6ed44bf4a421df6647d3e780cf5b2e9eae6ba782e94849c4ac"
+  }
+}

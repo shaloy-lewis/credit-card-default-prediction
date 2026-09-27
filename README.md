@@ -22,11 +22,11 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > and authenticated offline/batch/API parity evidence. Phase 7 adds a governed
 > local MLflow registry, digest-authenticated manual promotion, immutable
 > deployments, blocking container scanning, SBOM generation, authenticated
-> two-revision smoke parity, and demonstrated rollback. G4 remains open for
-> stress testing, monitoring, and incident controls. The Phase 8 prerequisite
-> layer now provides a digest-pinned persistent local stack with PostgreSQL,
-> MinIO, MLflow, API, and Streamlit; its official evidence package is not yet
-> published, so Week 9 remains in progress.
+> two-revision smoke parity, and demonstrated rollback. Release B now has
+> authenticated Phase 8 platform, robustness, monitoring, service acceptance,
+> and incident evidence. All mandatory live controls passed on Linux GitHub
+> Actions. G4 remains open pending the final dossier and explicit owner sign-off
+> for the local portfolio scope; G3 conditions, G5 and Release C remain in force/open.
 
 ## Product intent
 
@@ -514,8 +514,9 @@ externally distributed selected-model binary are excluded from version control.
 ## Release B sign-off implementation
 
 The additive platform-evidence, robustness, monitoring, benchmark, incident and
-Release B dossier commands are implemented. Official measured evidence and
-project-owner approval remain required before G4 closes. Follow the
+Release B dossier commands are implemented. Official Linux evidence is published
+and verifies offline; final dossier assembly and project-owner approval remain
+required before G4 closes. Follow the
 [sign-off procedure](docs/operations/release-b-signoff.md); the separate
 Release B evidence workflow runs Linux container checks and prediction-only
 diagnostics without training or sealed-test evaluation.
@@ -527,8 +528,8 @@ diagnostics without training or sealed-test evaluation.
   and one authenticated evidence chain.
 - **Release B — governed ML product (in progress):** model/data cards, subgroup
   analysis, reason-category tests, batch/API parity, registry promotion gates,
-  scanning, and rollback are complete; robustness, monitoring, and incident
-  controls remain before G4 can close.
+  scanning, rollback, robustness, monitoring, and incident controls have measured
+  evidence. Final dossier review and owner approval remain before G4 can close.
 - **Release C — local platform:** Docker Compose services, monitoring, incident
   drills, and recorded portfolio demo.
 

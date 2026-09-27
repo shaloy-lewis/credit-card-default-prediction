@@ -1,0 +1,100 @@
+{
+  "drills": [
+    {
+      "batch_id": "b9eba91f8c6e4674e5f4a840afff0fb6a3616dfa987da00afd468a26f38a969b",
+      "batch_status": "failed",
+      "contained": true,
+      "detected": true,
+      "disposition": "pending_owner_review",
+      "drill": "missing_columns",
+      "input_sha256": "0390f32fbe19bbe041abeaed715e5afd48171c84a196f55223c7fd5ab1772386",
+      "recovered": true,
+      "recovery_batch_id": "a0ee160b99e643644158140a5522ca93d8c0909be1f4d345c1827985b478d1fa",
+      "recovery_manifest_sha256": "8927d5ab03a193656371406c89c0647d639ad381660f72524441602ac2afad54",
+      "runbook": "missing_columns",
+      "verified": true
+    },
+    {
+      "batch_id": "5eaf331def73ffd83f4fe373d93d004663f5a51e7d4f277d4c9e8a9296280175",
+      "batch_status": "completed_with_rejections",
+      "contained": true,
+      "detected": true,
+      "disposition": "pending_owner_review",
+      "drill": "invalid_values",
+      "input_sha256": "dd3fbd0c0de1cb7c31c298bc0010f2df3c3601d39e685de40cc7d6170917f75c",
+      "recovered": true,
+      "recovery_batch_id": "68ebca8707c527e94543991f834dcad9dc25c2efbc00739e554f06ac6dfdad88",
+      "recovery_manifest_sha256": "4159c7d8cab27fd6bd4f4c1800ecfc78c147bb04bbfd5aaa1ba957abad9a1d09",
+      "rejected_rows": 1,
+      "runbook": "invalid_values",
+      "verified": true
+    },
+    {
+      "batch_id": "0bd2e650d856bc55fe4b18f78c64f8cb91c83d1cf0da28466996408ce1428838",
+      "batch_status": "completed_with_rejections",
+      "contained": true,
+      "detected": true,
+      "disposition": "pending_owner_review",
+      "drill": "duplicate_ids",
+      "input_sha256": "d8c9ecd936b39fb152ca32106931eda7254bd6341d6ceebc5393d82c14fa1394",
+      "recovered": true,
+      "recovery_batch_id": "0ead16a3ca59c8070d4a562203eb00bc3f6cd8d6f0128e1a989f5c2bf1ed2fe1",
+      "recovery_manifest_sha256": "8d4079f3fa6844e1894ea4a0a690fc787f0caaf995c13ecd7a148ee749b60efa",
+      "rejected_rows": 2,
+      "runbook": "duplicate_ids",
+      "verified": true
+    },
+    {
+      "contained": true,
+      "detected": true,
+      "disposition": "pending_owner_review",
+      "drill": "population_shift",
+      "recovered": true,
+      "runbook": "population_shift",
+      "verified": true
+    },
+    {
+      "contained": true,
+      "detected": true,
+      "disposition": "pending_owner_review",
+      "drill": "prediction_shift",
+      "recovered": true,
+      "runbook": "prediction_shift",
+      "verified": true
+    },
+    {
+      "contained": true,
+      "detected": true,
+      "disposition": "pending_owner_review",
+      "drill": "artifact_integrity",
+      "recovered": true,
+      "runbook": "artifact_integrity",
+      "verified": true
+    },
+    {
+      "contained": true,
+      "deployment_pointer_failures_refused": 2,
+      "detected": true,
+      "disposition": "pending_owner_review",
+      "drill": "phase7_sqlite_rollback",
+      "prediction": 0.190382,
+      "recovered": true,
+      "restored_pointer_sha256": "259f821c6564b4c77781eb5a517305c5ad8993ce3d2980fc1fed4f93f145a635",
+      "runbook": "phase7_sqlite_rollback",
+      "verified": true
+    },
+    {
+      "contained": true,
+      "detected": true,
+      "disposition": "pending_owner_review",
+      "drill": "service_interruption",
+      "recovered": true,
+      "recovery_seconds": 1.754614876000005,
+      "runbook": "service_interruption",
+      "verified": true
+    }
+  ],
+  "historical_state_modified": false,
+  "postgres_rollback_claimed": false,
+  "status": "pending_owner_review"
+}

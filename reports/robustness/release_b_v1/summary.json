@@ -1,0 +1,283 @@
+{
+  "baseline": {
+    "average_precision": 0.5565104548302114,
+    "brier_score": 0.13353854208377516,
+    "lift_at_0_1": 3.2109227871939736,
+    "rows": 4800,
+    "status": "measured"
+  },
+  "model_sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c",
+  "perturbed_outcome_metrics": false,
+  "runtime_sha256": {
+    "baseline.csv": "4302a7583ac6a24940b88bbd883cf2e415d8327cfe08c97e0fb1ce96724d0831",
+    "billing_balance_0.75.csv": "42f97af53f3c2a283738f47cf246ce1e24617fa38184451394bf83636645d3f1",
+    "billing_balance_0.9.csv": "3ce9025a975e62070e4915c80685fbe80a6114b48501ef814480ed67e2b1af9a",
+    "billing_balance_1.1.csv": "3ff29428d2c5782da94edfe3fab156150641040ea070c0ddaeb4ec8d7cf4682f",
+    "billing_balance_1.25.csv": "ed4412cb1ad79835f861b48cc1382446bfd31e973abc5f626d4d0a9abbac0583",
+    "credit_capacity_0.75.csv": "d81d3f097f3703d852d70c38ac02818493bc40c4cb3f2b249844e37761eed28b",
+    "credit_capacity_0.9.csv": "e9b002a52ecf53f7c6d491b901b39f6d2a7e0bcc469b65868801c6004d224709",
+    "credit_capacity_1.1.csv": "6f9f0621c6445085b3a81fe61a4ce108fb1a53a5a26287c02573c928f042964d",
+    "credit_capacity_1.25.csv": "b8d229229ddb58becdd59d34502ec7e9cd32df271ba18bd00fbbe5985835a8aa",
+    "payment_behaviour_0.75.csv": "833786b2716a12a0a6ee21d61a3880a317652dc9e0ac0e44f6e58d593094f623",
+    "payment_behaviour_0.9.csv": "48d292a2d7b771cc3ab8b700b35eb29da4ae5e6e084e862c47f55ab3364a4ed5",
+    "payment_behaviour_1.1.csv": "0b6fbfaf5b831553a0fb80b73936ebe9cdebe90f677868a80d3066f9ebb14287",
+    "payment_behaviour_1.25.csv": "41707f7d64a17f38daceed847e54b7602f48591569f4fde06e756daa4866d655",
+    "repayment_plus_1.csv": "a3aad79ab7c6dcff4e38fc40248b8fe9561e0bc052300b7edc322eb93201a797",
+    "repayment_plus_2.csv": "38ce65fef448ce0938dec9930c2770ed3740781568c41671b49ba22dd12313aa"
+  },
+  "scenarios": [
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "credit_capacity_0.9",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.0484331977242356,
+        "max_additivity_error": 4.440892098500626e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.003892581530926667,
+        "queue_turnover": 0.016666666666666666,
+        "reason_change_fraction": 0.07833333333333334,
+        "risk_band_change_fraction": 0.009791666666666667
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "credit_capacity_1.1",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.06557831148742743,
+        "max_additivity_error": 3.552713678800501e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.002412579838701512,
+        "queue_turnover": 0.008333333333333333,
+        "reason_change_fraction": 0.056875,
+        "risk_band_change_fraction": 0.006458333333333333
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "credit_capacity_0.75",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.06108737118961316,
+        "max_additivity_error": 4.884981308350689e-15,
+        "max_probability_error": 1.1102230246251565e-16,
+        "mean_absolute_probability_change": 0.007969073353608278,
+        "queue_turnover": 0.020833333333333332,
+        "reason_change_fraction": 0.16083333333333333,
+        "risk_band_change_fraction": 0.015833333333333335
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "credit_capacity_1.25",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.06971217025080323,
+        "max_additivity_error": 3.9968028886505635e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.00579625934778643,
+        "queue_turnover": 0.020833333333333332,
+        "reason_change_fraction": 0.11583333333333333,
+        "risk_band_change_fraction": 0.019375
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "billing_balance_0.9",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.11780537895171894,
+        "max_additivity_error": 3.9968028886505635e-15,
+        "max_probability_error": 1.1102230246251565e-16,
+        "mean_absolute_probability_change": 0.002032152822714047,
+        "queue_turnover": 0.022916666666666665,
+        "reason_change_fraction": 0.028541666666666667,
+        "risk_band_change_fraction": 0.00625
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "billing_balance_1.1",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.06472072278331825,
+        "max_additivity_error": 3.552713678800501e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.0018522863222140914,
+        "queue_turnover": 0.00625,
+        "reason_change_fraction": 0.023958333333333335,
+        "risk_band_change_fraction": 0.00375
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "billing_balance_0.75",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.11780537895171894,
+        "max_additivity_error": 3.9968028886505635e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.004456802204768878,
+        "queue_turnover": 0.03125,
+        "reason_change_fraction": 0.06166666666666667,
+        "risk_band_change_fraction": 0.010208333333333333
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "billing_balance_1.25",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.0708359555300857,
+        "max_additivity_error": 3.552713678800501e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.004051911871548325,
+        "queue_turnover": 0.010416666666666666,
+        "reason_change_fraction": 0.055625,
+        "risk_band_change_fraction": 0.007916666666666667
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "payment_behaviour_0.9",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.1483015039490626,
+        "max_additivity_error": 3.774758283725532e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.003408014193798971,
+        "queue_turnover": 0.010416666666666666,
+        "reason_change_fraction": 0.070625,
+        "risk_band_change_fraction": 0.007291666666666667
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "payment_behaviour_1.1",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.06703637618829433,
+        "max_additivity_error": 3.9968028886505635e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.0023886718483587016,
+        "queue_turnover": 0.00625,
+        "reason_change_fraction": 0.04645833333333333,
+        "risk_band_change_fraction": 0.005
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "payment_behaviour_0.75",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.16378440203840738,
+        "max_additivity_error": 3.9968028886505635e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.00812952696533074,
+        "queue_turnover": 0.014583333333333334,
+        "reason_change_fraction": 0.176875,
+        "risk_band_change_fraction": 0.013125
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": false,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "payment_behaviour_1.25",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.08929624094056896,
+        "max_additivity_error": 3.552713678800501e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.005095673942013739,
+        "queue_turnover": 0.0125,
+        "reason_change_fraction": 0.10583333333333333,
+        "risk_band_change_fraction": 0.010625
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": true,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "repayment_plus_1",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.5273633530681268,
+        "max_additivity_error": 3.9968028886505635e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.22669461569609364,
+        "queue_turnover": 0.3854166666666667,
+        "reason_change_fraction": 0.651875,
+        "risk_band_change_fraction": 0.6504166666666666
+      }
+    },
+    {
+      "disposition": "pending_owner_review",
+      "material": true,
+      "outcome_metrics": "not_applicable_counterfactual_features",
+      "rows": 4800,
+      "scenario": "repayment_plus_2",
+      "sensitivity": {
+        "max_absolute_probability_change": 0.7143712456832236,
+        "max_additivity_error": 3.774758283725532e-15,
+        "max_probability_error": 2.220446049250313e-16,
+        "mean_absolute_probability_change": 0.35276664677247177,
+        "queue_turnover": 0.9104166666666667,
+        "reason_change_fraction": 0.6560416666666666,
+        "risk_band_change_fraction": 0.6841666666666667
+      }
+    }
+  ],
+  "status": "pending_owner_review",
+  "subsets": [
+    {
+      "disposition": "pending_owner_review",
+      "interpretation": "historical_subset_only",
+      "metrics": {
+        "average_precision": 0.6198236778383007,
+        "brier_score": 0.17764408839851742,
+        "lift_at_0_1": 2.235872235872236,
+        "rows": 1230,
+        "status": "measured"
+      },
+      "scenario": "low_credit_limit"
+    },
+    {
+      "disposition": "pending_owner_review",
+      "interpretation": "historical_subset_only",
+      "metrics": {
+        "average_precision": 0.687500480890515,
+        "brier_score": 0.20811725457777425,
+        "lift_at_0_1": 1.6375721913479349,
+        "rows": 1326,
+        "status": "measured"
+      },
+      "scenario": "repayment_at_least_two"
+    }
+  ],
+  "test_accounts_selected": false,
+  "validation_rows": 4800
+}

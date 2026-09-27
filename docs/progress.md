@@ -519,3 +519,16 @@ deferred risks. It is not a substitute for commit history or CI results.
   for official container and platform checks.
 - G4 and Release B remain open. No owner approval is implied by implementation,
   a successful test run, or publication of a review candidate.
+
+
+## Release B measured evidence — owner sign-off pending
+
+**Measured:** 2026-09-27, implementation `29b5317d8681e05dfe748b75c0ee5852e760b74f`.
+
+- [Official Linux evidence run](https://github.com/shaloy-lewis/credit-card-default-prediction/actions/runs/36295979702) passed. Its downloaded archive authenticated as `1b11f7fbee7e4cdd2ccaa72da4b3dc33d48c69b4921e3990febf378c8c51d8a7`; eight aggregate packages verify offline without scoring.
+- Phase 8 startup, repeated bootstrap, service health, persistent state, synthetic parity, blocking scans and SBOMs passed.
+- All 14 robustness scenarios and two historical subsets completed. Both repayment-deterioration scenarios have material sensitivity requiring explicit operating restrictions.
+- Service acceptance: API p95 7.797950 ms, 10,000-row batch 0.465012 s and restart recovery 2.729980 s, with zero unexpected valid-request failures and prediction `0.190382`.
+- All eight incident drills passed detection, containment, recovery and verification. Isolated API outage recovery took 1.754615 s. The original 6.950855 s limit and all other service targets were retained after the earlier failed drill; none was relaxed.
+- Monitoring captured the injected failed batch and health failure. The intentionally different synthetic population triggered investigation without automatic model changes or discarding its completed batch.
+- Historical evidence and model bytes remain unchanged. Final exact-commit CI, dossier verification and owner approval are still required; G4 remains open.

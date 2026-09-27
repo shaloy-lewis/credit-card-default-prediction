@@ -1,38 +1,38 @@
 {
-  "release_id": "release_b_v1",
-  "status": "awaiting_measured_evidence",
   "evidence": {
-    "platform": {
-      "root": "reports/platform/phase8_v1",
-      "expected_manifest_sha256": null
-    },
-    "robustness": {
-      "root": "reports/robustness/release_b_v1",
-      "expected_manifest_sha256": null
-    },
-    "reference": {
-      "root": "reports/monitoring/reference_v1",
-      "expected_manifest_sha256": null
+    "acceptance": {
+      "expected_manifest_sha256": "fe0264413e53b126b7000aeaa65a686e2fc87163b1a83feb4042092903b43c8a",
+      "root": "reports/monitoring/acceptance_v1"
     },
     "batch_monitoring": {
-      "root": "reports/monitoring/batch_v1",
-      "expected_manifest_sha256": null
-    },
-    "service_monitoring": {
-      "root": "reports/monitoring/service_v1",
-      "expected_manifest_sha256": null
+      "expected_manifest_sha256": "f7a3cadf62027163c3e6b8ddd8ae684595251533b11f23b906467922f2535e21",
+      "root": "reports/monitoring/batch_v1"
     },
     "benchmark": {
-      "root": "reports/monitoring/benchmark_v1",
-      "expected_manifest_sha256": null
-    },
-    "acceptance": {
-      "root": "reports/monitoring/acceptance_v1",
-      "expected_manifest_sha256": null
+      "expected_manifest_sha256": "ad287ba70df8b284fe279703ae0071ee5135fc596fd0655b477bf12144a43523",
+      "root": "reports/monitoring/benchmark_v1"
     },
     "incidents": {
-      "root": "reports/incidents/release_b_v1",
-      "expected_manifest_sha256": null
+      "expected_manifest_sha256": "88bd1b8ae36170a6a1a32f528624b44e9e284ed07c29212528ee7bdddb667855",
+      "root": "reports/incidents/release_b_v1"
+    },
+    "platform": {
+      "expected_manifest_sha256": "a256c309b537814fdf87ae59cad062eef6bc6256d3551a97492462f06b23dc21",
+      "root": "reports/platform/phase8_v1"
+    },
+    "reference": {
+      "expected_manifest_sha256": "5f2a43675cbd9f6ed44bf4a421df6647d3e780cf5b2e9eae6ba782e94849c4ac",
+      "root": "reports/monitoring/reference_v1"
+    },
+    "robustness": {
+      "expected_manifest_sha256": "a5b8a1831bb7ef3d60f3d4ed1114ba24ccf73822272238b9c805b1e1924f938a",
+      "root": "reports/robustness/release_b_v1"
+    },
+    "service_monitoring": {
+      "expected_manifest_sha256": "6db0118fa25582bbcc7f7c388a7f2cc7630ff41706b741acee929e7dc15db31f",
+      "root": "reports/monitoring/service_v1"
     }
-  }
+  },
+  "release_id": "release_b_v1",
+  "status": "evidence_collected_ci_and_owner_review_pending"
 }
