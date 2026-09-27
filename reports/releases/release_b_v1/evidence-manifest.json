@@ -1,0 +1,52 @@
+{
+  "boundary": {
+    "fits": 0,
+    "scope": "local_portfolio_only",
+    "sealed_test_scored": false
+  },
+  "implementation_commit": "179f893b9675041fd7b1be6e1a48cf03d7a81a79",
+  "kind": "release_b_v1",
+  "outputs": {
+    "current-risk-disposition.json": "80fdad0a5b95cf05abcf77f518d47ce05842f82c82767359fefe7c02172db32c",
+    "owner-approval-template.json": "7ed041c6984361416d7db03d6bf31c765a05a1a683658090af5b9867584f104a",
+    "release-b-report.md": "cab3015b88646ec460268a8f725e1ae16fc5984f70241cdeeae493e1537a71f0",
+    "summary.json": "09a221fab592d0551c7c3a570d326eb238f740542404ee9c6fc93a80d1b5cfbb"
+  },
+  "schema_version": "1.0.0",
+  "sources": {
+    "configs/releases/release_b_v1.json": "3d8d12aa3da59e2decd2e567fb343285a560df61d5d11bda3f4354325c1c7d86",
+    "docs/operations/delayed-label-contract.md": "594319c7dfa57464f2ff0c231e9782578b2d759efde245cf3b8c613c97f79199",
+    "docs/operations/release-b-runbooks.md": "0d7d6fa8e8916e43608b59b39658d1f8e6a0c53fcd177300f766297a5a210e3a",
+    "reports/governance/phase5_v1/evidence-manifest.json": "6df8745f6deefcd138d7d1c821e6ad38ca7762aa7581fa0fae28042cf7f2b853",
+    "reports/governance/phase5_v1/risk-register.md": "239b35a44d46b153b9d55174a54f31632b30ded06daa50fbb2a6053478b3cdc0",
+    "reports/incidents/release_b_v1/evidence-manifest.json": "88bd1b8ae36170a6a1a32f528624b44e9e284ed07c29212528ee7bdddb667855",
+    "reports/incidents/release_b_v1/summary.json": "31ac92545224babae63364d4cbfe052216cc03dbe2f2e9488a36cbc04813b73d",
+    "reports/inference/phase6_v1/evidence-manifest.json": "919087229d20fe83c1846da65d5901ea103ac3182c9c2975c3490424a49f4df8",
+    "reports/monitoring/acceptance_v1/evidence-manifest.json": "fe0264413e53b126b7000aeaa65a686e2fc87163b1a83feb4042092903b43c8a",
+    "reports/monitoring/acceptance_v1/summary.json": "4fbf2fbf5ad0415872d806088ee833a74b3c9d567f4ca8ccfbf1b1539129653f",
+    "reports/monitoring/batch_v1/evidence-manifest.json": "f7a3cadf62027163c3e6b8ddd8ae684595251533b11f23b906467922f2535e21",
+    "reports/monitoring/batch_v1/summary.json": "9108d80f8d384c3a3b597ce602f4706c94fad5bc8603db4a5bb64a3b5a59e5d3",
+    "reports/monitoring/benchmark_v1/evidence-manifest.json": "ad287ba70df8b284fe279703ae0071ee5135fc596fd0655b477bf12144a43523",
+    "reports/monitoring/benchmark_v1/origin-rehearsal-manifest.json": "e8e12b787365ba832bce5bee66569be51b88a09f89dc60e8745011ab0caf7815",
+    "reports/monitoring/benchmark_v1/origin-rehearsal-summary.json": "d49b3278144b3075b9f9334b3a59438e3e539f51de56d79f9d392240dead5ceb",
+    "reports/monitoring/benchmark_v1/summary.json": "632ebd2ecf42876cb981377b11479d340c60f5b5a0298ff0aa0e8499ded5c518",
+    "reports/monitoring/reference_v1/evidence-manifest.json": "5f2a43675cbd9f6ed44bf4a421df6647d3e780cf5b2e9eae6ba782e94849c4ac",
+    "reports/monitoring/reference_v1/summary.json": "bcd417dd3f11301cd5641198b4a4709d15e734e113b3da1cb4f702470ef7179f",
+    "reports/monitoring/service_v1/evidence-manifest.json": "6db0118fa25582bbcc7f7c388a7f2cc7630ff41706b741acee929e7dc15db31f",
+    "reports/monitoring/service_v1/summary.json": "9c2ffb93480391e74c51d053ec567bd9e9ad3fdc788ef3b8776b462f14c47b48",
+    "reports/platform/phase8_v1/api-sbom.json": "b7d2c4b7f60f7f2f41a4449ceeb2d1683e6365bd852b97043e7637294c33ec20",
+    "reports/platform/phase8_v1/api-scan.json": "562e816f23b6fa54b3c42585f0898da245c261cffb400415144df71e22754dea",
+    "reports/platform/phase8_v1/evidence-manifest.json": "a256c309b537814fdf87ae59cad062eef6bc6256d3551a97492462f06b23dc21",
+    "reports/platform/phase8_v1/mlflow-sbom.json": "f626a0874c1f168ae7c5c49fda8ed14fc6c08718c7bdeddfaa4721ea06bc63a7",
+    "reports/platform/phase8_v1/mlflow-scan.json": "edff59227a1d7c3d2912665e1bf7df2f2b10aae1c49d94ed13d36eaed6e8cbe1",
+    "reports/platform/phase8_v1/receipt.json": "6309a4e915b044028922d2d49b45b16b80e63bc690621827ef2bbc6d4fd96742",
+    "reports/platform/phase8_v1/summary.json": "b922ca4faa1abcc28c16540668f342e6716d6eb252b2cd975fe5f4cf3122d24a",
+    "reports/platform/phase8_v1/ui-sbom.json": "ca25db60b38b0874482b9f2aec0ba77daf323b5d5485b3e1d3da451929831cbe",
+    "reports/platform/phase8_v1/ui-scan.json": "f059093c866ca54ba0580846c124e579fe3d4904ccd3c875682f28f277b2f030",
+    "reports/registry/phase7_v1/evidence-manifest.json": "ce36f33da60fe6470d28a76b8053d102e74731115d069c4d476d0c2abbc47da9",
+    "reports/releases/release_a_v1/evidence-manifest.json": "7e65c7b854de15742f05c4b8c2de891f50512518f8eb2339241f87f98754edf7",
+    "reports/robustness/release_b_v1/evidence-manifest.json": "a5b8a1831bb7ef3d60f3d4ed1114ba24ccf73822272238b9c805b1e1924f938a",
+    "reports/robustness/release_b_v1/protocol.json": "f48d2e37b011b188006aae44d845e818b78a3c9eb8ff4eb886ff3057a63c5931",
+    "reports/robustness/release_b_v1/summary.json": "bc696551251e4b0a1fc5cf4f27b8e8d7086618b906a4082095260d317c51c7e8"
+  }
+}

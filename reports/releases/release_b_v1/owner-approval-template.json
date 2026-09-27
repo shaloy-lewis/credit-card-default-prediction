@@ -1,0 +1,153 @@
+{
+  "decision": "pending",
+  "dispositions": {
+    "incident:artifact_integrity": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "incident:duplicate_ids": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "incident:invalid_values": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "incident:missing_columns": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "incident:phase7_sqlite_rollback": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "incident:population_shift": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "incident:prediction_shift": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "incident:service_interruption": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "monitoring:batch_disposition": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:artifact_integrity": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:calibration_drift": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:consumed_test_protection": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:education_disparities": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:explanation_language": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:geographic_temporal_transportability": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:human_owned_use": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:object_store_upstream_availability": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:phase7_phase8_boundary": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:production_monitoring": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "risk:production_privacy": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:billing_balance_0.75": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:billing_balance_0.9": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:billing_balance_1.1": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:billing_balance_1.25": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:credit_capacity_0.75": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:credit_capacity_0.9": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:credit_capacity_1.1": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:credit_capacity_1.25": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:low_credit_limit": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:payment_behaviour_0.75": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:payment_behaviour_0.9": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:payment_behaviour_1.1": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:payment_behaviour_1.25": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:repayment_at_least_two": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:repayment_plus_1": {
+      "decision": "pending",
+      "restriction": null
+    },
+    "robustness:repayment_plus_2": {
+      "decision": "pending",
+      "restriction": null
+    }
+  },
+  "dossier_sha256": null,
+  "g3_conditions_retained": true,
+  "owner": null,
+  "scope": "local_portfolio_only"
+}
