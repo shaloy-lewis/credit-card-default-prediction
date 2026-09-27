@@ -1,0 +1,18 @@
+{
+  "blocking_scan_services": [
+    "api",
+    "mlflow",
+    "ui"
+  ],
+  "built_image": "credit-risk-minio:phase8",
+  "compiler_image": "golang:1.26.7-bookworm@sha256:e8c859f5632dcfde7b32d2012b4351728f6437930887c2f6a91ea242459e5514",
+  "owner_risk_disposition": "object_store_upstream_availability",
+  "phase8_bootstrap_contract_changed": false,
+  "protocol_id": "phase8_minio_source_v1",
+  "reason": "Original image unauthorized and official binary archive HTTP 410 on 2026-09-26",
+  "release": "RELEASE.2025-07-23T15-54-02Z",
+  "runtime_image": "python:3.12.14-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254",
+  "source_archive_sha256": "f31b6997fdb098479ddddfca1267f02518ee0b59cc1d3f9682c3a48e6309f4d0",
+  "source_commit": "7ced9663e6a791fef9dc6be798ff24cda9c730ac",
+  "superseded_image": "quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z@sha256:d249d1fb6966de4d8ad26c04754b545205ff15a62e4fd19ebd0f26fa5baacbc0"
+}

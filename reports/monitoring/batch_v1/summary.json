@@ -1,0 +1,123 @@
+{
+  "action": "human_investigation",
+  "automatic_model_change": false,
+  "batch_id": "2922eecd60b773bed08f40cfdb3cf698589cb9cca5e8b3dc51626a4e9ac97df8",
+  "batch_status": "completed",
+  "checks": {
+    "bill_amount_ntd_lag_0": {
+      "distance": 0.4,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "bill_amount_ntd_lag_1": {
+      "distance": 0.426458333333,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "bill_amount_ntd_lag_2": {
+      "distance": 0.430625,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "bill_amount_ntd_lag_3": {
+      "distance": 0.42625,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "bill_amount_ntd_lag_4": {
+      "distance": 0.428125,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "bill_amount_ntd_lag_5": {
+      "distance": 0.326875,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "credit_limit_ntd": {
+      "distance": 0.257083333333,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "payment_amount_ntd_lag_0": {
+      "distance": 0.254166666667,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "payment_amount_ntd_lag_1": {
+      "distance": 0.25375,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "payment_amount_ntd_lag_2": {
+      "distance": 0.200416666667,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "payment_amount_ntd_lag_3": {
+      "distance": 0.219166666667,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "payment_amount_ntd_lag_4": {
+      "distance": 0.184583333333,
+      "rows": 10000,
+      "status": "warning"
+    },
+    "payment_amount_ntd_lag_5": {
+      "distance": 0.157083333333,
+      "rows": 10000,
+      "status": "warning"
+    },
+    "probability": {
+      "distance": 0.500208333333,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "repayment_status_lag_0": {
+      "distance": 0.328333333333,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "repayment_status_lag_1": {
+      "distance": 0.305416666667,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "repayment_status_lag_2": {
+      "distance": 0.273333333333,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "repayment_status_lag_3": {
+      "distance": 0.314375,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "repayment_status_lag_4": {
+      "distance": 0.225416666667,
+      "rows": 10000,
+      "status": "investigate"
+    },
+    "repayment_status_lag_5": {
+      "distance": 0.259375,
+      "rows": 10000,
+      "status": "investigate"
+    }
+  },
+  "counts": {
+    "input": 10000,
+    "rejected": 0,
+    "valid": 10000
+  },
+  "input_sha256": "782e120c0067a18d5a93f37705c8ffc0ae29e8289fd88dd64917f94f6daa8592",
+  "model_sha256": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c",
+  "reference_sha256": "5f2a43675cbd9f6ed44bf4a421df6647d3e780cf5b2e9eae6ba782e94849c4ac",
+  "rejection_rate": 0.0,
+  "risk_bands": {
+    "critical": 2000,
+    "high": 2000,
+    "standard": 6000
+  },
+  "status": "investigate"
+}

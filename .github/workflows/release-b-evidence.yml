@@ -1,0 +1,71 @@
+name: Release B evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["codex/release-b-signoff"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-b-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence:
+    name: Collect measured Release B evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      UV_PYTHON: "3.12.3"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+        with:
+          version: "0.11.28"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514
+        with:
+          version: v0.70.0
+      - name: Install exact environment and verify model
+        run: |
+          uv sync --locked --all-extras --dev
+          uv run credit-risk artifacts pull --cache-dir .cache/huggingface
+          uv run credit-risk artifacts verify
+          uv run credit-risk data build
+      - name: Prepare isolated local credentials
+        shell: bash
+        run: |
+          cp .env.example .env
+          python - <<'PY'
+          from pathlib import Path
+          import secrets
+          p = Path(".env")
+          p.write_text(p.read_text().replace("change-me", secrets.token_hex(24)))
+          PY
+      - name: Collect official prediction-only evidence
+        run: uv run python -m credit_risk.assurance.collect
+      - name: Upload aggregate evidence and proposed release contract
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-b-evidence-${{ github.sha }}
+          if-no-files-found: warn
+          path: |
+            reports/platform/phase8_v1/
+            reports/robustness/release_b_v1/
+            reports/monitoring/
+            reports/incidents/release_b_v1/
+            experiment/release_b/proposed-release-contract.json
+            experiment/incidents/release_b_v1/service-recovery.json
+            experiment/platform/release_b_v1/receipt.json
+            experiment/platform/release_b_v1/*-scan.json
+            experiment/platform/release_b_v1/*-sbom.json
+      - name: Stop isolated rehearsal services
+        if: always()
+        run: docker compose -p credit-risk-release-b --env-file .env -f docker-compose.platform.yml down

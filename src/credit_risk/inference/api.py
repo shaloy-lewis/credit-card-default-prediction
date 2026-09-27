@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import time
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal, cast
@@ -159,6 +159,37 @@ def create_app(
         ),
         lifespan=lifespan,
     )
+
+    @application.middleware("http")
+    async def record_request(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        started = time.perf_counter()
+        status = 500
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            return response
+        finally:
+            # Never log raw URLs, query strings, request bodies, IDs or error text.
+            route_name = getattr(request.scope.get("route"), "path", "unmatched")
+            if route_name not in {
+                "/",
+                "/ping",
+                "/ready",
+                "/v1/predict",
+                "/docs",
+                "/openapi.json",
+                "/redoc",
+            }:
+                route_name = "unmatched"
+            emit_event(
+                "api_request_completed",
+                route=route_name,
+                status=str(status),
+                duration_ms=round((time.perf_counter() - started) * 1000, 3),
+            )
+
     application.include_router(router)
     return application
 

@@ -1,0 +1,32 @@
+{
+  "boundary": {
+    "fits": 0,
+    "scope": "local_portfolio_only",
+    "sealed_test_scored": false
+  },
+  "implementation_commit": "29b5317d8681e05dfe748b75c0ee5852e760b74f",
+  "kind": "phase8_platform_evidence_v1",
+  "outputs": {
+    "api-sbom.json": "b7d2c4b7f60f7f2f41a4449ceeb2d1683e6365bd852b97043e7637294c33ec20",
+    "api-scan.json": "562e816f23b6fa54b3c42585f0898da245c261cffb400415144df71e22754dea",
+    "mlflow-sbom.json": "f626a0874c1f168ae7c5c49fda8ed14fc6c08718c7bdeddfaa4721ea06bc63a7",
+    "mlflow-scan.json": "edff59227a1d7c3d2912665e1bf7df2f2b10aae1c49d94ed13d36eaed6e8cbe1",
+    "receipt.json": "6309a4e915b044028922d2d49b45b16b80e63bc690621827ef2bbc6d4fd96742",
+    "summary.json": "b922ca4faa1abcc28c16540668f342e6716d6eb252b2cd975fe5f4cf3122d24a",
+    "ui-sbom.json": "ca25db60b38b0874482b9f2aec0ba77daf323b5d5485b3e1d3da451929831cbe",
+    "ui-scan.json": "f059093c866ca54ba0580846c124e579fe3d4904ccd3c875682f28f277b2f030"
+  },
+  "schema_version": "1.0.0",
+  "sources": {
+    "Dockerfile": "353ef314ff0ae66378d3d14b993cbeac13b1b9d579b23592bbf9ae48bdb24fdc",
+    "Dockerfile.demo": "e8796ebe9e7d99fb55d2db90d9267be5d65ae589f0e0d308970dc4c1fe4c857a",
+    "Dockerfile.minio": "dbfae8ce1a2e2381e44bf6a5d1d65571691f351e65c98ba491abd0cc2b4471b2",
+    "Dockerfile.platform": "108c4405e772e57cd065acca430d0c2e1f0cb77f41254f3437ac6ab000aa8aa9",
+    "configs/platform/minio_source_v1.json": "e8fb399c06e56f765c9f81de258828167d23f180970f0b7e97a364074f17deac",
+    "configs/platform/phase8_v1.json": "5de84bdb4f176b49f965f4983d69eb7b34e5ce763f04a855f200eb899a6529a6",
+    "docker-compose.platform.yml": "b7dbde76212e1467b3381ad718ff8f11d25f6f890fe81284fa3e7248314065c1",
+    "models/selected_v1/manifest.json": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+    "reports/registry/phase7_v1/evidence-manifest.json": "ce36f33da60fe6470d28a76b8053d102e74731115d069c4d476d0c2abbc47da9",
+    "uv.lock": "60249471e9c6687a730d2c21c02e8d6cdd436eb05cb49b96ac0c0edfde85007b"
+  }
+}

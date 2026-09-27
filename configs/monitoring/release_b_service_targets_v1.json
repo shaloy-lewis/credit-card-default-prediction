@@ -1,0 +1,17 @@
+{
+  "origin_archive_sha256": "b7d34fea54f0ff764c2879c95bb828e55b109728333c212c5712bdfb6ce2ddde",
+  "origin_commit": "f3654810662a2d67ea85a86327c5c32af968a5b5",
+  "origin_manifest": "configs/monitoring/rehearsal_f365481_manifest.json",
+  "origin_manifest_sha256": "e8e12b787365ba832bce5bee66569be51b88a09f89dc60e8745011ab0caf7815",
+  "origin_run_url": "https://github.com/shaloy-lewis/credit-card-default-prediction/actions/runs/36295126236",
+  "origin_summary": "configs/monitoring/rehearsal_f365481_summary.json",
+  "origin_summary_sha256": "d49b3278144b3075b9f9334b3a59438e3e539f51de56d79f9d392240dead5ceb",
+  "protocol_id": "release_b_service_targets_v1",
+  "reason": "Retain the original three-rehearsal targets after fixing isolated API recovery; no new target estimation.",
+  "status": "frozen_before_acceptance",
+  "targets": {
+    "api_p95_ms": 32.365462200016275,
+    "batch_seconds": 1.4562180860000353,
+    "recovery_seconds": 6.950854786000036
+  }
+}

@@ -96,3 +96,54 @@ def _run_verify(**kwargs: Any) -> Any:
     from credit_risk.release.workflow import verify_release_evidence
 
     return verify_release_evidence(**kwargs)
+
+
+@release_app.command("build-b")
+def build_b_command(
+    expected_ci_sha256: Annotated[str, typer.Option()],
+    ci_receipt: Annotated[str, typer.Option()] = "experiment/release_b/ci-receipt.json",
+    config: Annotated[str, typer.Option()] = "configs/releases/release_b_v1.json",
+    output: Annotated[str, typer.Option()] = "reports/releases/release_b_v1",
+) -> None:
+    """Build a zero-scoring Release B review candidate; never grant approval."""
+    from credit_risk.assurance.cli import invoke
+    from credit_risk.release.release_b import build
+
+    invoke(
+        build,
+        config=config,
+        output=output,
+        ci_receipt=ci_receipt,
+        expected_ci_sha256=expected_ci_sha256,
+    )
+
+
+@release_app.command("verify-b")
+def verify_b_command(
+    expected_manifest_sha256: Annotated[str, typer.Option()],
+    evidence_root: Annotated[str, typer.Option()] = "reports/releases/release_b_v1",
+    approval: Annotated[str | None, typer.Option()] = None,
+    approval_sha256: Annotated[str | None, typer.Option()] = None,
+) -> None:
+    """Verify evidence and, when supplied, externally authenticated owner approval."""
+    from credit_risk.assurance.cli import invoke
+    from credit_risk.release.release_b import verify_b
+
+    invoke(
+        verify_b,
+        root=evidence_root,
+        expected=expected_manifest_sha256,
+        approval=approval,
+        approval_sha256=approval_sha256,
+    )
+
+
+@release_app.command("capture-ci")
+def capture_ci_command(
+    output: Annotated[str, typer.Option()] = "experiment/release_b/ci-receipt.json",
+) -> None:
+    """Fetch successful exact-commit GitHub CI results without granting release approval."""
+    from credit_risk.assurance.cli import invoke
+    from credit_risk.release.ci_evidence import capture
+
+    invoke(capture, output=output)

@@ -93,3 +93,39 @@ def _verify(**kwargs: Any) -> Any:
     from credit_risk.platform.bootstrap import verify_platform
 
     return verify_platform(**kwargs)
+
+
+@platform_app.command("rehearse")
+def rehearse_command(
+    runtime: Annotated[str, typer.Option()] = "experiment/platform/release_b_v1",
+    trivy: Annotated[str, typer.Option()] = "trivy",
+) -> None:
+    """Measure isolated startup, persistence, scans and smoke parity."""
+    from credit_risk.assurance.cli import invoke
+    from credit_risk.platform.rehearsal import rehearse
+
+    invoke(rehearse, runtime=runtime, trivy=trivy)
+
+
+@platform_app.command("publish-evidence")
+def publish_evidence_command(
+    runtime: Annotated[str, typer.Option()] = "experiment/platform/release_b_v1",
+    output: Annotated[str, typer.Option()] = "reports/platform/phase8_v1",
+) -> None:
+    """Authenticate measured runtime receipts and publish aggregate evidence."""
+    from credit_risk.assurance.cli import invoke
+    from credit_risk.platform.evidence import publish_evidence
+
+    invoke(publish_evidence, runtime=runtime, output=output)
+
+
+@platform_app.command("verify-evidence")
+def verify_evidence_command(
+    expected_manifest_sha256: Annotated[str, typer.Option()],
+    evidence_root: Annotated[str, typer.Option()] = "reports/platform/phase8_v1",
+) -> None:
+    """Verify the platform package without live services."""
+    from credit_risk.assurance.cli import invoke
+    from credit_risk.platform.evidence import verify_evidence
+
+    invoke(verify_evidence, root=evidence_root, expected=expected_manifest_sha256)

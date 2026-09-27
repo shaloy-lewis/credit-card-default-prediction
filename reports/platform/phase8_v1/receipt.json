@@ -1,0 +1,91 @@
+{
+  "health": {
+    "api": true,
+    "mlflow": true,
+    "ui": true
+  },
+  "images": {
+    "api": "sha256:6cdd6afa458e14bd4dbed69cba30d00359c7409c8b97881131963a0471d136b8",
+    "mlflow": "sha256:5b429834fb4cc0b34ac4b156773a4537004793e0910f5adbef8554c01d034150",
+    "ui": "sha256:9af2a9669022e5f22757a6a0f6f14d3f95d4a83f34d4fce95909dc85dcb76111"
+  },
+  "implementation_commit": "29b5317d8681e05dfe748b75c0ee5852e760b74f",
+  "infrastructure_images": {
+    "minio": "sha256:79df57d238d1836465a9315b00a97cea351b6e2dfe867ef7bff9bd77eab64381",
+    "postgres": "sha256:5f71c21b69a7977b82247582e2e731ed76bdebaadb7dd7945ed76bcc9ed06632"
+  },
+  "sbom_sha256": {
+    "api": "b7d2c4b7f60f7f2f41a4449ceeb2d1683e6365bd852b97043e7637294c33ec20",
+    "mlflow": "f626a0874c1f168ae7c5c49fda8ed14fc6c08718c7bdeddfaa4721ea06bc63a7",
+    "ui": "ca25db60b38b0874482b9f2aec0ba77daf323b5d5485b3e1d3da451929831cbe"
+  },
+  "scan_sha256": {
+    "api": "562e816f23b6fa54b3c42585f0898da245c261cffb400415144df71e22754dea",
+    "mlflow": "edff59227a1d7c3d2912665e1bf7df2f2b10aae1c49d94ed13d36eaed6e8cbe1",
+    "ui": "f059093c866ca54ba0580846c124e579fe3d4904ccd3c875682f28f277b2f030"
+  },
+  "scanner_version": "Version: 0.70.0",
+  "smoke_probabilities": [
+    0.190382,
+    0.190382
+  ],
+  "sources": {
+    "Dockerfile": "353ef314ff0ae66378d3d14b993cbeac13b1b9d579b23592bbf9ae48bdb24fdc",
+    "Dockerfile.demo": "e8796ebe9e7d99fb55d2db90d9267be5d65ae589f0e0d308970dc4c1fe4c857a",
+    "Dockerfile.minio": "dbfae8ce1a2e2381e44bf6a5d1d65571691f351e65c98ba491abd0cc2b4471b2",
+    "Dockerfile.platform": "108c4405e772e57cd065acca430d0c2e1f0cb77f41254f3437ac6ab000aa8aa9",
+    "configs/platform/minio_source_v1.json": "e8fb399c06e56f765c9f81de258828167d23f180970f0b7e97a364074f17deac",
+    "configs/platform/phase8_v1.json": "5de84bdb4f176b49f965f4983d69eb7b34e5ce763f04a855f200eb899a6529a6",
+    "docker-compose.platform.yml": "b7dbde76212e1467b3381ad718ff8f11d25f6f890fe81284fa3e7248314065c1",
+    "models/selected_v1/manifest.json": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+    "reports/registry/phase7_v1/evidence-manifest.json": "ce36f33da60fe6470d28a76b8053d102e74731115d069c4d476d0c2abbc47da9",
+    "uv.lock": "60249471e9c6687a730d2c21c02e8d6cdd436eb05cb49b96ac0c0edfde85007b"
+  },
+  "states": [
+    {
+      "active_revision": "phase7_rev_001",
+      "aliases": {
+        "champion": "1",
+        "rollback": "2"
+      },
+      "fit_count": 0,
+      "object_sha256": {
+        "manifest.json": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+        "model.cbm": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
+      },
+      "registered_model_name": "credit-risk-default",
+      "sealed_test_accessed": false,
+      "status": "verified"
+    },
+    {
+      "active_revision": "phase7_rev_001",
+      "aliases": {
+        "champion": "1",
+        "rollback": "2"
+      },
+      "fit_count": 0,
+      "object_sha256": {
+        "manifest.json": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+        "model.cbm": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
+      },
+      "registered_model_name": "credit-risk-default",
+      "sealed_test_accessed": false,
+      "status": "ready"
+    },
+    {
+      "active_revision": "phase7_rev_001",
+      "aliases": {
+        "champion": "1",
+        "rollback": "2"
+      },
+      "fit_count": 0,
+      "object_sha256": {
+        "manifest.json": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+        "model.cbm": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c"
+      },
+      "registered_model_name": "credit-risk-default",
+      "sealed_test_accessed": false,
+      "status": "verified"
+    }
+  ]
+}

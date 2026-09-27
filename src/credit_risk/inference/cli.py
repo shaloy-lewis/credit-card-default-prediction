@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -27,6 +28,7 @@ from credit_risk.inference.evidence import (
     build_inference_evidence,
     verify_inference_evidence,
 )
+from credit_risk.inference.logging import emit_event
 from credit_risk.modeling.selected_bundle import SelectedBundleError
 
 inference_app = typer.Typer(
@@ -53,6 +55,7 @@ def batch_command(
 ) -> None:
     """Score valid rows, publish rejections, and enforce idempotent reuse."""
 
+    started = time.perf_counter()
     try:
         config = load_inference_config(config_path)
         validate_batch_identity(
@@ -75,8 +78,23 @@ def batch_command(
         InferenceError,
         SelectedBundleError,
     ) as error:
+        emit_event(
+            "batch_attempt_completed",
+            operation="batch",
+            status="failed",
+            duration_ms=round((time.perf_counter() - started) * 1000, 3),
+        )
         typer.echo(f"Inference batch failed: {error}", err=True)
         raise typer.Exit(code=1) from None
+    emit_event(
+        "batch_attempt_completed",
+        operation="batch",
+        status=result.status,
+        batch_id=result.batch_id,
+        row_count=result.valid_rows,
+        rejection_count=result.rejected_rows,
+        duration_ms=round((time.perf_counter() - started) * 1000, 3),
+    )
     typer.echo(
         f"Batch {result.batch_id}: status={result.status}, valid={result.valid_rows}, "
         f"rejected={result.rejected_rows}, reused={str(result.reused).lower()}, "

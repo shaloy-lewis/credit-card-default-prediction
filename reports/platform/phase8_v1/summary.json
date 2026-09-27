@@ -1,0 +1,20 @@
+{
+  "prediction": 0.190382,
+  "runtime_receipt_sha256": "6309a4e915b044028922d2d49b45b16b80e63bc690621827ef2bbc6d4fd96742",
+  "scans": {
+    "api": {
+      "fixable_high_critical": 0,
+      "image_id": "sha256:6cdd6afa458e14bd4dbed69cba30d00359c7409c8b97881131963a0471d136b8"
+    },
+    "mlflow": {
+      "fixable_high_critical": 0,
+      "image_id": "sha256:5b429834fb4cc0b34ac4b156773a4537004793e0910f5adbef8554c01d034150"
+    },
+    "ui": {
+      "fixable_high_critical": 0,
+      "image_id": "sha256:9af2a9669022e5f22757a6a0f6f14d3f95d4a83f34d4fce95909dc85dcb76111"
+    }
+  },
+  "states_verified": 3,
+  "status": "platform_verified"
+}

@@ -65,13 +65,15 @@ subgroup review, and explanation controls. Phase 6 completed versioned batch/API
 inference and parity from corrected implementation commit `f6b37af`. Phase 7
 completed local registry promotion, blocking image scanning, immutable deployment,
 authenticated two-revision smoke parity, and demonstrated rollback around unchanged
-model bytes. G4 remains open until robustness, monitoring, and incident controls
-are delivered.
+model bytes. Official Linux evidence now covers the Phase 8 platform, robustness,
+monitoring, service acceptance and incident controls. G4 remains open pending the
+explicit local-scope owner decision on the verified dossier.
 
 - Model and data cards, risk register, subgroup evaluation, and explanation tests.
 - Versioned batch/API inference with parity.
 - Registry, promotion gates, CI, container checks, and rollback (complete).
-- Robustness, monitoring, and incident controls (remaining).
+- Robustness, monitoring, service acceptance and incident controls (evidenced).
+- Final dossier and exact-commit CI (verified); project-owner sign-off (remaining).
 
 This release creates the core hybrid DS/MLE story.
 
@@ -175,9 +177,8 @@ At each weekly checkpoint:
 4. Run the relevant tests and capture reproducible outputs.
 5. Update the decision log and portfolio narrative before expanding scope.
 
-The persistent local platform prerequisite is implemented. After the pre-Release
-B repository cleanup, the next slice is the remaining G4 work: prediction-only
-robustness and population-shift stress evidence, monitoring contracts, and
-incident exercises. It will reuse the unchanged reviewed bundle and existing
-synthetic/runtime evidence without repeating model selection, training,
-calibration, or sealed-test evaluation.
+The Release B implementation and measured operational evidence are complete.
+Exact-commit CI, zero-scoring dossier assembly and independent verification have
+passed. The next step is the [project-owner decision](reviews/release-b-owner-review.md). The reviewed model and
+historical evidence remain unchanged. Training, tuning, calibration fitting,
+bootstrap regeneration and sealed-test evaluation remain prohibited.

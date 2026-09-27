@@ -1,0 +1,13 @@
+{
+  "protocol_id": "release_b_robustness_v1",
+  "monetary_multipliers": [0.9, 1.1, 0.75, 1.25],
+  "repayment_increments": [1, 2],
+  "subset_limit_quantile": 0.25,
+  "subset_repayment_minimum": 2,
+  "validation_rows": 4800,
+  "material_mean_probability_change": 0.05,
+  "material_queue_turnover": 0.2,
+  "material_band_or_reason_change": 0.2,
+  "disposition": "human_review_required",
+  "perturbed_outcome_metrics": "prohibited"
+}

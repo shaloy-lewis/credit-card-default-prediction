@@ -1,0 +1,73 @@
+{
+  "historical_register": "reports/governance/phase5_v1/risk-register.md",
+  "historical_register_rewritten": false,
+  "risks": [
+    {
+      "decision": "pending",
+      "historical_entry": "Demographic disparity",
+      "id": "education_disparities",
+      "proposed_restriction": "Retain both G3 education disparity conditions; audit-only demographic fields and human review."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Geographic and temporal transportability",
+      "id": "geographic_temporal_transportability",
+      "proposed_restriction": "Local demonstration only; no claims for current or other populations without representative evaluation."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Calibration or feature drift",
+      "id": "calibration_drift",
+      "proposed_restriction": "Identity calibration remains fixed; investigate drift manually, with no automatic recalibration."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Privacy and logging",
+      "id": "production_privacy",
+      "proposed_restriction": "Use synthetic operational fixtures; keep validation scores and account mappings in ignored local storage."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Missing registry and rollback",
+      "id": "phase7_phase8_boundary",
+      "proposed_restriction": "Phase 7 SQLite demonstrates promotion/rollback; Phase 8 demonstrates fixed bootstrap/persistence only."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Missing production monitoring",
+      "id": "production_monitoring",
+      "proposed_restriction": "CLI monitoring is a local demonstration; longitudinal evaluation and production operations remain G5 work."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Misleading explanations",
+      "id": "explanation_language",
+      "proposed_restriction": "Explanations describe model attribution, never causality or adverse-action reasons."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Unsafe automation",
+      "id": "human_owned_use",
+      "proposed_restriction": "Human-owned outreach demonstration only; prohibit lending, adverse action and automated customer decisions."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Artifact integrity",
+      "id": "artifact_integrity",
+      "proposed_restriction": "Authenticate model and deployment digests before use; reject missing or corrupt artifacts."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": "Consumed-test protection",
+      "id": "consumed_test_protection",
+      "proposed_restriction": "The sealed test remains retired; no fits, tuning, bootstrap regeneration or new test scoring."
+    },
+    {
+      "decision": "pending",
+      "historical_entry": null,
+      "id": "object_store_upstream_availability",
+      "proposed_restriction": "Use the source-pinned legacy MinIO build only in isolated local resources with private S3 networking; maintained object storage and production supportability remain G5 work."
+    }
+  ],
+  "status": "pending_owner_review"
+}

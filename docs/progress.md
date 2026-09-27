@@ -499,3 +499,47 @@ deferred risks. It is not a substitute for commit history or CI results.
   sealed-test evaluation, or evidence regeneration. The repository is narrowed
   to the active Release B foundations: inference, governance, registry,
   deployment, persistent platform, and upcoming monitoring/incident controls.
+
+
+## Release B sign-off implementation — evidence and approval pending
+
+**Prepared:** 2026-09-26
+
+- Added immutable platform evidence publication and offline verification,
+  validation-only robustness scenarios, fixed-reference drift monitoring,
+  safe service event aggregation, measured benchmark/acceptance commands,
+  isolated incident exercises, and a zero-scoring Release B review dossier.
+- Added a separate Linux evidence workflow with exact reviewed model bytes,
+  blocking scans, SBOMs and aggregate-only artifact upload.
+- Local locked-environment checks passed 885 tests, with six Windows symlink
+  skips and 32 training tests excluded. The new assurance gate measured 92%
+  branch coverage. Historical Release A and Phase 5–7 evidence authenticated.
+- Windows Docker execution is unavailable because WSL is not installed.
+  The project owner selected Linux GitHub Actions on the implementation branch
+  for official container and platform checks.
+- G4 and Release B remain open. No owner approval is implied by implementation,
+  a successful test run, or publication of a review candidate.
+
+
+## Release B measured evidence — owner sign-off pending
+
+**Measured:** 2026-09-27, implementation `29b5317d8681e05dfe748b75c0ee5852e760b74f`.
+
+- [Official Linux evidence run](https://github.com/shaloy-lewis/credit-card-default-prediction/actions/runs/36295979702) passed. Its downloaded archive authenticated as `1b11f7fbee7e4cdd2ccaa72da4b3dc33d48c69b4921e3990febf378c8c51d8a7`; eight aggregate packages verify offline without scoring.
+- Phase 8 startup, repeated bootstrap, service health, persistent state, synthetic parity, blocking scans and SBOMs passed.
+- All 14 robustness scenarios and two historical subsets completed. Both repayment-deterioration scenarios have material sensitivity requiring explicit operating restrictions.
+- Service acceptance: API p95 7.797950 ms, 10,000-row batch 0.465012 s and restart recovery 2.729980 s, with zero unexpected valid-request failures and prediction `0.190382`.
+- All eight incident drills passed detection, containment, recovery and verification. Isolated API outage recovery took 1.754615 s. The original 6.950855 s limit and all other service targets were retained after the earlier failed drill; none was relaxed.
+- Monitoring captured the injected failed batch and health failure. The intentionally different synthetic population triggered investigation without automatic model changes or discarding its completed batch.
+- Historical evidence and model bytes remain unchanged. Final exact-commit CI, dossier verification and owner approval are still required; G4 remains open.
+
+
+## Release B dossier verified — explicit owner decision required
+
+**Prepared:** 2026-09-27.
+
+- All four mandatory CI jobs passed on evidence commit `179f893b9675041fd7b1be6e1a48cf03d7a81a79`; the separate evidence workflow verified the committed reports without scoring.
+- Restored the selected-model artifact and checksum-pinned Phase 1 data in an isolated clean checkout. All eight new packages and Release A/Phase 5–7 authenticated without training or scoring.
+- Built the zero-scoring dossier with manifest SHA-256 `f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88` and verified it as `verified_pending_owner_signoff`.
+- Published the [owner review](reviews/release-b-owner-review.md) and 36 proposed dispositions, including both material repayment sensitivities and the local-only object-store restriction. The proposal grants no approval.
+- G4 remains open pending a separate explicit owner decision bound to this digest. G3 conditions remain; G5 and Release C communication deliverables remain open.

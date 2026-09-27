@@ -1,0 +1,13 @@
+{
+  "batch_attempt_count": 7,
+  "batch_failure_count": 1,
+  "client_error_count": 0,
+  "health_failure_count": 1,
+  "health_probe_count": 2,
+  "p95_latency_ms": 7.4405,
+  "request_count": 256,
+  "runtime_log_sha256": "2d1d0778d3c8a730df7475a0ca3fd7a1e072566faff646e0d8e9b34ac6a92a9d",
+  "server_error_count": 0,
+  "server_error_rate": 0.0,
+  "status": "measured"
+}

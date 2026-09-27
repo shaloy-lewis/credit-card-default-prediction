@@ -1,0 +1,23 @@
+{
+  "benchmark_sha256": "ad287ba70df8b284fe279703ae0071ee5135fc596fd0655b477bf12144a43523",
+  "hardware": {
+    "architecture": "x86_64",
+    "logical_cpus": 4,
+    "os": "Linux",
+    "processor": "x86_64",
+    "python": "3.12.3"
+  },
+  "measurements": {
+    "api_p95_ms": 7.797950149981148,
+    "batch_seconds": 0.46501158099999884,
+    "recovery_seconds": 2.7299796979999655
+  },
+  "prediction": 0.190382,
+  "status": "passed",
+  "targets": {
+    "api_p95_ms": 32.365462200016275,
+    "batch_seconds": 1.4562180860000353,
+    "recovery_seconds": 6.950854786000036
+  },
+  "valid_request_failures": 0
+}
