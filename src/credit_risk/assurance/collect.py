@@ -39,7 +39,11 @@ def main() -> None:
     acceptance_sha = acceptance(benchmark_sha)
     incident_log = ROOT / "experiment/release_b/incident-events.jsonl"
     incident_log.parent.mkdir(parents=True, exist_ok=True)
-    handler = logging.FileHandler(incident_log, mode="x", encoding="utf-8")
+    # Reserve a fresh receipt, then allow append-only reopening after MLflow logging
+    # configuration closes handlers. Exclusive-create mode cannot reopen an existing log.
+    with incident_log.open("x", encoding="utf-8"):
+        pass
+    handler = logging.FileHandler(incident_log, mode="a", encoding="utf-8")
     handler.setFormatter(logging.Formatter("%(message)s"))
     LOGGER.addHandler(handler)
     try:

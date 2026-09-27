@@ -2,6 +2,7 @@
 
 import io
 import json
+import logging
 from types import SimpleNamespace
 
 import numpy as np
@@ -118,6 +119,12 @@ def test_collector_sequences_new_packages_and_keeps_release_pending(tmp_path, mo
 
         def fake(*args, _name=name, **kwargs):
             operations.append(_name)
+            if _name == "incidents":
+                # MLflow logging configuration closes existing file handlers.
+                for handler in collect.LOGGER.handlers:
+                    if isinstance(handler, logging.FileHandler):
+                        handler.close()
+                collect.LOGGER.info('{"event":"batch_attempt_completed","status":"failed"}')
             return "a" * 64
 
         monkeypatch.setattr(collect, name, fake)
@@ -162,6 +169,8 @@ def test_collector_sequences_new_packages_and_keeps_release_pending(tmp_path, mo
         (tmp_path / "experiment/release_b/proposed-release-contract.json").read_bytes()
     )
     assert contract["status"] == "evidence_collected_ci_and_owner_review_pending"
+    captured = (tmp_path / "experiment/release_b/incident-events.jsonl").read_text()
+    assert '"status":"failed"' in captured
 
 
 def test_collector_authenticates_committed_reports_without_scoring(tmp_path, monkeypatch):
