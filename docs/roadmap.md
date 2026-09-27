@@ -60,20 +60,20 @@ approval or a fairness/compliance certification.
 
 ### Release B: governed ML product — end of Week 8
 
-**Status: in progress.** Phase 5 completed the model card, risk register,
-subgroup review, and explanation controls. Phase 6 completed versioned batch/API
+**Status: complete for local portfolio scope.** Phase 5 completed the model card,
+risk register, subgroup review, and explanation controls. Phase 6 completed versioned batch/API
 inference and parity from corrected implementation commit `f6b37af`. Phase 7
 completed local registry promotion, blocking image scanning, immutable deployment,
 authenticated two-revision smoke parity, and demonstrated rollback around unchanged
 model bytes. Official Linux evidence now covers the Phase 8 platform, robustness,
-monitoring, service acceptance and incident controls. G4 remains open pending the
-explicit local-scope owner decision on the verified dossier.
+monitoring, service acceptance and incident controls. G4 is closed for the local
+portfolio scope following the explicit owner decision on the verified dossier and all operating restrictions.
 
 - Model and data cards, risk register, subgroup evaluation, and explanation tests.
 - Versioned batch/API inference with parity.
 - Registry, promotion gates, CI, container checks, and rollback (complete).
 - Robustness, monitoring, service acceptance and incident controls (evidenced).
-- Final dossier and exact-commit CI (verified); project-owner sign-off (remaining).
+- Final dossier, exact-commit CI and digest-bound project-owner sign-off (complete).
 
 This release creates the core hybrid DS/MLE story.
 
@@ -179,6 +179,8 @@ At each weekly checkpoint:
 
 The Release B implementation and measured operational evidence are complete.
 Exact-commit CI, zero-scoring dossier assembly and independent verification have
-passed. The next step is the [project-owner decision](reviews/release-b-owner-review.md). The reviewed model and
-historical evidence remain unchanged. Training, tuning, calibration fitting,
+passed, and the project owner approved the exact dossier digest and all required
+dispositions. G4 is closed for the local portfolio scope. Next are Release C
+communication deliverables; G5 production review remains separate and open.
+The reviewed model and historical evidence remain unchanged. Training, tuning, calibration fitting,
 bootstrap regeneration and sealed-test evaluation remain prohibited.

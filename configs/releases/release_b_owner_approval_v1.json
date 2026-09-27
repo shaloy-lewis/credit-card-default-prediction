@@ -1,0 +1,163 @@
+{
+  "approved_proposal_sha256": "1ffe603f37cdd55a4faaf6b1363527ee36e092d17b66ecdf462aba0ca005e1e2",
+  "decision": "approved",
+  "decision_source": {
+    "channel": "project-owner conversation",
+    "question": "Do you approve the reviewed Release B dossier for local portfolio use, accepting all 36 proposed dispositions and retaining G3 conditions?",
+    "response": "yes"
+  },
+  "dispositions": {
+    "incident:artifact_integrity": {
+      "decision": "resolved",
+      "restriction": "The isolated synthetic drill passed detection, containment, recovery and verification. Continue the corresponding release runbook and retain failed receipts; never alter historical artifacts or silently select duplicate accounts."
+    },
+    "incident:duplicate_ids": {
+      "decision": "resolved",
+      "restriction": "The isolated synthetic drill passed detection, containment, recovery and verification. Continue the corresponding release runbook and retain failed receipts; never alter historical artifacts or silently select duplicate accounts."
+    },
+    "incident:invalid_values": {
+      "decision": "resolved",
+      "restriction": "The isolated synthetic drill passed detection, containment, recovery and verification. Continue the corresponding release runbook and retain failed receipts; never alter historical artifacts or silently select duplicate accounts."
+    },
+    "incident:missing_columns": {
+      "decision": "resolved",
+      "restriction": "The isolated synthetic drill passed detection, containment, recovery and verification. Continue the corresponding release runbook and retain failed receipts; never alter historical artifacts or silently select duplicate accounts."
+    },
+    "incident:phase7_sqlite_rollback": {
+      "decision": "resolved",
+      "restriction": "Demonstrated recovery applies to the isolated Phase 7 SQLite workflow. Phase 8 remains fixed-state bootstrap and restart recovery; no PostgreSQL promotion/rollback claim."
+    },
+    "incident:population_shift": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Synthetic drift detection and restored controls passed. Hold queue use during real investigation; only a human owner may restore use, without automatic model changes."
+    },
+    "incident:prediction_shift": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Synthetic drift detection and restored controls passed. Hold queue use during real investigation; only a human owner may restore use, without automatic model changes."
+    },
+    "incident:service_interruption": {
+      "decision": "resolved",
+      "restriction": "Use isolated API-container restart and the original frozen recovery target. Preserve volumes and authenticated state; suspend dependent requests while unavailable."
+    },
+    "monitoring:batch_disposition": {
+      "decision": "accepted_with_restriction",
+      "restriction": "The deterministic synthetic batch intentionally differs from historical validation and triggers investigation. Accept for the local demonstration only; preserve completed scores and require human review without model, calibration, threshold or promotion changes."
+    },
+    "risk:artifact_integrity": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Authenticate model and deployment digests before use; reject missing or corrupt artifacts."
+    },
+    "risk:calibration_drift": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Identity calibration remains fixed; investigate drift manually, with no automatic recalibration."
+    },
+    "risk:consumed_test_protection": {
+      "decision": "accepted_with_restriction",
+      "restriction": "The sealed test remains retired; no fits, tuning, bootstrap regeneration or new test scoring."
+    },
+    "risk:education_disparities": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Retain both G3 education disparity conditions; audit-only demographic fields and human review."
+    },
+    "risk:explanation_language": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Explanations describe model attribution, never causality or adverse-action reasons."
+    },
+    "risk:geographic_temporal_transportability": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Local demonstration only; no claims for current or other populations without representative evaluation."
+    },
+    "risk:human_owned_use": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Human-owned outreach demonstration only; prohibit lending, adverse action and automated customer decisions."
+    },
+    "risk:object_store_upstream_availability": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Use the source-pinned legacy MinIO build only in isolated local resources with private S3 networking; maintained object storage and production supportability remain G5 work."
+    },
+    "risk:phase7_phase8_boundary": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Phase 7 SQLite demonstrates promotion/rollback; Phase 8 demonstrates fixed bootstrap/persistence only."
+    },
+    "risk:production_monitoring": {
+      "decision": "accepted_with_restriction",
+      "restriction": "CLI monitoring is a local demonstration; longitudinal evaluation and production operations remain G5 work."
+    },
+    "risk:production_privacy": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Use synthetic operational fixtures; keep validation scores and account mappings in ignored local storage."
+    },
+    "robustness:billing_balance_0.75": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:billing_balance_0.9": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:billing_balance_1.1": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:billing_balance_1.25": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:credit_capacity_0.75": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:credit_capacity_0.9": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:credit_capacity_1.1": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:credit_capacity_1.25": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:low_credit_limit": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Historical subgroup diagnostic only; preserve the exact cohort and denominators. No causal, population-transfer or prospective performance claim."
+    },
+    "robustness:payment_behaviour_0.75": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:payment_behaviour_0.9": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:payment_behaviour_1.1": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:payment_behaviour_1.25": {
+      "decision": "accepted_with_restriction",
+      "restriction": "No material finding under the frozen thresholds. Restrict interpretation to this validation cohort and perturbation; no causal, prospective or production robustness claim."
+    },
+    "robustness:repayment_at_least_two": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Historical subgroup diagnostic only; preserve the exact cohort and denominators. No causal, population-transfer or prospective performance claim."
+    },
+    "robustness:repayment_plus_1": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Sensitivity demonstration only. Do not interpret retained labels as stressed outcomes or act on perturbed queues. Comparable real drift requires investigation and suspended human use until disposition."
+    },
+    "robustness:repayment_plus_2": {
+      "decision": "accepted_with_restriction",
+      "restriction": "Sensitivity demonstration only. Do not interpret retained labels as stressed outcomes or act on perturbed queues. Comparable real drift requires investigation and suspended human use until disposition."
+    }
+  },
+  "dossier_sha256": "f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88",
+  "g3_conditions_retained": true,
+  "owner": "Shaloy Lewis",
+  "owner_role": "project_owner",
+  "recorded_at_utc": "2026-09-27T13:20:28Z",
+  "release_id": "release_b_v1",
+  "reviewed_publication_commit": "fa396c9de607c998df1797a252642d506a946845",
+  "scope": "local_portfolio_only"
+}

@@ -50,6 +50,13 @@ jobs:
           PY
       - name: Collect official prediction-only evidence
         run: uv run python -m credit_risk.assurance.collect
+      - name: Verify approved Release B dossier
+        if: ${{ hashFiles('configs/releases/release_b_owner_approval_v1.json') != '' }}
+        run: >-
+          uv run credit-risk release verify-b
+          --expected-manifest-sha256 f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88
+          --approval configs/releases/release_b_owner_approval_v1.json
+          --approval-sha256 9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f
       - name: Upload aggregate evidence and proposed release contract
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

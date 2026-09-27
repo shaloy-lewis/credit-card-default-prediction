@@ -25,8 +25,9 @@ capacity-constrained intervention prioritisation for existing cardholders.
 > two-revision smoke parity, and demonstrated rollback. Release B now has
 > authenticated Phase 8 platform, robustness, monitoring, service acceptance,
 > and incident evidence. All mandatory live controls passed on Linux GitHub
-> Actions. G4 remains open pending explicit owner sign-off on the verified dossier
-> for the local portfolio scope; G3 conditions, G5 and Release C remain in force/open.
+> Actions. Release B is complete and G4 is closed for the local portfolio scope
+> following explicit owner approval of the verified dossier. G3 conditions remain in force;
+> G5 production review and Release C communication remain open.
 
 ## Product intent
 
@@ -133,7 +134,7 @@ The approved scope and delivery evidence are documented in:
   authenticated Phase 7 evidence proving identical synthetic outputs across both
   release revisions plus a successful restoration of revision 1.
 - A zero-cost Phase 8 local platform prerequisite stack with digest-pinned
-  PostgreSQL and MinIO images, PostgreSQL-backed MLflow 3.15, content-addressed
+  PostgreSQL and source-pinned MinIO, PostgreSQL-backed MLflow 3.15, content-addressed
   model objects, three persistent named volumes, exact Phase 7 alias/bootstrap
   reconstruction, and API/UI health checks. Bootstrap and restart verification
   perform zero fits and preserve the selected-model prediction `0.190382`.
@@ -141,9 +142,9 @@ The approved scope and delivery evidence are documented in:
   binary. The Git-tracked selected manifest remains the trust authority;
   application loaders remain local-only and network-free.
 
-G3 is `closed_with_conditions`. Release B operational evidence and the final
-dossier are verified; G4 remains open only for explicit owner sign-off on the
-local portfolio scope and the proposed operating restrictions.
+G3 is `closed_with_conditions`. Release B and G4 are complete for the local
+portfolio scope, with authenticated operational evidence and a digest-bound
+owner decision. The operating restrictions remain mandatory; G5 stays open.
 
 ## Dataset and evidence limits
 
@@ -511,13 +512,17 @@ released model contract.
 Generated data, logs, environments, caches, experiment outputs, and the
 externally distributed selected-model binary are excluded from version control.
 
-## Release B sign-off implementation
+## Release B sign-off
 
 The additive platform-evidence, robustness, monitoring, benchmark, incident and
 Release B dossier commands are implemented. Official Linux evidence and the
 [dossier](reports/releases/release_b_v1/release-b-report.md) verify from a clean
 checkout. The [owner review and proposed restrictions](docs/reviews/release-b-owner-review.md)
-are ready; explicit project-owner approval remains required before G4 closes. Follow the
+were explicitly approved by the project owner for local portfolio use. G4 is
+closed for that scope. The [owner decision](configs/releases/release_b_owner_approval_v1.json)
+binds the immutable dossier and every required disposition. Verification combines
+the original review candidate with this separate decision to report approved status.
+Follow the
 [sign-off procedure](docs/operations/release-b-signoff.md); the separate
 Release B evidence workflow runs Linux container checks and prediction-only
 diagnostics without training or sealed-test evaluation.
@@ -527,12 +532,30 @@ diagnostics without training or sealed-test evaluation.
 - **Release A — defensible model (complete):** reproducible data, baselines,
   identity calibration, validation-only uncertainty, capacity-aware evaluation,
   and one authenticated evidence chain.
-- **Release B — governed ML product (in progress):** model/data cards, subgroup
-  analysis, reason-category tests, batch/API parity, registry promotion gates,
+- **Release B — governed ML product (complete for local portfolio scope):**
+  model/data cards, subgroup analysis, reason-category tests, batch/API parity, registry promotion gates,
   scanning, rollback, robustness, monitoring, and incident controls have measured
-  evidence and a verified dossier. Owner approval remains before G4 can close.
-- **Release C — local platform:** Docker Compose services, monitoring, incident
-  drills, and recorded portfolio demo.
+  evidence, a verified dossier and an explicit owner decision. G4 is closed for
+  this local scope; G3 restrictions and G5 production review remain.
+- **Release C — portfolio communication (open):** executive narrative, demo video,
+  intervention experiment design and interview materials.
 
 See the [roadmap](docs/roadmap.md) for weekly acceptance gates and the honest
 mapping from the local implementation to Azure Databricks production concepts.
+
+Release B verification anchors:
+
+- Dossier: `f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88`.
+- Owner approval: `9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f`.
+
+Verify the approved release with:
+
+```bash
+credit-risk release verify-b \
+  --expected-manifest-sha256 f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88 \
+  --approval configs/releases/release_b_owner_approval_v1.json \
+  --approval-sha256 9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f
+```
+
+Restore the reviewed model and Phase 1 data first for historical-lineage
+verification; no training or scoring is performed.
