@@ -79,6 +79,12 @@ This release creates the core hybrid DS/MLE story.
 
 ### Release C: flagship portfolio case study — end of Week 12
 
+**Status: planned.** The [Release C acceptance plan](portfolio/release-c-acceptance-plan.md)
+defines the remaining two 10-hour work packages, deliverables and owner acceptance
+criteria for Senior Data Scientist and Senior ML Engineer audiences. Reuse the
+completed Release B platform and monitoring evidence. Release C closes only after
+the completed package is explicitly accepted; G5 production review remains open.
+
 - Reproducible local MLOps stack.
 - Monitoring and incident demonstrations.
 - Experiment design for measuring intervention impact.
