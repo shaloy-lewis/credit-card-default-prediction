@@ -579,16 +579,27 @@ def _ensure_deployment(context: _Context) -> ActiveDeployment:
     root = _validate_deployment_root(context.deployment_root)
     revision = context.config.registry_bootstrap.active_revision
     release = root / "releases" / revision
+    # Existing state is evidence, including when it is incomplete or corrupt.
+    # Verification must never enter creation's cleanup path.
     try:
         if root.exists() and any(root.iterdir()):
             active = load_active_deployment(root)
             _validate_active(context.config, active)
             return active
-        root.mkdir(parents=True, exist_ok=True)
+    except (OSError, DeploymentResolutionError, PlatformBootstrapError) as error:
+        raise PlatformBootstrapError(f"Unable to verify the active deployment: {error}") from error
+
+    owned_directories: list[Path] = []
+    try:
+        if not root.exists():
+            root.mkdir(parents=True)
+            owned_directories.append(root)
         root = _validate_deployment_root(root)
         bundle = release / "bundle"
-        _validate_release_path(root, bundle)
-        bundle.mkdir(parents=True)
+        for directory in (release.parent, release, bundle):
+            _validate_release_path(root, directory)
+            directory.mkdir()
+            owned_directories.append(directory)
         root = _validate_deployment_root(root)
         _validate_release_path(root, bundle)
         shutil.copyfile(context.bundle / "manifest.json", bundle / "manifest.json")
@@ -610,7 +621,7 @@ def _ensure_deployment(context: _Context) -> ActiveDeployment:
         _write_atomic(root / "active.json", _json_bytes(active.model_dump(mode="json")))
         load_active_deployment(root)
     except Exception as error:
-        _remove_incomplete_release(root, release)
+        _remove_incomplete_release(root, release, owned_directories=tuple(owned_directories))
         if isinstance(error, PlatformBootstrapError):
             raise
         raise PlatformBootstrapError(
@@ -619,17 +630,23 @@ def _ensure_deployment(context: _Context) -> ActiveDeployment:
     return active
 
 
-def _remove_incomplete_release(root: Path, release: Path) -> None:
+def _remove_incomplete_release(
+    root: Path, release: Path, *, owned_directories: tuple[Path, ...]
+) -> None:
+    """Remove only this invocation's unpublished work, never pre-existing state."""
     try:
         safe_root = _validate_deployment_root(root)
         _validate_release_path(safe_root, release)
-        if (
-            release.parent.parent != safe_root
-            or not release.exists()
-            or (safe_root / "active.json").exists()
-        ):
+        if release.parent.parent != safe_root or (safe_root / "active.json").exists():
             return
-        shutil.rmtree(release)
+        for directory in owned_directories:
+            _validate_release_path(safe_root, directory)
+        if release in owned_directories and release.exists():
+            shutil.rmtree(release)
+        # rmdir cannot remove foreign content or a pre-existing empty volume root.
+        for directory in reversed(owned_directories):
+            if directory.exists():
+                directory.rmdir()
     except (OSError, PlatformBootstrapError):
         return
 

@@ -827,7 +827,100 @@ def test_deployment_cleanup_never_follows_nested_symlink(tmp_path: Path, monkeyp
     monkeypatch.setattr(Path, "is_symlink", mark_releases_as_symlink)
     monkeypatch.setattr(workflow.shutil, "rmtree", lambda path: removals.append(path))
 
-    workflow._remove_incomplete_release(root, release)
+    workflow._remove_incomplete_release(root, release, owned_directories=(release,))
 
     assert removals == []
     assert release.exists()
+
+
+@pytest.mark.parametrize(
+    "damage", ["missing_pointer", "corrupt_pointer", "inconsistent", "partial"]
+)
+def test_bootstrap_preserves_rejected_existing_deployment(tmp_path, damage):
+    s3, mlflow = FakeS3(), FakeMlflow()
+    root = tmp_path / "deployment"
+    options = dict(
+        deployment_root=root, environment=_environment(), s3_client=s3, mlflow_client=mlflow
+    )
+    workflow.bootstrap_platform(**options)
+    pointer = root / "active.json"
+    if damage in {"missing_pointer", "partial"}:
+        pointer.unlink()
+        if damage == "partial":
+            (root / "releases/phase7_rev_001/bundle/manifest.json").unlink()
+    elif damage == "corrupt_pointer":
+        pointer.write_bytes(b"not-json")
+    else:
+        value = json.loads(pointer.read_bytes())
+        value["release_revision"] = "phase7_rev_002"
+        pointer.write_text(json.dumps(value), encoding="utf-8")
+    before = {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+    directories = {p.relative_to(root) for p in root.rglob("*") if p.is_dir()}
+    with pytest.raises(workflow.PlatformBootstrapError, match="active deployment"):
+        workflow.bootstrap_platform(**options)
+    assert {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()} == before
+    assert {p.relative_to(root) for p in root.rglob("*") if p.is_dir()} == directories
+
+
+@pytest.mark.parametrize("failure", ["copy", "pointer"])
+@pytest.mark.parametrize("existing_root", [False, True])
+def test_failed_creation_cleans_only_owned_work_and_can_retry(
+    tmp_path, monkeypatch, failure, existing_root
+):
+    s3, mlflow = FakeS3(), FakeMlflow()
+    root = tmp_path / "deployment"
+    if existing_root:
+        root.mkdir()
+    options = dict(
+        deployment_root=root, environment=_environment(), s3_client=s3, mlflow_client=mlflow
+    )
+    with monkeypatch.context() as failing:
+        if failure == "copy":
+            copyfile = workflow.shutil.copyfile
+
+            def broken_copy(source, destination):
+                if destination.name == "model.cbm":
+                    destination.write_bytes(b"partial-copy")
+                    raise OSError("copy interrupted")
+                return copyfile(source, destination)
+
+            failing.setattr(workflow.shutil, "copyfile", broken_copy)
+        else:
+            failing.setattr(
+                workflow.os,
+                "replace",
+                lambda *_: (_ for _ in ()).throw(OSError("pointer interrupted")),
+            )
+        with pytest.raises(workflow.PlatformBootstrapError):
+            workflow.bootstrap_platform(**options)
+    assert root.exists() is existing_root
+    assert not root.exists() or not list(root.iterdir())
+    assert workflow.bootstrap_platform(**options).status == "ready"
+    before = {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+    workflow.bootstrap_platform(**options)
+    assert {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()} == before
+
+
+def test_failure_after_pointer_publication_preserves_new_deployment(tmp_path, monkeypatch):
+    s3, mlflow = FakeS3(), FakeMlflow()
+    root = tmp_path / "deployment"
+    with monkeypatch.context() as failing:
+        failing.setattr(
+            workflow,
+            "load_active_deployment",
+            lambda _: (_ for _ in ()).throw(
+                workflow.DeploymentResolutionError("post-publication check failed")
+            ),
+        )
+        with pytest.raises(workflow.PlatformBootstrapError):
+            workflow.bootstrap_platform(
+                deployment_root=root, environment=_environment(), s3_client=s3, mlflow_client=mlflow
+            )
+    assert (root / "active.json").is_file()
+    assert (root / "releases/phase7_rev_001/bundle/model.cbm").is_file()
+    assert (
+        workflow.bootstrap_platform(
+            deployment_root=root, environment=_environment(), s3_client=s3, mlflow_client=mlflow
+        ).status
+        == "ready"
+    )

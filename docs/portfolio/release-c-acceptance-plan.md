@@ -54,10 +54,13 @@ measurement context and limitations. Distinguish **measured historical results**
    Python and pinned environment versions, hardware, artifact retrieval steps and
    explicit local API/UI startup commands. Retrieve the exact reviewed model;
    never retrain it. Keep credentials and runtime outputs in ignored storage.
-2. Authenticate the unchanged Release B dossier and detached owner approval with
-   the fixed external digest anchors below. Require
+2. Authenticate the unchanged Release B dossier and detached owner approval in
+   the separate approved checkout at `7e571fc4fbb4e6cb99b0d66f8e7d72b24feccff4`,
+   using the fixed external digest anchors below. Require
    `approved_local_portfolio_release` and closed G4 for local scope. Verification
-   authenticates existing evidence; it is not a new evaluation or benchmark.
+   authenticates that historical release; it is not approval of the patched
+   implementation. Record the current implementation commit and its separate
+   passing CI results for the live synthetic demonstration.
 3. Repeat the scripted API/UI request and deterministic synthetic batch, checking
    prediction `0.190382`, explanation categories, queue policy and monitoring.
    Record expected alerts and human disposition: the approved synthetic batch
@@ -71,12 +74,12 @@ measurement context and limitations. Distinguish **measured historical results**
    the full video for synthetic-only customer displays, absent secrets and
    unsupported claims. Record any edits and verify the final MP4 checksum.
 
-Run this existing command from the repository root in the restored pinned
-environment, following the [artifact retrieval guide](../artifacts/storage-architecture.md)
-and repository setup instructions:
+Follow the [historical checkout setup](../../README.md#release-b-sign-off), then
+run this command inside that checkout using its own pinned environment. Do not
+change historical source hashes to make verification pass in a patched checkout:
 
 ```sh
-credit-risk release verify-b \
+uv run credit-risk release verify-b \
   --expected-manifest-sha256 f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88 \
   --approval configs/releases/release_b_owner_approval_v1.json \
   --approval-sha256 9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f
