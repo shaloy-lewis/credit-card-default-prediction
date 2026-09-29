@@ -5,6 +5,17 @@ portfolio upgrade. The documents are written before the implementation so that
 the system is evaluated against an explicit product contract rather than only
 against model accuracy.
 
+## Current release status
+
+Release B is approved for local portfolio scope and G4 is closed. G3 conditions
+remain in force; G5 production review remains open. Release C is planned and
+requires completed communication deliverables and a separate owner decision.
+
+- [Release B report](../reports/releases/release_b_v1/release-b-report.md)
+- [Release B owner review and operating restrictions](reviews/release-b-owner-review.md)
+- [Authenticated Release B owner approval](../configs/releases/release_b_owner_approval_v1.json)
+- [Release C acceptance plan — Weeks 11 and 12](portfolio/release-c-acceptance-plan.md)
+
 ## Phase 0 documents
 
 - [Product and decision brief](product-brief.md)
@@ -124,8 +135,8 @@ model loading, prediction, fitting, bootstrap generation, test-row selection,
 or final-test reevaluation. The uncertainty file is byte-identical to the
 reviewed 500-resample selection-runtime artifact. The external manifest digest
 is `7e65c7b854de15742f05c4b8c2de891f50512518f8eb2339241f87f98754edf7`.
-Release A is complete; robustness and population-shift stress evidence remains
-explicitly deferred to G4/Release B.
+Release A is complete; robustness and population-shift stress evidence was
+delivered separately in the approved Release B package.
 
 ## Phase 6 inference parity
 
@@ -146,7 +157,8 @@ exact band/reason parity, and verified no-rewrite reuse on 20 synthetic rows.
 Its external manifest digest is
 `919087229d20fe83c1846da65d5901ea103ac3182c9c2975c3490424a49f4df8`.
 No model fitting, model change, sealed-test access, or row-level evidence
-publication occurred. G4 remains open for the remaining release-readiness work.
+publication occurred. G4 was subsequently closed for local portfolio scope by
+the approved Release B package.
 
 ## Phase 7 registry protocol
 
@@ -164,22 +176,25 @@ revisions, an atomic active pointer, exact synthetic smoke parity, and approved
 rollback around the unchanged reviewed model. GitHub Actions blocks fixable
 HIGH/CRITICAL image findings and publishes a CycloneDX SBOM. The evidence trust
 anchor is `ce36f33d...7da9`. PostgreSQL, MinIO, a persistent registry service,
-robustness testing, monitoring, and incident controls remain deferred.
+robustness testing, monitoring and incident controls were delivered separately
+in Release B. Promotion/rollback evidence remains specific to Phase 7 SQLite.
 
-## Phase 8 persistent local platform — prerequisites complete
+## Phase 8 persistent local platform — complete for local scope
 
 - [Persistent-platform architecture decision](adr/0006-persistent-local-mlops-platform.md)
 - [Frozen prerequisite protocol](platform/phase8-protocol.md)
 - Machine-readable contract: `../configs/platform/phase8_v1.json`
 - Compose topology: `../docker-compose.platform.yml`
+- [Authenticated platform evidence](../reports/platform/phase8_v1/evidence-manifest.json)
 
 The prerequisite layer re-registers the unchanged Phase 7 bundle into MLflow
 3.15 backed by PostgreSQL and MinIO, restores the reviewed champion/rollback
 aliases, and materialises the approved deployment pointer into a named volume.
-The stack passed local bootstrap, idempotency, restart persistence, API/UI health,
-and prediction-parity checks with zero fitting or sealed-test access. Phase 8 is
-still in progress until its deterministic aggregate evidence is published and
-reviewed.
+The stack passed bootstrap, idempotency, restart persistence, API/UI health and
+prediction-parity checks with zero fitting or sealed-test access. Official Linux
+CI evidence is published and reviewed in the approved Release B package.
+Phase 8 demonstrates fixed-state bootstrap and recovery, not PostgreSQL
+promotion/rollback.
 
 ## External artifact distribution
 

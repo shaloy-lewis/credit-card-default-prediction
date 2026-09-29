@@ -30,8 +30,8 @@
 | 6: Governance and explanation | 10 h | Correct SHAP feature mapping; additivity tests; reason categories; demographic exclusion/invariance review; validation-only subgroup report; model card; risk register | Corrected evidence is digest-protected; two predeclared education triggers have documented conditions; G3 is closed with conditions | Responsible AI and model-risk ownership |
 | 7: Batch and API inference — complete | 10 h | Versioned model bundle; idempotent monthly scorer; `/v1` API; validated contracts; model/trace metadata; structured safe logs | Authenticated synthetic evidence proves exact offline/batch parity, API tolerance, exact policy/reason parity, and no-rewrite reuse | Production inference and parity |
 | 8: Registry, CI, and rollback — complete | 10 h | MLflow registry; candidate/champion workflow; promotion checklist; unit/integration/contract/model tests; GitHub Actions; image scan | Authenticated evidence proves the unchanged model can be registered, promoted, deployed locally, and rolled back without replacing files by hand | Controlled software and model delivery |
-| 9: Local MLOps platform — in progress | 10 h | Docker Compose stack for API, UI, MLflow, PostgreSQL, and MinIO; persistent volumes; health checks; one-command startup | Prerequisite stack, restart persistence, and parity are implemented; reviewed aggregate Phase 8 evidence remains to be published | Platform architecture without paid infrastructure |
-| 10: Monitoring and incidents | 10 h | Batch manifest; data and prediction drift report; delayed-label evaluation design; service metrics; runbooks; schema and drift incident drills | Injected failures are detected and lead to an actionable investigation or rollback path | Operability and failure management |
+| 9: Local MLOps platform — complete for local scope | 10 h | Docker Compose stack for API, UI, MLflow, PostgreSQL, and MinIO; persistent volumes; health checks; one-command startup | Authenticated Phase 8 evidence proves startup, idempotent bootstrap, restart persistence, health, parity, blocking scans and SBOMs | Platform architecture without paid infrastructure |
+| 10: Monitoring and incidents — complete for local scope | 10 h | Batch manifest; data and prediction drift report; delayed-label evaluation design; service metrics; runbooks; schema and drift incident drills | Reference-fixed monitoring, frozen service targets and all eight incident drills passed; real delayed-label evaluation remains deferred | Operability and failure management |
 | 11: Impact and communication | 10 h | Intervention experiment design; MDE/sample-size workbook or script; architecture diagram; executive case study; README rewrite; demo script | Model lift is not described as causal impact, and a reviewer can understand the system quickly | Product experimentation and stakeholder communication |
 | 12: Hardening and interview packet | 10 h | Clean-machine rehearsal; reproducibility audit; security/privacy checklist; 4–6 minute video; system-design walkthrough; resume bullets using measured results | CI is green, docs match behaviour, limitations are prominent, and the complete demo is repeatable | End-to-end ownership and technical leadership |
 
@@ -49,7 +49,7 @@ and externally authenticated evidence manifest bind the complete reviewed chain.
 - No unsupported temporal, causal, India-specific, or compliance claim.
 
 Uncertainty intervals are validation-only. Robustness and population-shift
-stress evidence is not part of this milestone and is deferred to G4/Release B.
+stress evidence is outside this milestone and was delivered separately in Release B.
 
 This release is the minimum scientifically credible senior-data-science story.
 
@@ -60,24 +60,30 @@ approval or a fairness/compliance certification.
 
 ### Release B: governed ML product — end of Week 8
 
-**Status: in progress.** Phase 5 completed the model card, risk register,
-subgroup review, and explanation controls. Phase 6 completed versioned batch/API
+**Status: complete for local portfolio scope.** Phase 5 completed the model card,
+risk register, subgroup review, and explanation controls. Phase 6 completed versioned batch/API
 inference and parity from corrected implementation commit `f6b37af`. Phase 7
 completed local registry promotion, blocking image scanning, immutable deployment,
 authenticated two-revision smoke parity, and demonstrated rollback around unchanged
 model bytes. Official Linux evidence now covers the Phase 8 platform, robustness,
-monitoring, service acceptance and incident controls. G4 remains open pending the
-explicit local-scope owner decision on the verified dossier.
+monitoring, service acceptance and incident controls. G4 is closed for the local
+portfolio scope following the explicit owner decision on the verified dossier and all operating restrictions.
 
 - Model and data cards, risk register, subgroup evaluation, and explanation tests.
 - Versioned batch/API inference with parity.
 - Registry, promotion gates, CI, container checks, and rollback (complete).
 - Robustness, monitoring, service acceptance and incident controls (evidenced).
-- Final dossier and exact-commit CI (verified); project-owner sign-off (remaining).
+- Final dossier, exact-commit CI and digest-bound project-owner sign-off (complete).
 
 This release creates the core hybrid DS/MLE story.
 
 ### Release C: flagship portfolio case study — end of Week 12
+
+**Status: planned.** The [Release C acceptance plan](portfolio/release-c-acceptance-plan.md)
+defines the remaining two 10-hour work packages, deliverables and owner acceptance
+criteria for Senior Data Scientist and Senior ML Engineer audiences. Reuse the
+completed Release B platform and monitoring evidence. Release C closes only after
+the completed package is explicitly accepted; G5 production review remains open.
 
 - Reproducible local MLOps stack.
 - Monitoring and incident demonstrations.
@@ -179,6 +185,8 @@ At each weekly checkpoint:
 
 The Release B implementation and measured operational evidence are complete.
 Exact-commit CI, zero-scoring dossier assembly and independent verification have
-passed. The next step is the [project-owner decision](reviews/release-b-owner-review.md). The reviewed model and
-historical evidence remain unchanged. Training, tuning, calibration fitting,
+passed, and the project owner approved the exact dossier digest and all required
+dispositions. G4 is closed for the local portfolio scope. Next are Release C
+communication deliverables; G5 production review remains separate and open.
+The reviewed model and historical evidence remain unchanged. Training, tuning, calibration fitting,
 bootstrap regeneration and sealed-test evaluation remain prohibited.

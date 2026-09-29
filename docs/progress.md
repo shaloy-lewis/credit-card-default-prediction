@@ -543,3 +543,13 @@ deferred risks. It is not a substitute for commit history or CI results.
 - Built the zero-scoring dossier with manifest SHA-256 `f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88` and verified it as `verified_pending_owner_signoff`.
 - Published the [owner review](reviews/release-b-owner-review.md) and 36 proposed dispositions, including both material repayment sensitivities and the local-only object-store restriction. The proposal grants no approval.
 - G4 remains open pending a separate explicit owner decision bound to this digest. G3 conditions remain; G5 and Release C communication deliverables remain open.
+
+
+## Release B owner sign-off — local portfolio scope
+
+**Recorded:** 2026-09-27.
+
+- Project owner Shaloy Lewis explicitly approved dossier `f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88` and all 36 dispositions from the reviewed proposal, retaining G3 conditions.
+- Separate owner approval SHA-256: `9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f`. Independent verification returned `approved_local_portfolio_release` and `g4_status=closed`.
+- Release B is complete and G4 is closed for the local portfolio scope. G5 production review and Release C communication deliverables remain open.
+- Historical evidence, model bytes, 19 predictors, identity calibration, risk bands and the 10% review policy remain unchanged.
