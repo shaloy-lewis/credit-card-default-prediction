@@ -1,5 +1,7 @@
 """Fault drills prove rejection, isolation and controlled recovery."""
 
+import json
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -10,6 +12,8 @@ from credit_risk.assurance import evidence as ev
 from credit_risk.incidents import workflow as incidents
 from credit_risk.inference.contracts import load_inference_config
 from credit_risk.inference.engine import InferenceError
+from credit_risk.inference.logging import ALLOWED_LOG_FIELDS
+from credit_risk.monitoring.workflow import summarize_events
 
 
 def test_schema_and_drift_drills_are_detected():
@@ -90,9 +94,13 @@ def test_incident_runner_restores_service_and_publishes_pending_review(tmp_path,
 
 
 @pytest.mark.artifact
-def test_real_invalid_batches_leave_verified_receipts(tmp_path):
+def test_real_invalid_batches_leave_verified_receipts(tmp_path, monkeypatch):
     from credit_risk.inference.engine import InferenceEngine
 
+    events = []
+    monkeypatch.setattr(
+        incidents, "emit_event", lambda event, **fields: events.append({"event": event, **fields})
+    )
     outcomes = incidents.data_drills(InferenceEngine(), tmp_path)
     assert outcomes[0]["batch_status"] == "failed"
     assert outcomes[1]["rejected_rows"] == 1
@@ -101,37 +109,69 @@ def test_real_invalid_batches_leave_verified_receipts(tmp_path):
     assert all(len(x["batch_id"]) == 64 for x in outcomes[:3])
     assert all(x["recovered"] and x["verified"] for x in outcomes)
     assert all(len(x["recovery_batch_id"]) == 64 for x in outcomes[:3])
+    terminal = [x for x in events if x["event"] == "batch_attempt_completed"]
+    assert len(terminal) == len({x["trace_id"] for x in terminal}) == 6
+    assert [x["trace_id"] for x in terminal[::2]] == [x["trace_id"] for x in outcomes[:3]]
+    assert [x["trace_id"] for x in terminal[1::2]] == [x["recovery_trace_id"] for x in outcomes[:3]]
+    assert all(set(x) <= ALLOWED_LOG_FIELDS for x in events)
+    summary = summarize_events([json.dumps(x) for x in events])
+    assert summary["batch_attempt_count"] == 6
+    assert summary["batch_failure_count"] == 1
+    assert len(events) == 11  # Six attempts and five successfully published batch runs.
 
 
-@pytest.mark.parametrize("invalid_result", [False, True])
-def test_batch_drills_reconcile_published_rejections(tmp_path, monkeypatch, invalid_result):
-    from credit_risk.inference.batch import BatchInferenceError
-
+@pytest.mark.parametrize(
+    "fault", [None, "identity", "published_missing", "status", "count", "recovery"]
+)
+def test_batch_drills_reconcile_published_rejections(tmp_path, monkeypatch, fault):
+    config = load_inference_config()
     calls = []
+    manifests = {}
 
-    def run_batch(**kwargs):
-        name = kwargs["snapshot_id"]
+    def attempt(source, name, output_root):
         calls.append(name)
-        if name == "missing_columns":
-            raise BatchInferenceError("rejected schema")
-        if name.startswith("restored-"):
-            return SimpleNamespace(
-                status="completed", rejected_rows=0, run_root=tmp_path, batch_id="c" * 64
+        batch_id = incidents._batch_id(
+            incidents._batch_identity(
+                input_sha256=incidents.digest(source.read_bytes()),
+                as_of_date="2026-09-30",
+                snapshot_id=name,
+                config_sha256=incidents.PHASE6_CONFIG_SHA256,
+                manifest_sha256=config.bundle.manifest_sha256,
+                model_sha256=config.bundle.model_sha256,
             )
-        return SimpleNamespace(
-            status="completed" if invalid_result else "completed_with_rejections",
-            rejected_rows=1 if name == "invalid_values" else 2,
-            run_root=tmp_path,
-            batch_id="a" * 64,
         )
+        status = "completed"
+        count = 0
+        if name == "missing_columns":
+            status = "failed"
+            if fault == "published_missing":
+                (output_root / "2026-09-30" / name).mkdir(parents=True)
+        elif not name.startswith("restored-"):
+            status = "completed" if fault == "status" else "completed_with_rejections"
+            count = 1 if name == "invalid_values" else 2
+        if fault == "identity":
+            batch_id = "0" * 64
+        manifests[name] = {
+            "batch_id": batch_id,
+            "status": status,
+            "counts": {"rejected_rows": 10 if fault == "count" else count},
+        }
+        if name.startswith("restored-") and fault == "recovery":
+            status = "failed"
+        return {
+            "status": status,
+            "rejection_count": count,
+            "batch_id": batch_id,
+            "trace_id": "f" * 32,
+        }
 
-    monkeypatch.setattr(incidents, "run_batch", run_batch)
-    monkeypatch.setattr(incidents, "verify_batch_run", lambda *a, **k: {"input_sha256": "b" * 64})
-    if invalid_result:
-        with pytest.raises(ev.EvidenceError, match="expected batch evidence"):
-            incidents.data_drills(SimpleNamespace(config=load_inference_config()), tmp_path)
+    monkeypatch.setattr(incidents, "_batch_attempt", attempt)
+    monkeypatch.setattr(incidents, "verify_batch_run", lambda path, **k: manifests[path.name])
+    if fault:
+        with pytest.raises(ev.EvidenceError):
+            incidents.data_drills(SimpleNamespace(config=config), tmp_path)
     else:
-        outcomes = incidents.data_drills(SimpleNamespace(config=load_inference_config()), tmp_path)
+        outcomes = incidents.data_drills(SimpleNamespace(config=config), tmp_path)
         assert calls == [
             "missing_columns",
             "restored-missing_columns",
@@ -141,6 +181,74 @@ def test_batch_drills_reconcile_published_rejections(tmp_path, monkeypatch, inva
             "restored-duplicate_ids",
         ]
         assert [x["rejected_rows"] for x in outcomes[1:3]] == [1, 2]
+
+
+@pytest.mark.parametrize(
+    "fault", [None, "missing", "duplicate", "fields", "trace", "batch", "status", "exit"]
+)
+def test_cli_drill_accepts_only_correlated_events(tmp_path, monkeypatch, fault):
+    event = {
+        "event": "batch_attempt_completed",
+        "status": "failed",
+        "operation": "batch",
+        "trace_id": "a" * 32,
+        "batch_id": "b" * 64,
+        "duration_ms": 2.0,
+    }
+    if fault == "fields":
+        event["account_id"] = "must-not-be-forwarded"
+    elif fault == "trace":
+        event.pop("trace_id")
+    elif fault == "batch":
+        event["batch_id"] = "invalid"
+    elif fault == "status":
+        event.pop("status")
+    lines = ["human readable output", "[]", '{"event":"other"}']
+    if fault != "missing":
+        lines.append(json.dumps(event))
+    if fault == "duplicate":
+        lines.append(json.dumps(event))
+    completed = SimpleNamespace(stdout="\n".join(lines), returncode=0 if fault == "exit" else 1)
+    invoked = []
+
+    def run(args, **kwargs):
+        invoked.append((args, kwargs))
+        return completed
+
+    forwarded = []
+    monkeypatch.setattr(incidents.subprocess, "run", run)
+    monkeypatch.setattr(
+        incidents,
+        "emit_event",
+        lambda event, **fields: forwarded.append({"event": event, **fields}),
+    )
+    if fault:
+        with pytest.raises(ev.EvidenceError):
+            incidents._batch_attempt(tmp_path / "input.csv", "drill", tmp_path / "batches")
+        assert not forwarded
+    else:
+        result = incidents._batch_attempt(tmp_path / "input.csv", "drill", tmp_path / "batches")
+        assert result == event
+        assert forwarded == [event]
+        assert invoked[0][0][:5] == [
+            incidents.sys.executable,
+            "-m",
+            "credit_risk.cli",
+            "inference",
+            "batch",
+        ]
+        assert invoked[0][1]["capture_output"] is True
+        assert invoked[0][1]["timeout"] == 120
+
+
+@pytest.mark.parametrize("error", [OSError("unavailable"), subprocess.TimeoutExpired("cli", 120)])
+def test_cli_drill_subprocess_failure_is_controlled(tmp_path, monkeypatch, error):
+    def fail(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(incidents.subprocess, "run", fail)
+    with pytest.raises(ev.EvidenceError, match="did not complete"):
+        incidents._batch_attempt(tmp_path / "input.csv", "drill", tmp_path / "batches")
 
 
 @pytest.mark.artifact

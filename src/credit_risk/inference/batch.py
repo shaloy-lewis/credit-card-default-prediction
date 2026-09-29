@@ -28,7 +28,7 @@ from credit_risk.inference.contracts import (
     InferenceConfig,
     OperationalFeatures,
 )
-from credit_risk.inference.engine import InferenceEngine, InferenceResult
+from credit_risk.inference.engine import InferenceEngine, InferenceError, InferenceResult
 from credit_risk.inference.logging import emit_event
 from credit_risk.modeling.contracts import PREDICTOR_COLUMNS
 from credit_risk.modeling.risk_policy import risk_band
@@ -68,6 +68,10 @@ REJECTION_RULE_IDS = {
 
 class BatchInferenceError(RuntimeError):
     """Raised when a scoring batch cannot be parsed, published, or verified."""
+
+    def __init__(self, message: str, *, batch_id: str | None = None) -> None:
+        super().__init__(message)
+        self.batch_id = batch_id
 
 
 class _StrictManifestModel(BaseModel):
@@ -234,7 +238,6 @@ def _run_validated_batch(
     except OSError as error:
         raise BatchInferenceError(f"Unable to read batch input: {error}") from error
     input_sha256 = hashlib.sha256(input_bytes).hexdigest()
-    parsed = parse_batch_csv(input_bytes, config)
     identity = _batch_identity(
         input_sha256=input_sha256,
         as_of_date=scoring_date.isoformat(),
@@ -244,6 +247,34 @@ def _run_validated_batch(
         model_sha256=config.bundle.model_sha256,
     )
     batch_id = _batch_id(identity)
+    try:
+        return _run_identified_batch(
+            input_bytes=input_bytes,
+            input_sha256=input_sha256,
+            batch_id=batch_id,
+            scoring_date=scoring_date,
+            snapshot_id=snapshot_id,
+            output_root=output_root,
+            config=config,
+            engine=engine,
+        )
+    except (BatchInferenceError, InferenceError, OSError) as error:
+        raise BatchInferenceError(str(error), batch_id=batch_id) from error
+
+
+def _run_identified_batch(
+    *,
+    input_bytes: bytes,
+    input_sha256: str,
+    batch_id: str,
+    scoring_date: date,
+    snapshot_id: str,
+    output_root: str | Path,
+    config: InferenceConfig,
+    engine: InferenceEngine,
+) -> BatchRunResult:
+    # Identity and parsing use one immutable read of the input snapshot.
+    parsed = parse_batch_csv(input_bytes, config)
     run_root = Path(output_root) / scoring_date.isoformat() / snapshot_id
     if run_root.exists():
         manifest = verify_batch_run(run_root, config=config, expected_batch_id=batch_id)

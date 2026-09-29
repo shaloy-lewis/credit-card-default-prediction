@@ -316,6 +316,14 @@ rerun reuses its files without rewriting them; a conflicting or corrupt run is
 never overwritten. Verification reconciles the strict manifest with both CSVs,
 including identity, ranking, selection, bands, traces, counts, rules, and lineage.
 
+Each batch CLI attempt reports an opaque invocation `trace_id` in its terminal
+log event and CLI result, including rejected arguments and failures before input
+identification. Once the input bytes have been read, failures also carry the
+same deterministic `batch_id` used for successful scoring. An idempotent rerun
+gets a new invocation trace while preserving its batch ID and published files.
+Log events contain allowlisted operational metadata only; customer IDs and
+feature values remain outside service logs.
+
 Authenticate the committed aggregate parity evidence without runtime row data:
 
 ```bash
@@ -518,16 +526,18 @@ externally distributed selected-model binary are excluded from version control.
 
 The additive platform-evidence, robustness, monitoring, benchmark, incident and
 Release B dossier commands are implemented. Official Linux evidence and the
-[dossier](reports/releases/release_b_v1/release-b-report.md) verify from a clean
-checkout. The [owner review and proposed restrictions](docs/reviews/release-b-owner-review.md)
+[dossier](reports/releases/release_b_v1/release-b-report.md) verify from the pinned
+approved checkout described below. The [owner review and proposed restrictions](docs/reviews/release-b-owner-review.md)
 were explicitly approved by the project owner for local portfolio use. G4 is
 closed for that scope. The [owner decision](configs/releases/release_b_owner_approval_v1.json)
 binds the immutable dossier and every required disposition. Verification combines
 the original review candidate with this separate decision to report approved status.
 Follow the
 [sign-off procedure](docs/operations/release-b-signoff.md); the separate
-Release B evidence workflow runs Linux container checks and prediction-only
-diagnostics without training or sealed-test evaluation.
+Release B evidence workflow authenticates the pinned historical release without
+scoring. The four standard CI jobs test the current implementation, including
+Linux container checks, persistence and synthetic prediction parity. Historical
+approval does not approve later implementation changes.
 
 ## Delivery milestones
 
@@ -550,14 +560,32 @@ Release B verification anchors:
 - Dossier: `f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88`.
 - Owner approval: `9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f`.
 
-Verify the approved release with:
+The benchmark manifest binds the original source bytes. Verify that historical
+release in its own checkout and locked environment; verification in a modified
+implementation correctly rejects changed source hashes. From the current
+repository root, create a new ignored checkout (an existing destination is never
+reset or overwritten):
 
 ```bash
-credit-risk release verify-b \
+git clone --no-hardlinks . .cache/release-b-approved
+git -C .cache/release-b-approved switch --detach 7e571fc4fbb4e6cb99b0d66f8e7d72b24feccff4
+cd .cache/release-b-approved
+uv sync --locked --all-extras --dev
+uv run credit-risk artifacts pull
+uv run credit-risk artifacts verify
+uv run credit-risk data build
+uv run credit-risk release verify-b \
   --expected-manifest-sha256 f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88 \
   --approval configs/releases/release_b_owner_approval_v1.json \
   --approval-sha256 9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f
 ```
 
-Restore the reviewed model and Phase 1 data first for historical-lineage
-verification; no training or scoring is performed.
+The command must return `approved_local_portfolio_release` and `g4_status: closed`.
+This restores reviewed model bytes and Phase 1 data solely for lineage checks;
+no training or scoring is performed. Return to the current checkout before
+running its synthetic demonstration or tests. Record both the historical
+release commit and the current implementation commit in the rehearsal.
+
+CI also compares committed reports, approvals, reviewed configurations and the
+model manifest with that snapshot. It does not regenerate evidence or change
+its digest anchors. Release C remains planned and G5 remains open.

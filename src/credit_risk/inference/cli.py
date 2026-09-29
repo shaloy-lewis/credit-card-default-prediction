@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
+from uuid import uuid4
 
 import typer
+from typer.core import TyperCommand
 
 from credit_risk.inference.batch import (
     BatchInferenceError,
@@ -38,8 +40,30 @@ inference_app = typer.Typer(
 )
 
 
-@inference_app.command("batch")
+class _BatchCommand(TyperCommand):
+    """Identify attempts even when option parsing fails before the callback."""
+
+    def parse_args(self, ctx: Any, args: list[str]) -> list[str]:
+        ctx.meta["batch_trace_id"] = uuid4().hex
+        ctx.meta["batch_started"] = time.perf_counter()
+        try:
+            return super().parse_args(ctx, args)
+        except typer.TyperException:
+            trace_id = ctx.meta["batch_trace_id"]
+            emit_event(
+                "batch_attempt_completed",
+                operation="batch",
+                status="failed",
+                trace_id=trace_id,
+                duration_ms=round((time.perf_counter() - ctx.meta["batch_started"]) * 1000, 3),
+            )
+            typer.echo(f"Inference batch arguments rejected; trace_id={trace_id}", err=True)
+            raise
+
+
+@inference_app.command("batch", cls=_BatchCommand)
 def batch_command(
+    ctx: typer.Context,
     input_path: Annotated[Path, typer.Option("--input", help="Strict operational CSV snapshot.")],
     as_of_date: Annotated[str, typer.Option(help="Monthly scoring date in YYYY-MM-DD form.")],
     snapshot_id: Annotated[str, typer.Option(help="Opaque identifier for this input snapshot.")],
@@ -55,7 +79,8 @@ def batch_command(
 ) -> None:
     """Score valid rows, publish rejections, and enforce idempotent reuse."""
 
-    started = time.perf_counter()
+    trace_id = ctx.meta["batch_trace_id"]
+    started = ctx.meta["batch_started"]
     try:
         config = load_inference_config(config_path)
         validate_batch_identity(
@@ -78,18 +103,27 @@ def batch_command(
         InferenceError,
         SelectedBundleError,
     ) as error:
+        identity = (
+            {"batch_id": error.batch_id}
+            if isinstance(error, BatchInferenceError) and error.batch_id is not None
+            else {}
+        )
         emit_event(
             "batch_attempt_completed",
             operation="batch",
             status="failed",
+            trace_id=trace_id,
             duration_ms=round((time.perf_counter() - started) * 1000, 3),
+            **identity,
         )
-        typer.echo(f"Inference batch failed: {error}", err=True)
+        batch_context = f", batch_id={identity['batch_id']}" if identity else ""
+        typer.echo(f"Inference batch failed: {error}; trace_id={trace_id}{batch_context}", err=True)
         raise typer.Exit(code=1) from None
     emit_event(
         "batch_attempt_completed",
         operation="batch",
         status=result.status,
+        trace_id=trace_id,
         batch_id=result.batch_id,
         row_count=result.valid_rows,
         rejection_count=result.rejected_rows,
@@ -98,7 +132,7 @@ def batch_command(
     typer.echo(
         f"Batch {result.batch_id}: status={result.status}, valid={result.valid_rows}, "
         f"rejected={result.rejected_rows}, reused={str(result.reused).lower()}, "
-        f"run_root={result.run_root}"
+        f"run_root={result.run_root}, trace_id={trace_id}"
     )
     if result.exit_code:
         raise typer.Exit(code=result.exit_code)

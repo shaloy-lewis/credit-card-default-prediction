@@ -83,7 +83,9 @@ def batch(
     if ref["model_sha256"] != config.bundle.model_sha256:
         raise EvidenceError("Monitoring reference model differs from the scored model.")
     parsed = parse_batch_csv(content, config)
-    scores = pd.read_csv(safe_path(Path(run_root) / "scores.csv"), dtype={"account_id": str})
+    scores = pd.read_csv(
+        safe_path(Path(run_root) / "scores.csv"), dtype={"account_id": str}, keep_default_na=False
+    )
     if set(scores.account_id) != set(parsed.account_ids):
         raise EvidenceError("Monitoring account coverage differs from batch output.")
     scores = scores.set_index("account_id").loc[list(parsed.account_ids)]

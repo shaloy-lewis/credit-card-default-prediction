@@ -2,8 +2,9 @@ name: Release B evidence
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
-    branches: ["codex/release-b-signoff"]
+    branches: [main, "codex/**"]
 
 permissions:
   contents: read
@@ -14,65 +15,52 @@ concurrency:
 
 jobs:
   evidence:
-    name: Collect measured Release B evidence
+    name: Verify approved Release B snapshot
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
     env:
       UV_PYTHON: "3.12.3"
       HF_HUB_DISABLE_TELEMETRY: "1"
+      RELEASE_B_COMMIT: 7e571fc4fbb4e6cb99b0d66f8e7d72b24feccff4
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Check out patched revision for preservation checks
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          fetch-depth: 0
+      - name: Preserve historical reports, approvals, configurations and model manifests
+        run: >-
+          git diff --exit-code "$RELEASE_B_COMMIT" HEAD --
+          reports configs models/selected_v1/manifest.json
+      - name: Check out the approved historical release separately
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 7e571fc4fbb4e6cb99b0d66f8e7d72b24feccff4
+          path: .cache/release-b-approved
           fetch-depth: 0
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
         with:
           version: "0.11.28"
           enable-cache: true
-          cache-dependency-glob: uv.lock
-      - uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514
-        with:
-          version: v0.70.0
-      - name: Install exact environment and verify model
+          cache-dependency-glob: .cache/release-b-approved/uv.lock
+      - name: Restore the historical environment and reviewed artifact
+        working-directory: .cache/release-b-approved
         run: |
+          test "$(git rev-parse HEAD)" = "$RELEASE_B_COMMIT"
           uv sync --locked --all-extras --dev
           uv run credit-risk artifacts pull --cache-dir .cache/huggingface
           uv run credit-risk artifacts verify
           uv run credit-risk data build
-      - name: Prepare isolated local credentials
-        shell: bash
-        run: |
-          cp .env.example .env
-          python - <<'PY'
-          from pathlib import Path
-          import secrets
-          p = Path(".env")
-          p.write_text(p.read_text().replace("change-me", secrets.token_hex(24)))
-          PY
-      - name: Collect official prediction-only evidence
+      - name: Authenticate existing historical evidence without scoring
+        working-directory: .cache/release-b-approved
         run: uv run python -m credit_risk.assurance.collect
-      - name: Verify approved Release B dossier
-        if: ${{ hashFiles('configs/releases/release_b_owner_approval_v1.json') != '' }}
+      - name: Verify approved historical Release B dossier
+        working-directory: .cache/release-b-approved
         run: >-
           uv run credit-risk release verify-b
           --expected-manifest-sha256 f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88
           --approval configs/releases/release_b_owner_approval_v1.json
           --approval-sha256 9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f
-      - name: Upload aggregate evidence and proposed release contract
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: release-b-evidence-${{ github.sha }}
-          if-no-files-found: warn
-          path: |
-            reports/platform/phase8_v1/
-            reports/robustness/release_b_v1/
-            reports/monitoring/
-            reports/incidents/release_b_v1/
-            experiment/release_b/proposed-release-contract.json
-            experiment/incidents/release_b_v1/service-recovery.json
-            experiment/platform/release_b_v1/receipt.json
-            experiment/platform/release_b_v1/*-scan.json
-            experiment/platform/release_b_v1/*-sbom.json
-      - name: Stop isolated rehearsal services
-        if: always()
-        run: docker compose -p credit-risk-release-b --env-file .env -f docker-compose.platform.yml down
+      - name: Identify verification scope
+        run: |
+          printf 'Verified historical Release B at `%s`.\n\n' "$RELEASE_B_COMMIT" >> "$GITHUB_STEP_SUMMARY"
+          printf 'The separate CI workflow validates the patched revision. Historical approval does not approve new implementation changes.\n' >> "$GITHUB_STEP_SUMMARY"

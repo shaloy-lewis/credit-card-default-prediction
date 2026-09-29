@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -35,12 +38,11 @@ from credit_risk.inference.batch import (
     _batch_id,
     _batch_identity,
     parse_batch_csv,
-    run_batch,
     verify_batch_run,
 )
 from credit_risk.inference.contracts import PHASE6_CONFIG_SHA256
 from credit_risk.inference.engine import InferenceEngine, InferenceError
-from credit_risk.inference.logging import emit_event
+from credit_risk.inference.logging import ALLOWED_LOG_FIELDS, emit_event
 from credit_risk.monitoring.drift import compare, profile
 from credit_risk.registry.workflow import (
     deploy_champion,
@@ -52,6 +54,65 @@ from credit_risk.registry.workflow import (
 
 KIND = "release_b_incidents_v1"
 OUTPUT = "reports/incidents/release_b_v1"
+
+
+def _batch_attempt(source: Path, snapshot_id: str, output_root: Path) -> dict[str, Any]:
+    """Capture actual CLI completion events, including expected nonzero exits."""
+    try:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "credit_risk.cli",
+                "inference",
+                "batch",
+                "--input",
+                str(source),
+                "--as-of-date",
+                "2026-09-30",
+                "--snapshot-id",
+                snapshot_id,
+                "--output-root",
+                str(output_root),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise EvidenceError("The isolated batch CLI did not complete.") from error
+    events = []
+    for line in completed.stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue  # The CLI also prints a human-readable completion message.
+        if not isinstance(event, dict) or event.get("event") not in {
+            "batch_completed",
+            "batch_attempt_completed",
+        }:
+            continue
+        if set(event) - ALLOWED_LOG_FIELDS:
+            raise EvidenceError("Batch CLI emitted unapproved event fields.")
+        events.append(event)
+    terminal = [event for event in events if event["event"] == "batch_attempt_completed"]
+    if len(terminal) != 1:
+        raise EvidenceError("Batch CLI must emit exactly one completion event.")
+    attempt = terminal[0]
+    exits = {"completed": 0, "completed_with_rejections": 3, "failed": 1}
+    if (
+        exits.get(str(attempt.get("status"))) != completed.returncode
+        or re.fullmatch(r"[0-9a-f]{32}", str(attempt.get("trace_id", ""))) is None
+        or re.fullmatch(r"[0-9a-f]{64}", str(attempt.get("batch_id", ""))) is None
+    ):
+        raise EvidenceError("Batch CLI status or trace identity is invalid.")
+    # Child stdout is captured, so replay each verified event exactly once to the
+    # collector's existing JSON handler. Never forward stderr or customer values.
+    for event in events:
+        emit_event(event["event"], **{key: value for key, value in event.items() if key != "event"})
+    return attempt
 
 
 def data_drills(engine: InferenceEngine, runtime: Path | None = None) -> list[dict[str, Any]]:
@@ -104,81 +165,59 @@ def data_drills(engine: InferenceEngine, runtime: Path | None = None) -> list[di
             payload = payloads[name]
             source = runtime / f"{name}.csv"
             source.write_bytes(payload)
-            try:
-                run = run_batch(
-                    input_path=source,
+            attempt = _batch_attempt(source, name, runtime / "batches")
+            expected_id = _batch_id(
+                _batch_identity(
+                    input_sha256=digest(payload),
                     as_of_date="2026-09-30",
                     snapshot_id=name,
-                    output_root=runtime / "batches",
-                    config=engine.config,
-                    engine=engine,
+                    config_sha256=PHASE6_CONFIG_SHA256,
+                    manifest_sha256=engine.config.bundle.manifest_sha256,
+                    model_sha256=engine.config.bundle.model_sha256,
                 )
-            except BatchInferenceError:
-                if name != "missing_columns":
-                    raise
-                attempt = _batch_id(
-                    _batch_identity(
-                        input_sha256=digest(payload),
-                        as_of_date="2026-09-30",
-                        snapshot_id=name,
-                        config_sha256=PHASE6_CONFIG_SHA256,
-                        manifest_sha256=engine.config.bundle.manifest_sha256,
-                        model_sha256=engine.config.bundle.model_sha256,
-                    )
-                )
-                emit_event(
-                    "batch_attempt_completed", operation="batch", status="failed", batch_id=attempt
-                )
-                outcome["batch_id"] = attempt
-                outcome["batch_status"] = "failed"
-                outcome["input_sha256"] = digest(payload)
+            )
+            if attempt["batch_id"] != expected_id:
+                raise EvidenceError("Batch CLI identity differs from the injected snapshot.")
+            run_root = runtime / "batches" / "2026-09-30" / name
+            if name == "missing_columns":
+                if attempt["status"] != "failed" or run_root.exists():
+                    raise EvidenceError("Missing-column failure published unexpected scores.")
             else:
                 expected_rejections = 1 if name == "invalid_values" else 2
+                manifest = verify_batch_run(run_root, config=engine.config)
                 if (
-                    name == "missing_columns"
-                    or run.status != "completed_with_rejections"
-                    or run.rejected_rows != expected_rejections
+                    attempt["status"] != "completed_with_rejections"
+                    or attempt.get("rejection_count") != expected_rejections
+                    or manifest["counts"]["rejected_rows"] != expected_rejections
+                    or manifest["batch_id"] != attempt["batch_id"]
                 ):
                     raise EvidenceError(
                         "Injected input failure did not produce the expected batch evidence."
                     )
-                manifest = verify_batch_run(run.run_root, config=engine.config)
-                emit_event(
-                    "batch_attempt_completed",
-                    operation="batch",
-                    status=run.status,
-                    batch_id=run.batch_id,
-                    rejection_count=run.rejected_rows,
-                )
-                outcome.update(
-                    batch_status=run.status,
-                    batch_id=run.batch_id,
-                    rejected_rows=run.rejected_rows,
-                    input_sha256=manifest["input_sha256"],
-                )
+                outcome["rejected_rows"] = expected_rejections
+            outcome.update(
+                batch_id=attempt["batch_id"],
+                trace_id=attempt["trace_id"],
+                batch_status=attempt["status"],
+                input_sha256=digest(payload),
+            )
             restored = runtime / f"restored-{name}.csv"
             restored.write_bytes(content)
-            recovery = run_batch(
-                input_path=restored,
-                as_of_date="2026-09-30",
-                snapshot_id=f"restored-{name}",
-                output_root=runtime / "batches",
-                config=engine.config,
-                engine=engine,
+            recovery = _batch_attempt(restored, f"restored-{name}", runtime / "batches")
+            recovered_manifest = verify_batch_run(
+                runtime / "batches" / "2026-09-30" / f"restored-{name}", config=engine.config
             )
-            recovered_manifest = verify_batch_run(recovery.run_root, config=engine.config)
-            if recovery.status != "completed" or recovery.rejected_rows != 0:
+            if (
+                recovery["status"] != "completed"
+                or recovery.get("rejection_count") != 0
+                or recovered_manifest["status"] != "completed"
+                or recovered_manifest["batch_id"] != recovery["batch_id"]
+            ):
                 raise EvidenceError("Corrected batch did not recover cleanly.")
             outcome.update(
-                recovery_batch_id=recovery.batch_id,
+                recovery_batch_id=recovery["batch_id"],
+                recovery_trace_id=recovery["trace_id"],
                 recovery_manifest_sha256=digest(encode(recovered_manifest)),
-            )
-            emit_event(
-                "batch_attempt_completed",
-                operation="batch",
-                status=recovery.status,
-                batch_id=recovery.batch_id,
-                rejection_count=0,
             )
     # Recovery restores the original valid fixture/distribution; it never alters the model.
     if len(clean.rejections) or compare(reference, control)["status"] != "clear":

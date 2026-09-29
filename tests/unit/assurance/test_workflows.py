@@ -119,6 +119,7 @@ def test_monitor_batch_reconciles_input_and_publishes_no_accounts(sandbox, monke
     from credit_risk.monitoring.drift import profile
 
     frame = features(400)
+    frame.index = ["NA", "NULL", "NaN", "nan", "None", "000123", *frame.index[6:]]
     input_path = sandbox / "experiment/input.csv"
     input_path.parent.mkdir()
     frame.rename_axis("account_id").reset_index().to_csv(input_path, index=False)
@@ -284,3 +285,81 @@ def test_ci_gate_requires_all_exact_commit_jobs():
     ci["jobs"].pop(next(iter(ci["jobs"])))
     with pytest.raises(ev.EvidenceError):
         release_b.check_ci(ci, "a" * 40)
+
+
+@pytest.mark.artifact
+@pytest.mark.parametrize("with_rejections", [False, True])
+def test_monitor_literal_ids_on_verified_scored_batch(sandbox, with_rejections):
+    from credit_risk.inference.batch import BatchInferenceError, parse_batch_csv, run_batch
+    from credit_risk.inference.engine import InferenceEngine
+    from credit_risk.monitoring.drift import profile
+
+    frame = features(400)
+    literal_ids = ["NA", "NULL", "NaN", "nan", "None", "000123"]
+    frame.index = [*literal_ids, *frame.index[6:]]
+    if with_rejections:
+        invalid = frame.iloc[:3].copy()
+        invalid.index = ["", "duplicate", "duplicate"]
+        frame = pd.concat([frame, invalid])
+    source = sandbox / "experiment/input.csv"
+    source.parent.mkdir()
+    frame.rename_axis("account_id").reset_index().to_csv(source, index=False)
+    engine = InferenceEngine()
+    parsed = parse_batch_csv(source.read_bytes(), engine.config)
+    assert all(identifier in parsed.account_ids for identifier in literal_ids)
+    assert len(parsed.rejections) == (3 if with_rejections else 0)
+    run = run_batch(
+        input_path=source,
+        as_of_date="2026-09-30",
+        snapshot_id="literal-ids",
+        output_root=source.parent / "batches",
+        config=engine.config,
+        engine=engine,
+    )
+    before = {p.name: p.read_bytes() for p in run.run_root.iterdir()}
+    scores = pd.read_csv(
+        run.run_root / "scores.csv", dtype={"account_id": str}, keep_default_na=False
+    )
+    reference_root = "reports/monitoring/synthetic-reference"
+    profiles = {column: profile(parsed.features[column]) for column in parsed.features}
+    profiles["probability"] = profile(scores.probability_of_default)
+    reference_sha = ev.publish(
+        reference_root,
+        kind="monitor_reference_v1",
+        commit="a" * 40,
+        sources={},
+        summary={"model_sha256": engine.config.bundle.model_sha256, "profiles": profiles},
+    )
+    report_root = "reports/monitoring/literal-ids"
+    sha = monitoring.batch(
+        str(source), str(run.run_root), reference_root, reference_sha, report_root
+    )
+    report = ev.verify(report_root, sha, "monitor_batch_v1")
+    assert report["status"] == "clear"
+    assert report["counts"] == {
+        "input": len(frame),
+        "valid": 400,
+        "rejected": len(parsed.rejections),
+    }
+    assert {p.name: p.read_bytes() for p in run.run_root.iterdir()} == before
+    assert set(scores.account_id) == set(parsed.account_ids)
+    original = source.read_bytes()
+    source.write_bytes(original + b"\n")
+    with pytest.raises(ev.EvidenceError, match="does not match"):
+        monitoring.batch(
+            str(source),
+            str(run.run_root),
+            reference_root,
+            reference_sha,
+            "reports/monitoring/tampered-input",
+        )
+    source.write_bytes(original)
+    (run.run_root / "scores.csv").write_bytes(before["scores.csv"] + b"\n")
+    with pytest.raises(BatchInferenceError, match="digest mismatch"):
+        monitoring.batch(
+            str(source),
+            str(run.run_root),
+            reference_root,
+            reference_sha,
+            "reports/monitoring/tampered-output",
+        )
