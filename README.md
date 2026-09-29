@@ -316,6 +316,14 @@ rerun reuses its files without rewriting them; a conflicting or corrupt run is
 never overwritten. Verification reconciles the strict manifest with both CSVs,
 including identity, ranking, selection, bands, traces, counts, rules, and lineage.
 
+Each batch CLI attempt reports an opaque invocation `trace_id` in its terminal
+log event and CLI result, including rejected arguments and failures before input
+identification. Once the input bytes have been read, failures also carry the
+same deterministic `batch_id` used for successful scoring. An idempotent rerun
+gets a new invocation trace while preserving its batch ID and published files.
+Log events contain allowlisted operational metadata only; customer IDs and
+feature values remain outside service logs.
+
 Authenticate the committed aggregate parity evidence without runtime row data:
 
 ```bash
