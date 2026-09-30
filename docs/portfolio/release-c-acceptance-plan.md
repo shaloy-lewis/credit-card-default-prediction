@@ -6,6 +6,13 @@
 (Weeks 11 and 12).
 **Audience:** Senior Data Scientist and Senior ML Engineer reviewers.
 
+## Week 11 implementation candidates
+
+The [study protocol](intervention-study.md), [planning calculator](planning-calculator.md),
+[architecture](architecture.md), [case study](case-study.md) and
+[claims inventory](claims-inventory.md) are prepared for review. They do not
+constitute owner acceptance; the completion checklist below remains open.
+
 ## Scope and inherited boundaries
 
 Release C packages the implemented local portfolio product into a reproducible,
