@@ -10,7 +10,8 @@
 
 The [study protocol](intervention-study.md), [planning calculator](planning-calculator.md),
 [architecture](architecture.md), [case study](case-study.md) and
-[claims inventory](claims-inventory.md) are prepared for review. They do not
+[claims inventory](claims-inventory.md), [demo script](demo-script.md) and
+[Week 11 review record](week11-review.md) are prepared for review. They do not
 constitute owner acceptance; the completion checklist below remains open.
 
 ## Scope and inherited boundaries

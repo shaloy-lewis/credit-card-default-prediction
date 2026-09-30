@@ -171,3 +171,6 @@ cython_debug/
 /models/selected_v1/model.cbm
 *.csv
 !tests/fixtures/inference_batch_v1.csv
+
+# Fresh synthetic Release C walkthrough monitoring packages; historical evidence stays tracked.
+/reports/monitoring/release_c_demo/

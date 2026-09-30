@@ -16,7 +16,7 @@ No new historical scoring, uncertainty resampling or impact evaluation is perfor
 | 3,554 analysable / 3,949 recruited per arm; 7,898 total at alpha .05, power .80 and attrition .10 | Computed planning estimates | [Standalone calculator](../../src/credit_risk/portfolio/planning.py), [reference and regression tests](../../tests/unit/portfolio/test_planning.py). Normal approximation; not an assurance of power under an unknown operating population. |
 | Seven days before due date; one attempt within three business days; maturity plus 14 days; maximum 12 cohorts | Hypothetical protocol rules | Study protocol. Chosen design assumptions, not dataset facts or approved real operating policy. |
 | 400 synthetic rows and 40 selected accounts in the walkthrough | Synthetic demonstration target, measured only when the helper passes | [Demo script](demo-script.md) and its ignored run receipt. Repeats known fixture patterns with unique synthetic IDs; not 400 independently sampled customers. |
-| Five-minute script; final MP4 acceptance requires 4?6 minutes | Planned communication deliverable | [Acceptance plan](release-c-acceptance-plan.md). No video exists or is accepted merely because this script is written. |
+| Five-minute script; final MP4 acceptance requires 4-6 minutes | Planned communication deliverable | [Acceptance plan](release-c-acceptance-plan.md). No video exists or is accepted merely because this script is written. |
 
 ## Claim review checklist
 

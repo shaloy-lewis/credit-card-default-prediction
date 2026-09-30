@@ -43,6 +43,10 @@ The study's primary endpoint differs from the historical model label.
 
 ## Run it
 
+Participant-count inflation and retention use exact fractions of the supplied
+decimal attrition rate, so binary rounding cannot add or remove a whole customer.
+The power equation and its inversion remain floating-point normal approximations.
+
 Only Python's standard library is required; Python 3.12 is the repository runtime.
 From the repository root:
 

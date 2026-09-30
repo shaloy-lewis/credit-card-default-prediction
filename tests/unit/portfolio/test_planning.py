@@ -163,3 +163,23 @@ runpy.run_path(str(script), run_name='__main__')
         check=True,
     )
     assert json.loads(result.stdout)["analysable_per_arm"] == 3554
+
+
+def test_decimal_attrition_preserves_whole_participant_boundaries():
+    size = sample_size(0.3, 0.1, attrition=0.9)
+    assert size.analysable_per_arm == 294
+    assert size.recruited_per_arm == 2940
+    estimate = minimum_detectable_effect(0.5, 100, attrition=0.8)
+    assert estimate.analysable_per_arm == 20
+    assert estimate.absolute_reduction == pytest.approx(
+        minimum_detectable_effect(0.5, 20).absolute_reduction
+    )
+
+
+def test_attrition_keeps_genuinely_fractional_counts_conservative():
+    # Do not repair binary rounding by blindly nudging every result: genuine
+    # fractional losses still round down, and extra recruits still round up.
+    size = sample_size(0.3, 0.1, attrition=0.900001)
+    assert size.recruited_per_arm == 2941
+    estimate = minimum_detectable_effect(0.5, 100, attrition=0.800001)
+    assert estimate.analysable_per_arm == 19

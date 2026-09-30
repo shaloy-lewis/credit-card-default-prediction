@@ -23,6 +23,8 @@ requires completed communication deliverables and a separate owner decision.
 - [Hypothetical intervention protocol](portfolio/intervention-study.md)
 - [Standalone planning calculator](portfolio/planning-calculator.md)
 - [Claim-to-evidence inventory](portfolio/claims-inventory.md)
+- [Executable demonstration script](portfolio/demo-script.md)
+- [Week 11 review and Week 12 handoff](portfolio/week11-review.md)
 
 These are implementation/review artifacts. Release C remains planned; owner
 acceptance, the recorded demonstration and Week 12 material remain outstanding.

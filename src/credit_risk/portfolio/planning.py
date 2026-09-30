@@ -12,6 +12,7 @@ import json
 import math
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
+from fractions import Fraction
 from statistics import NormalDist
 
 METHOD = "equal_allocation_two_proportion_normal_strict_false"
@@ -132,8 +133,9 @@ def sample_size(
     if not math.isfinite(continuous) or continuous > MAX_PER_ARM:
         raise PlanningError("Required sample size exceeds the supported numerical range.")
     analysable = max(2, math.ceil(continuous))
-    inflated = analysable / (1 - attrition)
-    if not math.isfinite(inflated) or inflated > MAX_PER_ARM:
+    # Preserve decimal attrition at integer boundaries (for example 0.9).
+    inflated = math.ceil(Fraction(analysable) / (1 - Fraction(str(attrition))))
+    if inflated > MAX_PER_ARM:
         raise PlanningError("Attrition-adjusted recruitment exceeds the supported numerical range.")
     return _estimate(
         "sample-size",
@@ -144,7 +146,7 @@ def sample_size(
         attrition,
         continuous,
         analysable,
-        math.ceil(inflated),
+        inflated,
     )
 
 
@@ -164,7 +166,7 @@ def minimum_detectable_effect(
         or not 2 <= n_per_arm <= MAX_PER_ARM
     ):
         raise PlanningError("n_per_arm must be an integer from 2 through 2**53 - 1.")
-    analysable = math.floor(n_per_arm * (1 - attrition))
+    analysable = math.floor(n_per_arm * (1 - Fraction(str(attrition))))
     if analysable < 2:
         raise PlanningError("Attrition leaves fewer than two analysable customers per arm.")
     if _required(baseline_rate, baseline_rate, alpha, power) > analysable:
