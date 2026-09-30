@@ -1,0 +1,69 @@
+{
+  "status": "partial_rehearsal_evidence_not_release_approval",
+  "date": "2026-09-30",
+  "implementation_commit": "6c3e8a56cf0551dc22a67f91d8e204a1b8de4984",
+  "historical_commit": "7e571fc4fbb4e6cb99b0d66f8e7d72b24feccff4",
+  "environment": {
+    "windows": "Windows 11 Home Single Language 10.0.26200 build 26200",
+    "cpu": "Intel Core i5-1155G7 @ 2.50 GHz",
+    "physical_cores": 4,
+    "logical_processors": 8,
+    "ram_bytes": 16917716992,
+    "python": "Python 3.12.13",
+    "historical_python": "Python 3.12.3",
+    "uv": "0.11.28",
+    "uv_lock_sha256": "60249471e9c6687a730d2c21c02e8d6cdd436eb05cb49b96ac0c0edfde85007b"
+  },
+  "historical_verification": {
+    "status": "approved_local_portfolio_release",
+    "g4_status": "closed",
+    "scoring_performed": false,
+    "dossier_sha256": "f5fa342b89e06c016ea7b632c8a252c472502186ab52ac68aba6992d652c8c88",
+    "approval_sha256": "9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f"
+  },
+  "synthetic_rehearsal": {
+    "run_id": "week12-rehearsal-001",
+    "prediction": 0.190382,
+    "ui_display": "0.1904",
+    "risk_band": "standard",
+    "explanation_count": 2,
+    "valid_rows": 400,
+    "selected_rows": 40,
+    "rejected_rows": 0,
+    "idempotent_no_rewrite": true,
+    "distinct_invocation_traces": true,
+    "monitoring_status": "investigate",
+    "automatic_model_change": false,
+    "ui_check_method": "Streamlit AppTest against live native API; visual browser review pending"
+  },
+  "hashes": {
+    "model": "844ec1c33a894cbf01dcaf8672443fa38d86a06b8965ed729afccaf08f24d88c",
+    "model_manifest": "df5ce6ce07b268f57fa3bf72c97cd32f8ebb66695d7157139942c91e46d7cd88",
+    "uv_lock": "60249471e9c6687a730d2c21c02e8d6cdd436eb05cb49b96ac0c0edfde85007b",
+    "demo_receipt": "7a966e68be9bb64be910389af564125818aa54c640e3d6387bec01af8fb2349c",
+    "ui_receipt": "fbec61653f23533fe26ebbb27b7b26c9d38477148aa6153254d43db9c0cd90e0",
+    "monitoring_manifest": "592f0c001025d517c96f94ccb591ee80cd78b0f7a6d4ae6d63234ff008d7b739",
+    "reference_manifest": "5f2a43675cbd9f6ed44bf4a421df6647d3e780cf5b2e9eae6ba782e94849c4ac",
+    "historical_result": "75cc29db995c6f26ce375e19576889944be7faa4bee31719c07dcd3939c69ffd",
+    "historical_collector": "a258b7f0bad1ffd23597264daa0f9381a2a89569bcb6868240b889fcd5b5372e",
+    "ffmpeg": "3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec",
+    "ffprobe": "f0d36ecbbdd3bcfac3efa078c96c7271c2e68b3810595552ac3b7f17e9a65c52",
+    "captions": "29146414ec5c8b82222c29d5c3498ca4b13fa13ccb351965b1e2f893b43cfa71"
+  },
+  "tooling": {
+    "ffmpeg": "9.0.2-essentials_build-www.gyan.dev",
+    "archive_sha256": "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba",
+    "source": "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip"
+  },
+  "media": {
+    "status": "blocked_pending_visible_window",
+    "preflight": "failed: FFmpeg could not find the dedicated capture window",
+    "duration_seconds": null,
+    "size_bytes": null,
+    "sha256": null,
+    "recording_commit": null,
+    "prepared_source_commit": "6c3e8a56cf0551dc22a67f91d8e204a1b8de4984",
+    "intended_local_directory": "D:/projects/credit-card-default-prediction/.cache/release-c-week12/media-20260930"
+  },
+  "owner_acceptance": null
+}

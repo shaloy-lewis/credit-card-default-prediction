@@ -19,7 +19,9 @@ constitute owner acceptance; the completion checklist below remains open.
 The [rehearsal and recording guide](week12-recording-guide.md),
 [timed captions](week12-captions.srt) and [interview packet](interview-packet.md)
 prepare the final work package. Rehearsal outcomes, media checks and findings
-must be recorded separately before owner acceptance can be requested.
+are tracked in the [Week 12 review record](week12-review.md) and
+[aggregate inventory](week12-evidence.json). Media and owner acceptance remain
+open; author verification does not check off acceptance items.
 
 ## Scope and inherited boundaries
 
