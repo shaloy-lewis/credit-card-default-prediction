@@ -1,0 +1,104 @@
+1
+00:00:00,000 --> 00:00:12,000
+Local credit-risk portfolio | Shaloy Lewis
+A human-owned monthly review decision.
+
+2
+00:00:12,000 --> 00:00:24,000
+The fixed policy ranks the top 10% of valid accounts.
+It does not approve loans or automatically contact customers.
+
+3
+00:00:24,000 --> 00:00:35,000
+Historical ranking evidence is not prevented defaults.
+This demonstration uses synthetic accounts only.
+
+4
+00:00:35,000 --> 00:00:50,000
+LIVE WINDOWS API | Reviewed synthetic request
+The unchanged selected_v1 bundle supplies the prediction.
+
+5
+00:00:50,000 --> 00:01:05,000
+API probability: 0.190382 | Standard band
+Two reason categories describe model attribution, not causation.
+
+6
+00:01:05,000 --> 00:01:20,000
+LIVE WINDOWS UI | The same synthetic fixture
+Credit limit 1,000,000; repayment codes 1, 0, -1, -1, -1, -1.
+
+7
+00:01:20,000 --> 00:01:35,000
+The UI rounds the probability to 0.1904.
+Both explanation categories come from the same inference engine.
+
+8
+00:01:35,000 --> 00:01:50,000
+LIVE SYNTHETIC BATCH | Existing demonstration helper
+400 unique synthetic IDs repeat reviewed fixture patterns.
+
+9
+00:01:50,000 --> 00:02:05,000
+400 valid rows, zero rejections, 40 selected accounts.
+These are fixture results, not independently sampled customers.
+
+10
+00:02:05,000 --> 00:02:25,000
+The verified manifest binds input, model and output identity.
+The review queue uses the unchanged top-10% policy.
+
+11
+00:02:25,000 --> 00:02:45,000
+Repeat invocation: same batch ID, different trace ID.
+Verified reuse preserves output bytes and modification times.
+
+12
+00:02:45,000 --> 00:03:00,000
+LIVE MONITORING OUTPUT | Authenticated reference and report
+The deliberately concentrated synthetic population differs from reference.
+
+13
+00:03:00,000 --> 00:03:15,000
+Expected disposition: INVESTIGATE
+No automatic model, calibration or threshold change.
+
+14
+00:03:15,000 --> 00:03:35,000
+Human disposition: known synthetic fixture concentration.
+Retain completed scores; permit demonstration use only.
+
+15
+00:03:35,000 --> 00:03:50,000
+IMPLEMENTED ARCHITECTURE | Separate platform demonstrations
+Phase 7: SQLite promotion and rollback of unchanged model bytes.
+
+16
+00:03:50,000 --> 00:04:05,000
+Phase 8: PostgreSQL/MinIO fixed bootstrap and restart recovery.
+PostgreSQL promotion/rollback is not demonstrated.
+
+17
+00:04:05,000 --> 00:04:20,000
+RECORDED LINUX CI EVIDENCE | Not services on this Windows machine
+Startup, persistence, restart checks, scans and SBOMs are recorded.
+
+18
+00:04:20,000 --> 00:04:30,000
+The displayed CI run identifies its exact source revision.
+Azure/Databricks mappings are conceptual, not deployed services.
+
+19
+00:04:30,000 --> 00:04:42,000
+HYPOTHETICAL STUDY | Voluntary support versus usual support
+Next-cycle minimum payment unpaid differs from the historical label.
+
+20
+00:04:42,000 --> 00:04:50,000
+Calculator outputs are planning estimates under stated assumptions.
+No recruitment, outreach or causal evaluation has occurred.
+
+21
+00:04:50,000 --> 00:05:00,000
+Local use only | Education-related G3 conditions remain active.
+G5 stays open; Release C requires explicit owner acceptance.

@@ -29,6 +29,15 @@ requires completed communication deliverables and a separate owner decision.
 These are implementation/review artifacts. Release C remains planned; owner
 acceptance, the recorded demonstration and Week 12 material remain outstanding.
 
+## Release C Week 12 preparation
+
+- [Fresh-checkout rehearsal and silent recording guide](portfolio/week12-recording-guide.md)
+- [Timed five-minute captions](portfolio/week12-captions.srt)
+- [System-design walkthrough and three resume bullets](portfolio/interview-packet.md)
+
+These preparation artifacts do not establish a completed rehearsal, reviewed
+video or owner acceptance. Release C remains planned.
+
 ## Phase 0 documents
 
 - [Product and decision brief](product-brief.md)
