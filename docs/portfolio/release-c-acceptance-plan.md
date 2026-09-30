@@ -14,6 +14,15 @@ The [study protocol](intervention-study.md), [planning calculator](planning-calc
 [Week 11 review record](week11-review.md) are prepared for review. They do not
 constitute owner acceptance; the completion checklist below remains open.
 
+## Week 12 preparation
+
+The [rehearsal and recording guide](week12-recording-guide.md),
+[timed captions](week12-captions.srt) and [interview packet](interview-packet.md)
+prepare the final work package. Rehearsal outcomes, media checks and findings
+are tracked in the [Week 12 review record](week12-review.md) and
+[aggregate inventory](week12-evidence.json). Media and owner acceptance remain
+open; author verification does not check off acceptance items.
+
 ## Scope and inherited boundaries
 
 Release C packages the implemented local portfolio product into a reproducible,
