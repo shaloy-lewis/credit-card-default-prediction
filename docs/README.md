@@ -16,6 +16,19 @@ requires completed communication deliverables and a separate owner decision.
 - [Authenticated Release B owner approval](../configs/releases/release_b_owner_approval_v1.json)
 - [Release C acceptance plan — Weeks 11 and 12](portfolio/release-c-acceptance-plan.md)
 
+## Release C Week 11 review material
+
+- [Executive case study](portfolio/case-study.md)
+- [Implemented architecture and conceptual cloud mapping](portfolio/architecture.md)
+- [Hypothetical intervention protocol](portfolio/intervention-study.md)
+- [Standalone planning calculator](portfolio/planning-calculator.md)
+- [Claim-to-evidence inventory](portfolio/claims-inventory.md)
+- [Executable demonstration script](portfolio/demo-script.md)
+- [Week 11 review and Week 12 handoff](portfolio/week11-review.md)
+
+These are implementation/review artifacts. Release C remains planned; owner
+acceptance, the recorded demonstration and Week 12 material remain outstanding.
+
 ## Phase 0 documents
 
 - [Product and decision brief](product-brief.md)

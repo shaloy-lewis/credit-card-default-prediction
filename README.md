@@ -1,33 +1,54 @@
 # Credit Risk Early-Warning Platform
 
-A portfolio project for monthly credit-risk early warning and
-capacity-constrained intervention prioritisation for existing cardholders.
+A governed local portfolio product that ranks existing credit-card accounts for
+human review. I built the scientific evidence, inference services and release
+controls to demonstrate Senior Data Scientist and Senior ML Engineer ownership.
+The decision is deliberately narrow: after a monthly snapshot closes, a
+hypothetical operations owner reviews the highest-risk 10% of eligible accounts.
+The system provides risk estimates and model-attribution explanations; humans own
+eligibility, outreach and every consequential action.
 
-> **Current status:** Phase 1 / G1 and the reviewed Phase 2/3 evidence are
-> complete. A simpler authoritative release protocol compared four fixed
-> classifiers, one fit each, one shared validation split, and no tuning, repeated
-> CV, calibration fit, or winner refit. It selected the exact fitted
-> `catboost_fixed` model. One separately authorized, prediction-only evaluation
-> then passed every frozen test gate, closing G2 without training or refitting.
-> Phase 4 release hardening has permanently retired that consumed evaluator and
-> requires exact serving-library compatibility before loading the model. The API
-> and Streamlit demo now serve that exact digest-verified winner. Corrected
-> Phase 5 validation-only evidence has been independently verified and closes
-> G3 with documented conditions; it is not a fairness or production certification.
-> Release A is now complete and consolidated in one externally authenticated,
-> zero-computation evidence dossier. Robustness and population-shift stress
-> evidence was delivered separately in Release B. Phase 6 adds a shared
-> prediction-only engine, idempotent monthly batch scoring, the breaking
-> `/v1/predict` API, reviewed SHAP reason categories, safe traceable logging,
-> and authenticated offline/batch/API parity evidence. Phase 7 adds a governed
-> local MLflow registry, digest-authenticated manual promotion, immutable
-> deployments, blocking container scanning, SBOM generation, authenticated
-> two-revision smoke parity, and demonstrated rollback. Release B now has
-> authenticated Phase 8 platform, robustness, monitoring, service acceptance,
-> and incident evidence. All mandatory live controls passed on Linux GitHub
-> Actions. Release B is complete and G4 is closed for the local portfolio scope
-> following explicit owner approval of the verified dossier. G3 conditions remain in force;
-> G5 production review and Release C communication remain open.
+**Measured historical result:** the frozen CatBoost model achieved average
+precision **0.542867**, Brier score **0.136304** and lift at 10% **3.089676** on the
+one authorised 6,000-account test evaluation. The selected 600-account queue
+contained 410 observed defaults in that historical sample. Those are ranking
+results, not evidence that outreach prevents default. The
+[authenticated Release A dossier](reports/releases/release_a_v1/release-a-report.md)
+records the cohort, metrics and completed evaluation; that test cannot be rerun.
+
+My scientific choices were an explicit four-fit comparison, a shared validation
+split, identity calibration and preservation of the exact fitted winner. The
+released model uses 19 operational predictors; demographics remain audit-only.
+I retained historical experiments as evidence while retiring routine training
+and test replay. That boundary makes the result inspectable without inviting
+repeated selection against consumed evidence.
+
+The engineering path is batch-first: strict CSV validation, row rejection,
+deterministic ranking, atomic publication and verified idempotent reuse. A shared
+engine serves the FastAPI endpoint and batch scorer; Streamlit calls the API.
+**Measured synthetic checks** demonstrate prediction **0.190382**, explanations,
+container readiness and persistence. Phase 7 demonstrates SQLite-backed promotion
+and rollback. Phase 8 adds PostgreSQL, MinIO and persistent fixed-state bootstrap
+and recovery; it does not demonstrate PostgreSQL promotion or rollback. Drift
+alerts require human investigation and never retrain or promote automatically.
+
+**Status:** Releases A and B are complete for local portfolio use; Release C is
+planned, with its Week 11 material prepared for review. G3 conditions remain
+active, G4 is closed for local scope and G5 production review remains open.
+The [Release B owner decision](configs/releases/release_b_owner_approval_v1.json)
+binds the approved dossier and restrictions. The project uses historical
+Taiwanese data, with no genuine longitudinal evaluation, current-population
+validation, fairness certification or demonstrated financial benefit. It must
+not make lending decisions or initiate adverse actions.
+
+For a fast review, start with the [executive case study](docs/portfolio/case-study.md),
+[implemented architecture](docs/portfolio/architecture.md) and
+[claim-to-evidence inventory](docs/portfolio/claims-inventory.md). The
+[hypothetical outreach protocol](docs/portfolio/intervention-study.md) and
+[standalone planning calculator](docs/portfolio/planning-calculator.md) explain
+how a future intervention could be tested. Setup and operational commands follow
+below; the [Release C acceptance plan](docs/portfolio/release-c-acceptance-plan.md)
+keeps the remaining rehearsal, video and owner review explicit.
 
 ## Product intent
 
