@@ -5,6 +5,22 @@ portfolio upgrade. The documents are written before the implementation so that
 the system is evaluated against an explicit product contract rather than only
 against model accuracy.
 
+## Reviewer routes
+
+Start with the [README audience paths](../README.md#choose-a-review-path).
+The [senior portfolio audit](portfolio/senior-portfolio-audit.md) classifies ten
+dimensions against existing evidence and identifies permitted improvements and
+blocked future claims. For reasoning beyond implementation details, use:
+
+- [Scientific decisions, data quality, EDA interpretation and model trade-offs](portfolio/scientific-decisions.md).
+- [Capacity, review burden, hypothetical economics and causal impact](portfolio/decision-analysis.md).
+- [Twenty interview answers and three evidence-linked resume bullets](portfolio/interview-packet.md).
+
+These are current reading guides, not amendments to authenticated historical
+reports or approval records. Older checkpoint documents retain their original
+status language; the current governance summary and separate owner decisions
+determine today's local scope.
+
 ## Current release status
 
 Release B is approved for local portfolio scope and G4 is closed. G3 conditions

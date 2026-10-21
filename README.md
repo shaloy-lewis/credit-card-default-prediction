@@ -1,58 +1,56 @@
 # Credit Risk Early-Warning Platform
 
-A governed local portfolio product that ranks existing credit-card accounts for
-human review. I built the scientific evidence, inference services and release
-controls to demonstrate Senior Data Scientist and Senior ML Engineer ownership.
-The decision is deliberately narrow: after a monthly snapshot closes, a
-hypothetical operations owner reviews the highest-risk 10% of eligible accounts.
-The system provides risk estimates and model-attribution explanations; humans own
-eligibility, outreach and every consequential action.
+Rank existing credit-card accounts for a capacity-constrained human review queue.
+This independently developed portfolio connects statistical model selection with
+reproducible inference, operational controls and an honest plan to measure impact.
 
-**Measured historical result:** the frozen CatBoost model achieved average
-precision **0.542867**, Brier score **0.136304** and lift at 10% **3.089676** on the
-one authorised 6,000-account test evaluation. The selected 600-account queue
-contained 410 observed defaults in that historical sample. Those are ranking
-results, not evidence that outreach prevents default. The
-[authenticated Release A dossier](reports/releases/release_a_v1/release-a-report.md)
-records the cohort, metrics and completed evaluation; that test cannot be rerun.
+**The decision:** after a monthly snapshot closes, a hypothetical credit-risk
+operations manager reviews the highest-risk 10% of valid accounts. The model
+predicts the published next-month default label; people establish operational
+eligibility, choose appropriate support and own every consequential action.
 
-My scientific choices were an explicit four-fit comparison, a shared validation
-split, identity calibration and preservation of the exact fitted winner. The
-released model uses 19 operational predictors; demographics remain audit-only.
-I retained historical experiments as evidence while retiring routine training
-and test replay. That boundary makes the result inspectable without inviting
-repeated selection against consumed evidence.
+**Measured historical evidence:** one authorized 6,000-account evaluation of the
+frozen CatBoost model recorded **AP 0.542867**, **Brier 0.136304** and
+**lift at 10% 3.089676**. The 600-account queue contained **410 defaults** and
+190 non-defaults; 917 defaults remained outside it. These results establish
+historical ranking and workload trade-offs. They do not measure prevented
+defaults or savings. [Authenticated results](reports/releases/release_a_v1/release-a-report.md)
+and [decision implications](docs/portfolio/decision-analysis.md) supply the evidence.
 
-The engineering path is batch-first: strict CSV validation, row rejection,
-deterministic ranking, atomic publication and verified idempotent reuse. A shared
-engine serves the FastAPI endpoint and batch scorer; Streamlit calls the API.
-**Measured synthetic checks** demonstrate prediction **0.190382**, explanations,
-container readiness and persistence. Phase 7 demonstrates SQLite-backed promotion
-and rollback. Phase 8 adds PostgreSQL, MinIO and persistent fixed-state bootstrap
-and recovery; it does not demonstrate PostgreSQL promotion or rollback. Drift
-alerts require human investigation and never retrain or promote automatically.
+**My ownership — Shaloy Lewis:** problem formulation, data/feature contracts,
+historical experiments, the final four-classifier selection, shared batch/API
+inference, artifact verification, monitoring and release evidence. The selected
+model retains 19 operational predictors, identity calibration and its exact fitted
+bytes. Earlier development experiments are retained; the final test is consumed.
+This is personal portfolio work, not employment or a live bank deployment.
 
-**Status:** Releases A and B are complete for local portfolio use; Release C
-remains planned. Week 11 material, the September 30 functional fresh-checkout
-rehearsal and the interview packet are prepared for review. The
-[Week 12 review record](docs/portfolio/week12-review.md) keeps recording, visual
-UI review, full-video privacy/claims review and owner acceptance open. G3
-conditions remain active, G4 is closed for local scope and G5 production review
-remains open.
-The [Release B owner decision](configs/releases/release_b_owner_approval_v1.json)
-binds the approved dossier and restrictions. The project uses historical
-Taiwanese data, with no genuine longitudinal evaluation, current-population
-validation, fairness certification or demonstrated financial benefit. It must
-not make lending decisions or initiate adverse actions.
+**Implemented locally:** validated, deterministic and idempotent batch scoring;
+FastAPI and Streamlit; MLflow release controls; human-reviewed monitoring and
+incident drills. SQLite demonstrates promotion/rollback. PostgreSQL/MinIO
+demonstrates fixed-state persistence/recovery. Cloud mappings are conceptual.
 
-For a fast review, start with the [executive case study](docs/portfolio/case-study.md),
-[implemented architecture](docs/portfolio/architecture.md) and
-[claim-to-evidence inventory](docs/portfolio/claims-inventory.md). The
-[hypothetical outreach protocol](docs/portfolio/intervention-study.md) and
-[standalone planning calculator](docs/portfolio/planning-calculator.md) explain
-how a future intervention could be tested. Setup and operational commands follow
-below; the [Release C acceptance plan](docs/portfolio/release-c-acceptance-plan.md)
-defines the remaining recording, final-revision verification and owner review.
+**Limits and status:** historical 2005 Taiwan snapshot; no longitudinal or
+current-population validation, demonstrated intervention benefit, fairness or
+regulatory certification. G3 conditions remain, G4 is closed for approved local
+Release B scope, G5 is open. Release C remains planned; video and owner acceptance
+are outstanding in the [Week 12 record](docs/portfolio/week12-review.md).
+
+## Choose a review path
+
+| Audience / time | Suggested route |
+| --- | --- |
+| Recruiter or hiring manager / 60–90 seconds | Overview above → [executive case study](docs/portfolio/case-study.md) → [three evidence-backed resume bullets](docs/portfolio/interview-packet.md#three-resume-bullets). |
+| Senior Data Scientist or Applied Scientist / 5–10 minutes | [Scientific decisions and EDA reasoning](docs/portfolio/scientific-decisions.md) → [authenticated evaluation](reports/releases/release_a_v1/release-a-report.md) → [decision economics](docs/portfolio/decision-analysis.md) → [proposed causal study](docs/portfolio/intervention-study.md). |
+| Senior ML Engineer or technical interviewer / 10–20 minutes | [Architecture and trade-offs](docs/portfolio/architecture.md) → [local quickstart](#local-development) → [repeatable synthetic demonstration](docs/portfolio/demo-script.md) → [interview packet](docs/portfolio/interview-packet.md). |
+
+The [senior portfolio audit](docs/portfolio/senior-portfolio-audit.md) distinguishes
+existing capabilities from presentation gaps and blocked future evidence. The
+[claims inventory](docs/portfolio/claims-inventory.md) maps measurements,
+synthetic checks, assumptions and proposals to their sources.
+
+**Stack:** Python 3.12, uv, pandas/Pandera, scikit-learn, CatBoost, FastAPI,
+Streamlit, MLflow, SQLite, PostgreSQL, MinIO, Docker and GitHub Actions;
+Ruff, mypy, pytest and pre-commit for maintained code.
 
 ## Product intent
 
@@ -103,73 +101,19 @@ The approved scope and delivery evidence are documented in:
 
 ## Current capabilities
 
-- A checksum-protected native CatBoost release bundle selected without refitting.
-- FastAPI inference plus separate liveness and selected-bundle readiness endpoints.
-- A local Streamlit demonstration.
-- A reproducible Python 3.12 environment managed through `pyproject.toml` and
-  `uv.lock`.
-- Checksum-pinned acquisition of the official UCI CSV, strict canonical schema
-  validation, deterministic quality evidence, and content-addressed quarantine.
-- A sealed 80/20 development/test holdout plus 5-fold × 3-repeat development
-  cross-validation assignments tied to a reviewed lineage lock.
-- Unit and integration tests that protect the selected-bundle, prediction,
-  API-health, CLI, and retained historical-artifact contracts.
-- Ruff, mypy, pytest, pre-commit, and GitHub Actions quality gates.
-- A non-root, locked-dependency Docker API image.
-- A versioned Week 3 experiment protocol that keeps baseline fitting and
-  evaluation on the reviewed development folds only.
-- A governed 19-feature modelling view, three deterministic baselines,
-  repeated-CV capacity metrics, SQLite MLflow lineage, and non-executable
-  fold-level logistic diagnostics.
-- A clean, digest-protected Phase 2 baseline report tied to reviewed commit
-  `c695c60`, with the sealed holdout explicitly unevaluated.
-- A versioned Phase 3 CatBoost contract with eight bounded search variants,
-  150 reviewed fold fits, deterministic advancement and fallback rules,
-  content-bound NumPy checkpoints, and two-run evidence verification.
-- Digest-protected Phase 3 aggregate evidence selecting the lightweight
-  `cb_cfg_006` configuration from development folds only; this remains historical evidence.
-- A frozen one-pass comparison of logistic regression, histogram gradient
-  boosting, random forest, and fixed CatBoost, with an exact four-fit budget,
-  validation guardrails, deterministic simplicity tie-break, and no winner refit.
-- A checksum-protected native CatBoost winner bundle tied to clean implementation
-  commit `f7c99f2` and reviewed validation evidence.
-- One immutable prediction-only evaluation of exactly 6,000 test accounts. All
-  frozen gates passed, G2 closed, and the reviewed release bundle now serves the API.
-- A byte-preserved, non-importable archive of the executed evaluator plus a
-  no-option tombstone that rejects every final-test replay before data or model access.
-- Exact startup checks for the six inference dependencies recorded by the reviewed
-  bundle; intentionally absent modelling and data-validation extras are excluded.
-- A validation-only Phase 5 governance workflow with demographic
-  exclusion/invariance checks, corrected subgroup uncertainty, native SHAP, and
-  protected report/runtime destinations, backed by digest-protected aggregate evidence.
-- An authenticated Release A dossier binding the complete data, baseline,
-  selection, bundle, authorization, receipt, and final-test chain. It publishes
-  the reviewed 500-resample validation uncertainty without recomputation.
-- One dependency-validated inference engine shared by an idempotent monthly
-  batch scorer and `POST /v1/predict`, with deterministic 10% ranking,
-  partial-row rejection evidence, native-SHAP reason categories, trace IDs,
-  safe JSON logs, and an API-only Streamlit client.
-- Authenticated Phase 6 evidence from corrected implementation commit `f6b37af`:
-  20 synthetic records achieved exact offline/batch probability parity,
-  API agreement within `5e-7`, exact band/reason parity, and no-rewrite reuse.
-- A local MLflow 3.15 registry with SQLite metadata and content-addressed model
-  artifacts, digest-authenticated promotion/rollback approvals, compensated
-  alias transitions, immutable deployment revisions, and an atomic active pointer.
-- Blocking fixable HIGH/CRITICAL Trivy scanning, a CycloneDX SBOM, and
-  authenticated Phase 7 evidence proving identical synthetic outputs across both
-  release revisions plus a successful restoration of revision 1.
-- A zero-cost Phase 8 local platform prerequisite stack with digest-pinned
-  PostgreSQL and source-pinned MinIO, PostgreSQL-backed MLflow 3.15, content-addressed
-  model objects, three persistent named volumes, exact Phase 7 alias/bootstrap
-  reconstruction, and API/UI health checks. Bootstrap and restart verification
-  perform zero fits and preserve the selected-model prediction `0.190382`.
-- Public, immutable Hugging Face distribution for the exact reviewed CatBoost
-  binary. The Git-tracked selected manifest remains the trust authority;
-  application loaders remain local-only and network-free.
+| Capability | Implemented evidence |
+| --- | --- |
+| Reproducible data | Checksum-pinned UCI acquisition, strict schema, content-addressed quarantine, deterministic canonical data and reviewed split lineage. [Data controls](docs/data/validation-policy.md). |
+| Frozen science | Historical baselines/search, final four-classifier comparison, exact fitted winner, identity calibration, validation-only uncertainty and one consumed test. [Scientific reasoning](docs/portfolio/scientific-decisions.md). |
+| Inference contracts | Strict 19-predictor requests, digest/dependency verification before model loading, shared batch/API engine, native-SHAP attribution categories and separate health/readiness. [Inference architecture](docs/inference/architecture.md). |
+| Batch operation | Duplicate rejection, partial-row evidence, deterministic 10% ranking, atomic publication, verified no-rewrite reuse and allowlisted traceable events. [Batch contract](docs/inference/phase6-protocol.md). |
+| Release control | Immutable revisions and manual SQLite promotion/rollback; separately PostgreSQL/MinIO fixed-state bootstrap and persistent recovery. [Architecture and limits](docs/portfolio/architecture.md). |
+| Assurance | Subgroup diagnostics with retained G3 conditions, drift/service monitoring, robustness and incident drills, locked environments, Linux image tests, scans and SBOMs. [Approved local Release B](docs/reviews/release-b-owner-review.md). |
+| Impact study design | Hypothetical customer-randomized outreach protocol and tested standalone sample-size/MDE calculator. [Study](docs/portfolio/intervention-study.md); no observed intervention benefit. |
 
-G3 is `closed_with_conditions`. Release B and G4 are complete for the local
-portfolio scope, with authenticated operational evidence and a digest-bound
-owner decision. The operating restrictions remain mandatory; G5 stays open.
+All current model, feature, risk-band and capacity contracts remain frozen.
+Historical evidence is inspected through its fixed trust anchors; synthetic
+fixtures exercise the current implementation without reopening model selection.
 
 ## Dataset and evidence limits
 
@@ -195,11 +139,43 @@ will not be used as evidence of real model performance.
 - [uv 0.11.28](https://docs.astral.sh/uv/), matching CI and the container build
 - Docker Desktop for the container demonstration
 
-### Install the locked environment
+### Synthetic-only quickstart
+
+The API, UI and batch demonstration need the reviewed model and synthetic
+fixtures; historical customer data is unnecessary. Install Python/uv as above,
+then run from the repository root:
 
 ```bash
 uv sync --locked --all-extras --dev
+uv run credit-risk artifacts pull
+uv run credit-risk artifacts verify
+uv run uvicorn api:app --host 127.0.0.1 --port 8080
 ```
+
+Leave the API running. In a second terminal at the same root:
+
+```bash
+uv run streamlit run app.py --server.address 127.0.0.1
+```
+
+Open `http://127.0.0.1:8501` and use the exact
+[synthetic fixture and demo instructions](docs/portfolio/demo-script.md), rather
+than arbitrary UI defaults, to reproduce probability `0.190382` (UI `0.1904`).
+`http://127.0.0.1:8080/ready` should return `{"status":"ready"}`.
+For a short batch check in a third terminal:
+
+```bash
+uv run credit-risk inference batch --input tests/fixtures/inference_batch_v1.csv --as-of-date 2026-09-30 --snapshot-id monthly-demo
+uv run credit-risk inference verify --run-root experiment/inference/batches/2026-09-30/monthly-demo
+```
+
+The committed fixture contains 20 synthetic rows; the fixed policy selects two.
+Identical reruns verify/reuse existing files; conflicting output fails without
+overwrite. A clean batch exits 0, a published partial batch exits 3, and a failed
+batch exits 1. The [full walkthrough](docs/portfolio/demo-script.md) uses new run
+IDs for its separate 400-row monitoring demonstration. These counts are technical
+checks, not new customer-performance evidence. Stop foreground services with Ctrl+C.
+Detailed restoration and historical verification instructions follow.
 
 ### Materialise reviewed model artifacts
 
@@ -208,7 +184,7 @@ verify the selected model from the full immutable Hugging Face revision before
 running inference:
 
 ```bash
-uv sync --locked --extra artifacts
+uv sync --locked --all-extras --dev
 uv run credit-risk artifacts pull
 uv run credit-risk artifacts verify
 ```
@@ -240,41 +216,26 @@ Phase 2/3 experiment executors are no longer shipped; their reviewed
 configurations, reports, protocols, and integrity checks remain available for
 audit.
 
-### Run the governed one-pass selection
+### Inspect historical selection without rerunning it
 
-Install the `data` and `modeling` extras, verify the sealed lineage, and commit
-the reviewed implementation before the official run:
+The completed selection fitted four fixed classifiers on 19,200 development rows
+and compared the same 4,800 validation accounts. It preserved the exact winner
+without refitting: `catboost_fixed`, validation AP `0.556510`, Brier `0.133539`
+and lift at 10% `3.210923`. Earlier development CV/search remains historical
+context; four fits describes the final comparison, not all prior research.
 
-```bash
-uv sync --locked --extra data --extra modeling --dev
-uv run credit-risk data verify
-uv run credit-risk model select
-```
+Read the [selection protocol](docs/modeling/selection-protocol.md) and
+[scientific decision narrative](docs/portfolio/scientific-decisions.md) for the
+guardrails, close competitor, preprocessing and uncertainty limits. New fitting,
+calibration, uncertainty regeneration or historical scoring is outside the current
+scope. Reproduction here means restoring reviewed bytes, verifying lineage and
+repeating synthetic technical checks.
 
-The reviewed run fitted exactly four fixed models on 19,200 development rows, evaluated
-the same 4,800 validation accounts, and atomically publishes the aggregate
-evidence plus the exact winner bundle without refitting. Row-level predictions,
-bootstrap evidence, and MLflow state remain ignored under `experiment/`.
-`catboost_fixed` won with validation average precision `0.556510`, Brier score
-`0.133539`, and lift at 10% `3.210923`. The native bundle is protected by its
-manifest and model digests. If a future selection produces joblib, it has pickle
-semantics and must be loaded only as a trusted local input after digest verification.
-
-The one-time test gates were frozen independently from model selection:
-
-```bash
-uv run credit-risk model freeze-test
-```
-
-That command loads neither data nor the estimator. A separate approval record
-then authorized exactly one `credit-risk model final-test` execution. It scored
-6,000 unique test accounts with the unchanged selected bundle, performed zero
-fits, and passed the frozen average-precision, Brier, and lift gates. Its durable
-receipts and the active no-option tombstone permanently prevent reevaluation; the
-reviewed evidence is under `reports/modeling/final_test_v1/`. The exact executed
-source is preserved as a non-importable text artifact under
-`docs/modeling/evidence/`. Historical baseline and candidate reports remain
-available, while their retired public fitting commands are absent.
+The separately authorized 6,000-account final evaluation passed its frozen gates
+once. Its [aggregate evidence and receipts](reports/modeling/final_test_v1/final-test-report.md)
+remain immutable. A no-option tombstone prevents replay before data/model access;
+the executed evaluator survives only as a non-importable text artifact. Training,
+selection, gate freezing and final-test execution are not quickstart steps.
 
 ### Verify Phase 5 governance evidence
 
@@ -284,8 +245,9 @@ uv run credit-risk governance verify \
   --aggregate-only
 ```
 
-`governance build` is the controlled prediction-only reproduction interface. It
-scores the existing bundle once on validation, computes subgroup and native-SHAP
+The historical `governance build` is a controlled prediction-only interface; it is
+not authorized by this quickstart. It scores the existing bundle on validation,
+computes subgroup and native-SHAP
 evidence, and refuses dirty worktrees, existing destinations, or paths outside
 the approved governance report/runtime subtrees. Phase 1 may parse the complete
 snapshot for integrity; test accounts are never selected, returned, scored,
@@ -423,7 +385,7 @@ environment mapping as authoritative; only `None` enables ambient discovery.
 ```bash
 uv run ruff format --check api.py app.py src/credit_risk tests
 uv run ruff check api.py app.py src/credit_risk tests
-uv run mypy src/credit_risk/artifact_distribution src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
+uv run mypy src/credit_risk/portfolio src/credit_risk/assurance src/credit_risk/robustness src/credit_risk/monitoring src/credit_risk/incidents src/credit_risk/artifact_distribution src/credit_risk/data src/credit_risk/modeling src/credit_risk/governance src/credit_risk/release src/credit_risk/inference src/credit_risk/registry src/credit_risk/platform src/credit_risk/cli.py api.py app.py
 uv run pytest -m "not training and not artifact" --cov --cov-report=term-missing
 uv run pytest tests/unit/artifact_distribution --cov=credit_risk.artifact_distribution --cov-branch --cov-fail-under=90
 uv run pytest tests/unit/data tests/unit/test_data_cli.py tests/integration/test_data_workflow.py --cov=credit_risk.data --cov-branch --cov-fail-under=90
@@ -458,7 +420,7 @@ uv run pytest tests/unit/platform tests/unit/test_platform_cli.py tests/integrat
 
 ```bash
 uv run credit-risk artifacts pull
-uv run uvicorn api:app --host 0.0.0.0 --port 8080
+uv run uvicorn api:app --host 127.0.0.1 --port 8080
 ```
 
 Open `http://localhost:8080/docs` for the generated API documentation. `GET /ping`
