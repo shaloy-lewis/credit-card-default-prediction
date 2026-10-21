@@ -60,12 +60,26 @@ runtime images now pin `10.42-1+deb12u2`, the replacement listed by
 [Debian's security tracker](https://security-tracker.debian.org/tracker/source-package/pcre2).
 The historical Release B evidence retains its original source and image hashes;
 the updated images require their own passing CI checks. The locked platform extra
-still requires GitPython `3.1.59` and cryptography `50.0.0`. These are security-only
+now requires GitPython `3.1.60` and retains cryptography `50.0.0`. The subsequent
+image scan also identified fixed vulnerabilities in Perl and Python image/network
+dependencies. Runtime images pin Perl `5.36.0-7+deb12u4`, and the lock updates
+Pillow to `13.0.0`, GitPython to `3.1.60`, aiohttp to `3.14.4`, certifi to
+`2026.10.19` and urllib3 to `2.8.0`. aiohttp also requires yarl `1.25.1`.
+All other locked package versions are retained. These are security-only
 updates: the base-image digest, platform contract, model, registry, and serving
 policy remain unchanged, and the scan threshold is not relaxed.
 MLflow's upstream fix changed only its cryptography upper-bound metadata; the
 lock applies that same compatibility relaxation while retaining frozen MLflow
 `3.15.0` and verifies the complete platform behavior in tests and containers.
+
+Streamlit `1.64.0` declares Pillow `<13`. The explicit uv override selects
+Pillow `13.0.0` to address the blocking findings while retaining the existing UI.
+The [compatibility tests](../../tests/integration/test_demo_ui.py) exercise PNG
+and JPEG conversion/resizing plus the Predictor against the real API with the
+reviewed synthetic fixture. This verifies those local demo paths; it is not a
+claim of general upstream compatibility. Remove the override when the selected
+Streamlit release supports Pillow 13. The model's exact dependency contract and
+all authenticated historical evidence remain unchanged.
 
 The deployment named volume is created root-owned by Docker. A read-only-root
 one-shot bootstrap container therefore runs as UID 0 solely to initialise that

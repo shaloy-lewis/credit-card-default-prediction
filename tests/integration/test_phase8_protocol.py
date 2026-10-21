@@ -65,6 +65,8 @@ def test_platform_images_and_environment_do_not_leak_runtime_state() -> None:
     assert "libpcre2-8-0=10.42-1+deb12u2" in dockerfile
     assert "libpcre2-8-0=10.42-1+deb12u2" in ui_dockerfile
     assert "libpcre2-8-0=10.42-1+deb12u2" in api_dockerfile
+    for image in (dockerfile, ui_dockerfile, api_dockerfile):
+        assert "perl-base=5.36.0-7+deb12u4" in image
     assert "USER app" in dockerfile
     assert "--extra platform" not in api_dockerfile
     assert "mlflow" not in api_dockerfile.lower()
@@ -73,7 +75,7 @@ def test_platform_images_and_environment_do_not_leak_runtime_state() -> None:
     assert "change-me" in example
     assert "MLFLOW_ARTIFACT_BUCKET=credit-risk-mlflow" in example
     assert 'name = "cryptography"\nversion = "50.0.0"' in lockfile
-    assert 'name = "gitpython"\nversion = "3.1.59"' in lockfile
+    assert 'name = "gitpython"\nversion = "3.1.60"' in lockfile
 
 
 @pytest.mark.artifact

@@ -17,7 +17,7 @@ dependencies = [
     "joblib==1.5.3",
     "numpy==1.26.4",
     "pandas==2.2.2",
-    "pillow==12.3.0",
+    "pillow==13.0.0",
     "pydantic==2.7.4",
     "scikit-learn==1.4.2",
     "starlette==1.6.0",
@@ -33,7 +33,7 @@ modeling = ["mlflow==3.15.0"]
 platform = [
     "boto3==1.43.96",
     "cryptography==50.0.0",
-    "gitpython==3.1.59",
+    "gitpython==3.1.60",
     "mlflow==3.15.0",
     "psycopg2-binary==2.9.13",
 ]
@@ -44,7 +44,11 @@ credit-risk = "credit_risk.cli:app"
 [tool.uv]
 # MLflow 3.15.0 capped cryptography below 50. Upstream later relaxed only this
 # metadata bound; retain the frozen MLflow runtime while installing the fix.
-override-dependencies = ["cryptography==50.0.0"]
+# Streamlit 1.64.0 declares Pillow <13, but 13.0.0 fixes the blocking image
+# vulnerabilities. Retain the frozen UI with an explicit compatibility override;
+# tests/integration/test_demo_ui.py covers its predictor and image-rendering paths.
+# Remove this override when the UI dependency supports Pillow 13 upstream.
+override-dependencies = ["cryptography==50.0.0", "pillow==13.0.0"]
 
 [dependency-groups]
 dev = [
