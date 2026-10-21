@@ -62,8 +62,9 @@ def test_platform_images_and_environment_do_not_leak_runtime_state() -> None:
     lockfile = (REPOSITORY_ROOT / "uv.lock").read_text(encoding="utf-8")
 
     assert "--extra platform" in dockerfile
-    assert "libpcre2-8-0=10.42-1+deb12u1" in dockerfile
-    assert "libpcre2-8-0=10.42-1+deb12u1" in ui_dockerfile
+    assert "libpcre2-8-0=10.42-1+deb12u2" in dockerfile
+    assert "libpcre2-8-0=10.42-1+deb12u2" in ui_dockerfile
+    assert "libpcre2-8-0=10.42-1+deb12u2" in api_dockerfile
     assert "USER app" in dockerfile
     assert "--extra platform" not in api_dockerfile
     assert "mlflow" not in api_dockerfile.lower()

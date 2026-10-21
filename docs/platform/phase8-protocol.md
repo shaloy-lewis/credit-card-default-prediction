@@ -52,10 +52,15 @@ fitting or sealed-test access. CI repeats those runtime checks, scans the new
 MLflow and UI images, and publishes their SBOMs.
 
 The blocking image scan discovered fixable vulnerabilities after the frozen
-base-image digest was published. The MLflow and Streamlit runtime images
-therefore install Debian's fixed `libpcre2-8-0` package
-`10.42-1+deb12u1`, and the locked platform extra
-requires GitPython `3.1.59` and cryptography `50.0.0`. These are security-only
+base-image digest was published. The runtime images originally installed Debian's
+fixed `libpcre2-8-0` package `10.42-1+deb12u1`. During recording preparation on
+2026-10-21, both container CI jobs failed because that revision was no longer
+available from the live Bookworm repositories. The API, MLflow and Streamlit
+runtime images now pin `10.42-1+deb12u2`, the replacement listed by
+[Debian's security tracker](https://security-tracker.debian.org/tracker/source-package/pcre2).
+The historical Release B evidence retains its original source and image hashes;
+the updated images require their own passing CI checks. The locked platform extra
+still requires GitPython `3.1.59` and cryptography `50.0.0`. These are security-only
 updates: the base-image digest, platform contract, model, registry, and serving
 policy remain unchanged, and the scan threshold is not relaxed.
 MLflow's upstream fix changed only its cryptography upper-bound metadata; the

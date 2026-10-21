@@ -34,7 +34,7 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
-        libpcre2-8-0=10.42-1+deb12u1 \
+        libpcre2-8-0=10.42-1+deb12u2 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system app && adduser --system --ingroup app --home /app app
