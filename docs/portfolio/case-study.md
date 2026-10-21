@@ -32,6 +32,38 @@ contains the exact denominators, selection history and validation-only uncertain
 The test was consumed once and cannot be rerun. Those metrics support a historical
 ranking claim, not temporal transportability or intervention effectiveness.
 
+The queue also contained 190 non-defaults, while 917 defaults remained outside
+it: capacity creates both review burden and missed risk. The published 20%
+sensitivity doubles review workload to 1,200 accounts and contains 676 defaults;
+it is not an authorized policy change. The [decision analysis](decision-analysis.md)
+explains these aggregate trade-offs and independent, explicitly assumed economic
+break-even scenarios. The [scientific narrative](scientific-decisions.md) explains
+the close model comparison, source anomalies, encoding choices, calibration and
+conditional uncertainty without claiming a new experiment.
+
+## What a business stakeholder should do next
+
+```mermaid
+flowchart LR
+  Snapshot["Closed monthly snapshot"] --> Validate["Validate and reconcile inputs"]
+  Validate --> Rank["Frozen scoring and top-10% account queue"]
+  Rank --> Review["Human eligibility and support review"]
+  Review -. "future approvals required" .-> Pilot["Voluntary randomized outreach pilot"]
+  Pilot --> Outcomes["Mature outcomes, harms and staff effort"]
+  Outcomes --> Decision["Human evidence review and adoption decision"]
+```
+
+Solid arrows before human review describe the local technical workflow;
+operational eligibility requires records absent from UCI. The pilot, outcome
+collection and adoption decision are proposals, not implemented customer flows.
+
+| Recommendation | Evidence boundary and success criterion |
+| --- | --- |
+| Treat the queue as a human-review aid | Historical concentration supports investigation; humans verify eligibility and never use the score to impose lending or adverse actions. |
+| Measure operational usefulness before expanding capacity | Reconcile valid/rejected records, complete reviews, preserve idempotency and record staff effort, exclusions, complaints and opt-outs. No achieved customer outcome is claimed. |
+| Investigate shifts, subgroup triggers and inference failures | Follow the existing human-owned monitoring/incident runbooks, retain evidence and require explicit model/policy change approval. |
+| Test actual benefit in an approved representative pilot | Use original randomized assignment, mature endpoints, missingness accounting and harm review; rank quality alone cannot establish effectiveness. |
+
 ## Engineering ownership
 
 The operational path uses strict batch contracts, row-level rejection receipts,
@@ -77,6 +109,8 @@ is enrolled and no default reduction is claimed.
 
 Releases A and B are complete for local portfolio use. G4 is closed for that
 scope; G3 conditions persist and G5 production review is open. Week 11 prepares
-this communication package for review. Release C still requires the fresh-checkout
-rehearsal, reviewed recording, privacy/claims review, interview material and
-explicit owner acceptance defined in the [acceptance plan](release-c-acceptance-plan.md).
+this communication package for review. The [Week 12 record](week12-review.md)
+already documents a functional fresh-checkout rehearsal and prepared interview
+material at its recorded revision. Release C still requires actual media, visual
+review, full-video privacy/claims review, final-package verification and explicit
+owner acceptance under the [acceptance plan](release-c-acceptance-plan.md).
