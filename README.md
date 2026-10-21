@@ -32,9 +32,13 @@ and rollback. Phase 8 adds PostgreSQL, MinIO and persistent fixed-state bootstra
 and recovery; it does not demonstrate PostgreSQL promotion or rollback. Drift
 alerts require human investigation and never retrain or promote automatically.
 
-**Status:** Releases A and B are complete for local portfolio use; Release C is
-planned, with its Week 11 material prepared for review. G3 conditions remain
-active, G4 is closed for local scope and G5 production review remains open.
+**Status:** Releases A and B are complete for local portfolio use; Release C
+remains planned. Week 11 material, the September 30 functional fresh-checkout
+rehearsal and the interview packet are prepared for review. The
+[Week 12 review record](docs/portfolio/week12-review.md) keeps recording, visual
+UI review, full-video privacy/claims review and owner acceptance open. G3
+conditions remain active, G4 is closed for local scope and G5 production review
+remains open.
 The [Release B owner decision](configs/releases/release_b_owner_approval_v1.json)
 binds the approved dossier and restrictions. The project uses historical
 Taiwanese data, with no genuine longitudinal evaluation, current-population
@@ -48,7 +52,7 @@ For a fast review, start with the [executive case study](docs/portfolio/case-stu
 [standalone planning calculator](docs/portfolio/planning-calculator.md) explain
 how a future intervention could be tested. Setup and operational commands follow
 below; the [Release C acceptance plan](docs/portfolio/release-c-acceptance-plan.md)
-keeps the remaining rehearsal, video and owner review explicit.
+defines the remaining recording, final-revision verification and owner review.
 
 ## Product intent
 

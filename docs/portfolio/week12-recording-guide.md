@@ -7,10 +7,14 @@ until every mandatory criterion and an explicit owner decision are recorded.
 
 ## Freeze and identify the recording source
 
-Commit the preparation material on `codex/release-c-week12`. Record that full
-SHA as the recording source R before capture. Clone from the remote repository
-into a new ignored `.cache/release-c-week12/current-<run>` directory and detach
-at R. Do not copy the working checkout's environment, model, outputs or data.
+Select the committed cleanup revision only after all four required Linux CI jobs
+and the separate historical Release B verification pass for that exact revision.
+Record its full SHA and check URLs as recording source R; the working tree must
+be clean. R remains unset until those checks pass. Once R is available on the
+remote, clone into a new ignored `.cache/release-c-week12/current-<run>` directory
+and detach at R. Do not copy the working checkout's environment, model, outputs
+or data. The [September 30 rehearsal](week12-review.md) and its
+[inventory](week12-evidence.json) retain their original source and results.
 Reserve fresh destinations; never overwrite a prior run. A later package commit
 P adds the review record, inventory and findings. Record both R and P in the PR;
 P does not pretend to be the source shown in a recording made at R.
@@ -66,10 +70,20 @@ accounts, unrelated tabs or notifications. The owner operates the Predictor when
 native/browser automation is unavailable; command preparation and verification
 remain the implementer's work.
 
-Use the exact fixture and execute the existing helper with a fresh run ID:
+Use the exact fixture and initialise one fresh `$runId` in Terminal C at the
+recording checkout root. This is the same setup as the
+[demo script](demo-script.md#timed-walkthrough); execute the setup and helper
+from one guide only. Keep Terminal C at the checkout root for the queue and
+monitoring commands. Reuse its `$recordingRoot` and `$runId` values in the separate
+capture terminal below. Each complete attempt gets a new ID; do not reinitialise
+it midway through an attempt.
 
 ```powershell
-.venv/Scripts/python.exe -m credit_risk.portfolio.demo --run-id week12-rehearsal-001 --api-url http://127.0.0.1:8080
+$recordingRoot = (Get-Location).Path
+$runId = 'week12-' + [guid]::NewGuid().ToString('N').Substring(0, 12)
+$runtimeRoot = Join-Path $recordingRoot "experiment/portfolio/week11/$runId"
+$monitoringRoot = Join-Path $recordingRoot "reports/monitoring/release_c_demo/$runId"
+.venv/Scripts/python.exe -m credit_risk.portfolio.demo --run-id $runId --api-url http://127.0.0.1:8080
 ```
 
 The unchanged helper uses `experiment/portfolio/week11/<run-id>` even for Week 12.
@@ -103,8 +117,21 @@ Retain archive, download URL, ffmpeg/ffprobe versions and executable hashes unde
 ignored tooling storage. Verify the archive before extraction or execution.
 A later version requires a separately recorded pin and review, not a silent swap.
 
-Set `$ffmpeg`, `$ffprobe` and `$media` to those absolute executable paths and a
-new ignored media directory. Record the exact title of a dedicated demonstration
+Open a separate PowerShell terminal for capture so Terminal C remains available
+for the live helper and queue commands. Set `$recordingRoot` and `$runId` there
+to the values already established in Terminal C; do not generate another ID.
+Set `$ffmpeg` and `$ffprobe` to those absolute executable paths. Create the media
+directory in the capture terminal, preserving any existing destination:
+
+```powershell
+$media = Join-Path $recordingRoot ".cache/release-c-week12/media-$runId"
+if (Test-Path -LiteralPath $media) { throw "Media destination already exists: $media" }
+New-Item -ItemType Directory -Path $media -ErrorAction Stop | Out-Null
+Copy-Item -LiteralPath (Join-Path $recordingRoot 'docs/portfolio/week12-captions.srt') -Destination $media -ErrorAction Stop
+Set-Location -LiteralPath $media -ErrorAction Stop
+```
+
+Record the exact title of a dedicated demonstration
 window. FFmpeg's [gdigrab device](https://ffmpeg.org/ffmpeg-devices.html#gdigrab)
 supports `title=<window title>` or `hwnd=<window handle>`. Do not select `desktop`.
 Keep the window visible, unminimised and unobscured. A title/handle mismatch,

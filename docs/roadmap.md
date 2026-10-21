@@ -32,8 +32,8 @@
 | 8: Registry, CI, and rollback — complete | 10 h | MLflow registry; candidate/champion workflow; promotion checklist; unit/integration/contract/model tests; GitHub Actions; image scan | Authenticated evidence proves the unchanged model can be registered, promoted, deployed locally, and rolled back without replacing files by hand | Controlled software and model delivery |
 | 9: Local MLOps platform — complete for local scope | 10 h | Docker Compose stack for API, UI, MLflow, PostgreSQL, and MinIO; persistent volumes; health checks; one-command startup | Authenticated Phase 8 evidence proves startup, idempotent bootstrap, restart persistence, health, parity, blocking scans and SBOMs | Platform architecture without paid infrastructure |
 | 10: Monitoring and incidents — complete for local scope | 10 h | Batch manifest; data and prediction drift report; delayed-label evaluation design; service metrics; runbooks; schema and drift incident drills | Reference-fixed monitoring, frozen service targets and all eight incident drills passed; real delayed-label evaluation remains deferred | Operability and failure management |
-| 11: Impact and communication | 10 h | Intervention experiment design; MDE/sample-size workbook or script; architecture diagram; executive case study; README rewrite; demo script | Model lift is not described as causal impact, and a reviewer can understand the system quickly | Product experimentation and stakeholder communication |
-| 12: Hardening and interview packet | 10 h | Clean-machine rehearsal; reproducibility audit; security/privacy checklist; 4–6 minute video; system-design walkthrough; resume bullets using measured results | CI is green, docs match behaviour, limitations are prominent, and the complete demo is repeatable | End-to-end ownership and technical leadership |
+| 11: Impact and communication — implemented, awaiting acceptance | 10 h | Intervention experiment design; MDE/sample-size workbook or script; architecture diagram; executive case study; README rewrite; demo script | Model lift is not described as causal impact, and a reviewer can understand the system quickly | Product experimentation and stakeholder communication |
+| 12: Hardening and interview packet — partial | 10 h | Fresh-checkout rehearsal; reproducibility audit; security/privacy checklist; 4–6 minute video; system-design walkthrough; resume bullets using measured results | CI is green, docs match behaviour, limitations are prominent, and the complete demo is repeatable | End-to-end ownership and technical leadership |
 
 ## Release milestones
 
@@ -79,11 +79,19 @@ This release creates the core hybrid DS/MLE story.
 
 ### Release C: flagship portfolio case study — end of Week 12
 
-**Status: planned.** The [Release C acceptance plan](portfolio/release-c-acceptance-plan.md)
-defines the remaining two 10-hour work packages, deliverables and owner acceptance
-criteria for Senior Data Scientist and Senior ML Engineer audiences. Reuse the
-completed Release B platform and monitoring evidence. Release C closes only after
-the completed package is explicitly accepted; G5 production review remains open.
+**Status: planned; preparation partially complete.** Week 11 study design,
+calculator, architecture, narrative and executable synthetic walkthrough are
+prepared for review. The [September 30 Week 12 record](portfolio/week12-review.md)
+documents a functional fresh-checkout rehearsal on the existing Windows machine
+and prepared interview material. Recording, visual UI review, full-video
+privacy/claims review and explicit owner acceptance remain open.
+
+The [Release C acceptance plan](portfolio/release-c-acceptance-plan.md) retains
+the deliverables and owner acceptance criteria for Senior Data Scientist and
+Senior ML Engineer audiences. Reuse the completed Release B platform and
+monitoring evidence, and verify the selected recording source and final package
+revisions separately. Release C closes only after the completed package is
+explicitly accepted; G5 production review remains open.
 
 - Reproducible local MLOps stack.
 - Monitoring and incident demonstrations.
