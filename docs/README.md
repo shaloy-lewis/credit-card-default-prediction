@@ -8,8 +8,10 @@ against model accuracy.
 ## Current release status
 
 Release B is approved for local portfolio scope and G4 is closed. G3 conditions
-remain in force; G5 production review remains open. Release C is planned and
-requires completed communication deliverables and a separate owner decision.
+remain in force; G5 production review remains open. Release C is planned, with
+Week 11 material, a functional fresh-checkout rehearsal and the interview packet
+prepared for review. Recording, visual UI review, full-video privacy/claims
+review and a separate owner decision remain outstanding.
 
 - [Release B report](../reports/releases/release_b_v1/release-b-report.md)
 - [Release B owner review and operating restrictions](reviews/release-b-owner-review.md)
@@ -26,8 +28,8 @@ requires completed communication deliverables and a separate owner decision.
 - [Executable demonstration script](portfolio/demo-script.md)
 - [Week 11 review and Week 12 handoff](portfolio/week11-review.md)
 
-These are implementation/review artifacts. Release C remains planned; owner
-acceptance, the recorded demonstration and Week 12 material remain outstanding.
+These implementation/review artifacts are prepared. Their acceptance is tracked
+separately in the [Release C acceptance plan](portfolio/release-c-acceptance-plan.md).
 
 ## Release C Week 12 preparation
 
@@ -37,8 +39,11 @@ acceptance, the recorded demonstration and Week 12 material remain outstanding.
 - [Week 12 rehearsal results and open media criteria](portfolio/week12-review.md)
 - [Aggregate Week 12 evidence inventory](portfolio/week12-evidence.json)
 
-These preparation artifacts do not establish a completed rehearsal, reviewed
-video or owner acceptance. Release C remains planned.
+The September 30 record documents a completed functional fresh-checkout rehearsal
+on the existing Windows machine and prepared interview material. Visual browser
+review, the final video, full-video privacy/claims review and owner acceptance
+remain pending. Release C remains planned; the dated record and evidence inventory
+retain their original results.
 
 ## Phase 0 documents
 

@@ -6,6 +6,8 @@ __pycache__
 *.py[cod]
 *.log
 .coverage
+.cache
+.uv-cache
 .mypy_cache
 .pytest_cache
 .ruff_cache

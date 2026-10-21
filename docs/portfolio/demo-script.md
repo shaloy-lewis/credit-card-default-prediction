@@ -1,13 +1,17 @@
 # Five-minute local demonstration script
 
-**Status:** executable Week 11 walkthrough prepared for review. The final 4-6
-minute MP4, fresh-checkout rehearsal and owner viewing decision are Week 12 work.
+**Status:** executable walkthrough prepared for review, with a functional
+fresh-checkout rehearsal recorded on September 30. Visual UI review, the final
+4-6 minute MP4, full-video privacy/claims review and owner viewing decision remain open.
 Show synthetic data only. No real customer outreach, model fitting or historical
 cohort scoring occurs.
 
 ## Prepare before the timed walkthrough
 
-Use the recorded implementation commit, Python 3.12 and the locked environment.
+Use recording source R selected through the
+[recording guide](week12-recording-guide.md#freeze-and-identify-the-recording-source),
+Python 3.12 and the locked environment. R remains unset until the cleanup is
+committed and its required CI checks pass.
 Follow the [setup guide](../../README.md#local-development), restore and verify
 the model, and authenticate Release B in the separate historical checkout at
 `7e571fc4fbb4e6cb99b0d66f8e7d72b24feccff4` using the fixed
@@ -52,10 +56,18 @@ hide credentials, unrelated tabs and customer material before recording.
 | 3:35-4:30 | Rendered architecture and linked Linux CI evidence. Explicitly label the platform persistence/recovery evidence as recorded Linux CI, separate from the API/UI running live on Windows. SQLite demonstrates promotion/rollback; PostgreSQL demonstrates fixed bootstrap/recovery. |
 | 4:30-5:00 | Show hypothetical outreach design and calculator. The next-cycle missed-payment endpoint differs from the dataset label. Close with G3 conditions, open G5 and the remaining Release C owner acceptance. |
 
-In Terminal C, select a new run ID for each complete helper run:
+In Terminal C at the recording checkout root, initialise `$runId` once per
+complete attempt. This is the same setup as the recording guide; execute it from
+one guide only. Keep Terminal C at the checkout root and retain its variables for
+the output commands. Reuse their values in the separate capture terminal described
+in the recording guide. A corrected or repeated attempt needs a fresh ID.
 
 ```powershell
-.venv/Scripts/python.exe -m credit_risk.portfolio.demo --run-id week11-demo-001
+$recordingRoot = (Get-Location).Path
+$runId = 'week12-' + [guid]::NewGuid().ToString('N').Substring(0, 12)
+$runtimeRoot = Join-Path $recordingRoot "experiment/portfolio/week11/$runId"
+$monitoringRoot = Join-Path $recordingRoot "reports/monitoring/release_c_demo/$runId"
+.venv/Scripts/python.exe -m credit_risk.portfolio.demo --run-id $runId --api-url http://127.0.0.1:8080
 ```
 
 The helper uses the real batch CLI twice, the existing API client and the existing
@@ -65,8 +77,8 @@ expected investigation state. Success exits 0; controlled failures exit 1;
 argument-parser failures exit 2. A failed run is retained for inspection: correct
 the cause and choose a fresh ID. Never delete historical evidence to make it pass.
 
-The ignored receipt is
-`experiment/portfolio/week11/week11-demo-001/receipt.json`. It records the exact
+The ignored receipt is `receipt.json` beneath `$runtimeRoot`, whose path is
+`experiment/portfolio/week11/<run-id>` even for Week 12. It records the exact
 implementation commit, fixture and model hashes, batch identity, invocation
 traces and monitoring manifest digest. It is synthetic demonstration evidence,
 not a new release approval. The CSV repeats 20 reviewed fixture patterns under
@@ -75,10 +87,10 @@ not a new release approval. The CSV repeats 20 reviewed fixture patterns under
 Show a few queue entries using the same run ID:
 
 ```powershell
-Import-Csv experiment/portfolio/week11/week11-demo-001/batches/2026-09-30/week11-demo-001/scores.csv |
+Import-Csv -LiteralPath (Join-Path $runtimeRoot "batches/2026-09-30/$runId/scores.csv") |
   Where-Object selected_for_review -EQ 'true' |
   Select-Object -First 5 account_id,probability_of_default,risk_band,primary_reason_category
-Get-Content reports/monitoring/release_c_demo/week11-demo-001/summary.json
+Get-Content -LiteralPath (Join-Path $monitoringRoot 'summary.json')
 ```
 
 Batch dates are frozen synthetic identifiers, not the date of an actual customer
@@ -90,10 +102,11 @@ No authenticated Release B output is overwritten or committed anew.
 ## Evidence shown on screen and Week 12 handoff
 
 Use the [claims inventory](claims-inventory.md) to connect every spoken metric to
-its source. The [verified baseline Linux run](https://github.com/shaloy-lewis/credit-card-default-prediction/actions/runs/36594629955)
-binds commit `9b0635559ec80d9f0d1198be5f978fd0999bff24`; the Week 11 PR must
-add its own final-revision CI links before the package is handed off. Do not
-present baseline CI as a measurement of a different revision.
+its source. Show the four passing Linux CI jobs and historical Release B
+verification for the exact recording source R, with their run URLs. The
+[September 30 rehearsal record](week12-review.md) retains earlier check results;
+those checks do not verify the cleanup or a later recording source. The final
+package P requires its own passing checks before handoff.
 
 A rehearsal must record checkout/environment, commands, run ID, receipt/digest,
 claims review and failures. Stop the native processes you started after the

@@ -553,3 +553,30 @@ deferred risks. It is not a substitute for commit history or CI results.
 - Separate owner approval SHA-256: `9a40d17f038056e3e475762810ead7887cdf764be836dc6387bc19638e4f8f1f`. Independent verification returned `approved_local_portfolio_release` and `g4_status=closed`.
 - Release B is complete and G4 is closed for the local portfolio scope. G5 production review and Release C communication deliverables remain open.
 - Historical evidence, model bytes, 19 predictors, identity calibration, risk bands and the 10% review policy remain unchanged.
+
+## Release C preparation — recording and acceptance pending
+
+**Preparation recorded:** 2026-09-30. **Recording-readiness cleanup:** 2026-10-21.
+
+- Week 11 study design, calculator, architecture, narrative, claims inventory and
+  executable synthetic walkthrough were merged through
+  [PR #19](https://github.com/shaloy-lewis/credit-card-default-prediction/pull/19).
+  The [Week 11 review](portfolio/week11-review.md) retains its implementation evidence.
+- [PR #20](https://github.com/shaloy-lewis/credit-card-default-prediction/pull/20)
+  added the recording guide, captions, interview packet and partial Week 12
+  rehearsal record. The [September 30 record](portfolio/week12-review.md) and
+  [evidence inventory](portfolio/week12-evidence.json) document functional checks
+  from independent fresh checkouts on the existing Windows machine. Those
+  historical results do not verify a later recording source.
+- The interview packet contains a system-design walkthrough and three
+  evidence-backed resume bullets. Window-capture preflight failed in the recorded
+  rehearsal; visual UI review, the final MP4, full-video privacy/claims review and
+  owner acceptance remain open.
+- Recording-readiness cleanup excludes `.cache` and `.uv-cache` from Docker build
+  context, refreshes status documentation and uses one fresh run ID consistently
+  in the recording commands. Local caches, tools, model bytes and retained
+  evidence are preserved.
+- Recording source R remains unset until the cleanup is committed and its required
+  CI checks pass. Follow the [recording guide](portfolio/week12-recording-guide.md)
+  for the next attempt, preserving previous runs. Release C remains planned,
+  G3 conditions remain active and G5 remains open.
